@@ -179,200 +179,93 @@ pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
     return Ok(result.last_insert_rowid());
 }
 
-pub async fn insert_movie_file(db: &Db, movie_file: &MovieFilesItem) -> Result<i64, sqlx::Error> {
+pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i64, sqlx::Error> {
+    let video_type = video_file.video_type.to_db();
     let result = sqlx::query!(
         "
-            INSERT INTO movie_files (
+            INSERT INTO video_files (
+                id,
+                video_type,
+                match_id,
                 blob_id,
-                movie_id
-            ) VALUES (?, ?)
-            ON CONFLICT (blob_id) DO UPDATE SET
-                movie_id = ?
-        ",
-        movie_file.blob_id,
-        movie_file.movie_id,
-        movie_file.movie_id,
-    )
-    .execute(db)
-    .await?;
-
-    return Ok(result.last_insert_rowid());
-}
-
-pub async fn insert_movie_special_features_file(
-    db: &Db,
-    movie_special_features_file: &MovieSpecialFeaturesFilesItem,
-) -> Result<i64, sqlx::Error> {
-    let result = sqlx::query!(
-        "
-            INSERT INTO movie_special_features_files (
-                blob_id,
-                movie_id
-            ) VALUES (?, ?)
-            ON CONFLICT (blob_id) DO UPDATE SET
-                movie_id = ?
-        ",
-        movie_special_features_file.blob_id,
-        movie_special_features_file.movie_id,
-        movie_special_features_file.movie_id,
-    )
-    .execute(db)
-    .await?;
-
-    return Ok(result.last_insert_rowid());
-}
-
-pub async fn insert_tv_file(db: &Db, tv_file: &TvFilesItem) -> Result<i64, sqlx::Error> {
-    let result = sqlx::query!(
-        "
-            INSERT INTO tv_files (
-                blob_id,
-                tv_show_id,
-                tv_season_id,
-                tv_episode_id
-            ) VALUES (?, ?, ?, ?)
-            ON CONFLICT (blob_id) DO UPDATE SET
-                tv_show_id = ?,
-                tv_season_id = ?,
-                tv_episode_id = ?
-        ",
-        tv_file.blob_id,
-        tv_file.tv_show_id,
-        tv_file.tv_season_id,
-        tv_file.tv_episode_id,
-        tv_file.tv_show_id,
-        tv_file.tv_season_id,
-        tv_file.tv_episode_id,
-    )
-    .execute(db)
-    .await?;
-
-    return Ok(result.last_insert_rowid());
-}
-
-pub async fn insert_untagged_media(
-    db: &Db,
-    untagged_media: &UntaggedMediaItem,
-) -> Result<i64, sqlx::Error> {
-    let result = sqlx::query!(
-        "
-            INSERT INTO untagged_media (
-                blob_id,
-                subtitle_id
-            )
-            VALUES (?, ?)
-            ON CONFLICT (blob_id) DO UPDATE SET
-                subtitle_id = ?
-        ",
-        untagged_media.blob_id,
-        untagged_media.subtitle_id,
-        untagged_media.subtitle_id,
-    )
-    .execute(db)
-    .await?;
-
-    return Ok(result.last_insert_rowid());
-}
-
-pub async fn insert_video_meta(
-    db: &Db,
-    video_meta: &VideoMetadataItem,
-) -> Result<i64, sqlx::Error> {
-    let result = sqlx::query!(
-        "
-            INSERT INTO video_metadata (
-                blob_id,
-                resolution,
                 resolution_width,
                 resolution_height,
-                video_format,
                 length,
+                original_mkv_hash,
                 audio_hash
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT (blob_id) DO UPDATE SET
-                resolution = ?,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (id) DO UPDATE SET
+                video_type = ?,
+                match_id = ?,
+                blob_id = ?,
                 resolution_width = ?,
                 resolution_height = ?,
-                video_format = ?,
                 length = ?,
+                original_mkv_hash = ?,
                 audio_hash = ?
         ",
-        video_meta.blob_id,
-        video_meta.resolution,
-        video_meta.resolution_width,
-        video_meta.resolution_height,
-        video_meta.video_format,
-        video_meta.length,
-        video_meta.audio_hash,
-        video_meta.resolution,
-        video_meta.resolution_width,
-        video_meta.resolution_height,
-        video_meta.video_format,
-        video_meta.length,
-        video_meta.audio_hash,
-    )
-    .execute(db)
-    .await?;
+        video_file.id,
+        video_type,
+        video_file.match_id,
+        video_file.blob_id,
+        video_file.resolution_width,
+        video_file.resolution_height,
+        video_file.length,
+        video_file.original_mkv_hash,
+        video_file.audio_hash,
+        video_type,
+        video_file.match_id,
+        video_file.blob_id,
+        video_file.resolution_width,
+        video_file.resolution_height,
+        video_file.length,
+        video_file.original_mkv_hash,
+        video_file.audio_hash,
+    ).execute(db).await?;
 
     return Ok(result.last_insert_rowid());
 }
 
-pub async fn insert_subtitle_metadata(
-    db: &Db,
-    subtitle_meta: &SubtitleMetadataItem,
-) -> Result<i64, sqlx::Error> {
+pub async fn insert_subtitle_file(db: &Db, subtitle_file: &SubtitleFilesItem) -> Result<i64, sqlx::Error> {
     let result = sqlx::query!(
         "
-            INSERT INTO subtitle_metadata (
-                blob_id,
-                video_blob_id,
-                language
-            ) VALUES (?, ?, ?)
-            ON CONFLICT (blob_id) DO UPDATE SET
-                video_blob_id = ?,
-                language = ?
-        ",
-        subtitle_meta.blob_id,
-        subtitle_meta.video_blob_id,
-        subtitle_meta.language,
-        subtitle_meta.video_blob_id,
-        subtitle_meta.language,
-    )
-    .execute(db)
-    .await?;
-
-    return Ok(result.last_insert_rowid());
-}
-
-pub async fn insert_blob(db: &Db, blob: &BlobItem) -> Result<i64, sqlx::Error> {
-    let result = sqlx::query!(
-        "
-            INSERT INTO blobs (
+            INSERT INTO subtitle_files (
                 id,
-                creation_time,
-                mime_type,
-                hash,
-                filename
-            )
-            VALUES (?, ?, ?, ?, ?)
+                blob_id
+            ) VALUES (?, ?)
             ON CONFLICT (id) DO UPDATE SET
-                creation_time = ?,
-                mime_type = ?,
-                hash = ?,
-                filename = ?
+                blob_id = ?
         ",
-        blob.id,
-        blob.creation_time,
-        blob.mime_type,
-        blob.hash,
-        blob.filename,
-        blob.creation_time,
-        blob.mime_type,
-        blob.hash,
-        blob.filename,
-    )
-    .execute(db)
-    .await?;
+        subtitle_file.id,
+        subtitle_file.blob_id,
+        subtitle_file.blob_id,
+    ).execute(db).await?;
+
+    return Ok(result.last_insert_rowid());
+}
+
+pub async fn insert_image_file(db: &Db, image_file: &ImageFilesItem) -> Result<i64, sqlx::Error> {
+    let result = sqlx::query!(
+        "
+            INSERT INTO image_files (
+                id,
+                blob_id,
+                mime_type,
+                name
+            ) VALUES (?, ?, ?, ?)
+            ON CONFLICT (id) DO UPDATE SET
+                blob_id = ?,
+                mime_type = ?,
+                name = ?
+        ",
+        image_file.id,
+        image_file.blob_id,
+        image_file.mime_type,
+        image_file.name,
+        image_file.blob_id,
+        image_file.mime_type,
+        image_file.name,
+    ).execute(db).await?;
 
     return Ok(result.last_insert_rowid());
 }

@@ -52,65 +52,59 @@ pub struct TvEpisodesItem {
     pub description: Option<String>,
 }
 
-// File tags (Movie, Special features, TV Episode)
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct MovieFilesItem {
-    pub blob_id: i64,
-    pub movie_id: i64,
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
+pub enum VideoType {
+    Untagged = 0,
+    Movie = 1,
+    SpecialFeature = 2,
+    TvEpisode = 3,
+}
+impl VideoType {
+    pub fn to_db(self) -> i64 {
+        return match self {
+            Self::Untagged => 0,
+            Self::Movie => 1,
+            Self::SpecialFeature => 2,
+            Self::TvEpisode => 3,
+        };
+    }
+    pub fn from_db(int: i64) -> Self {
+        return match int {
+            0 => Self::Untagged,
+            1 => Self::Movie,
+            2 => Self::SpecialFeature,
+            3 => Self::TvEpisode,
+            _ => Self::Untagged,
+        };
+    }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct MovieSpecialFeaturesFilesItem {
-    pub blob_id: i64,
-    pub movie_id: i64,
+pub struct VideoFilesItem {
+	pub id: Option<i64>,
+	///  Video type:
+	///  0 => Untagged
+	///  1 => Movie
+	///  2 => Special Feature
+	///  3 => TV Episode
+	pub video_type: VideoType,
+	///  Match ID: Identifies the specific movie, special feature, etc this video contains.
+	pub match_id: Option<i64>,
+	pub blob_id: String,
+	pub resolution_width: u32,
+	pub resolution_height: u32,
+	pub length: u32,
+	pub original_mkv_hash: Vec<u8>,
+	pub audio_hash: Vec<u8>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct TvFilesItem {
-    pub blob_id: i64,
-    pub tv_show_id: i64,
-    pub tv_season_id: i64,
-    pub tv_episode_id: i64,
+pub struct SubtitleFilesItem {
+	pub id: Option<i64>,
+	pub blob_id: String,
 }
 
-// Untagged Media
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct UntaggedMediaItem {
-    pub blob_id: i64,
-    pub subtitle_id: Option<i64>,
-}
-
-// Video File Stream Info
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct VideoMetadataItem {
-    pub blob_id: i64,
-    pub resolution: String,
-    pub resolution_width: i64,
-    pub resolution_height: i64,
-    pub video_format: String,
-    pub length: i64,
-    pub audio_hash: Vec<u8>,
-}
-
-// Subtitle file info
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct SubtitleMetadataItem {
-    pub blob_id: i64,
-    pub video_blob_id: i64,
-    pub language: Option<String>,
-}
-
-// File References
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct BlobItem {
-    pub id: Option<i64>,
-    pub creation_time: i64,
-    pub mime_type: Option<String>,
-    pub hash: Vec<u8>,
-    pub filename: String,
+pub struct ImageFilesItem {
+	pub id: Option<i64>,
+	pub blob_id: String,
+	pub mime_type: String,
+	pub name: Option<String>,
 }

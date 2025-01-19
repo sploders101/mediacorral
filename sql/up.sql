@@ -1,7 +1,7 @@
 -- Movie Metadata --
 
 CREATE TABLE `movies`(
-	`id` INTEGER NOT NULL PRIMARY KEY,
+	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`tmdb_id` TEXT,
 	`poster_blob` INTEGER,
 	`title` TEXT NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE `movies`(
 );
 
 CREATE TABLE `movies_special_features`(
-	`id` INTEGER NOT NULL PRIMARY KEY,
+	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`movie_id` INTEGER NOT NULL,
 	`thumbnail_blob` INTEGER,
 	`title` TEXT NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE `movies_special_features`(
 -- TV Show Metadata --
 
 CREATE TABLE `tv_shows`(
-	`id` INTEGER NOT NULL PRIMARY KEY,
+	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`tmdb_id` TEXT,
 	`poster_blob` INTEGER,
 	`title` TEXT NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE `tv_shows`(
 );
 
 CREATE TABLE `tv_seasons`(
-	`id` INTEGER NOT NULL PRIMARY KEY,
+	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`tv_show_id` INTEGER NOT NULL,
 	`season_number` INTEGER NOT NULL,
 	`poster_blob` INTEGER,
@@ -36,7 +36,7 @@ CREATE TABLE `tv_seasons`(
 );
 
 CREATE TABLE `tv_episodes`(
-	`id` INTEGER NOT NULL PRIMARY KEY,
+	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`tv_show_id` INTEGER NOT NULL,
 	`tv_season_id` INTEGER NOT NULL,
 	`episode_number` INTEGER NOT NULL,
@@ -45,58 +45,34 @@ CREATE TABLE `tv_episodes`(
 	`description` TEXT
 );
 
--- File tags (Movie, Special features, TV Episode) --
+-- File Tracking --
 
-CREATE TABLE `movie_files`(
-	`blob_id` INTEGER NOT NULL PRIMARY KEY,
-	`movie_id` INTEGER NOT NULL
-);
-
-CREATE TABLE `movie_special_features_files`(
-	`blob_id` INTEGER NOT NULL PRIMARY KEY,
-	`movie_id` INTEGER NOT NULL
-);
-
-CREATE TABLE `tv_files`(
-	`blob_id` INTEGER NOT NULL PRIMARY KEY,
-	`tv_show_id` INTEGER NOT NULL,
-	`tv_season_id` INTEGER NOT NULL,
-	`tv_episode_id` INTEGER NOT NULL
-);
-
--- Untagged Media --
-
-CREATE TABLE `untagged_media`(
-	`blob_id` INTEGER NOT NULL PRIMARY KEY,
-	`subtitle_id` INTEGER
-);
-
--- Video File Stream Info --
-
-CREATE TABLE `video_metadata`(
-	`blob_id` INTEGER NOT NULL PRIMARY KEY,
-	`resolution` TEXT NOT NULL,
+CREATE TABLE `video_files`(
+	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	-- Video type:
+	-- 0 => Untagged
+	-- 1 => Movie
+	-- 2 => Special Feature
+	-- 3 => TV Episode
+	`video_type` INTEGER NOT NULL DEFAULT 0,
+	-- Match ID: Identifies the specific movie, special feature, etc this video contains.
+	`match_id` INTEGER,
+	`blob_id` TEXT NOT NULL,
 	`resolution_width` INTEGER NOT NULL,
 	`resolution_height` INTEGER NOT NULL,
-	`video_format` TEXT NOT NULL,
 	`length` INTEGER NOT NULL,
+	`original_mkv_hash` BINARY NOT NULL,
 	`audio_hash` BINARY NOT NULL
 );
 
--- Subtitle file info --
-
-CREATE TABLE `subtitle_metadata`(
-	`blob_id` INTEGER NOT NULL PRIMARY KEY,
-	`video_blob_id` INTEGER NOT NULL,
-	`language` TEXT
+CREATE TABLE `subtitle_files`(
+	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	`blob_id` TEXT NOT NULL
 );
 
--- File References --
-
-CREATE TABLE `blobs`(
-	`id` INTEGER NOT NULL PRIMARY KEY,
-	`creation_time` INTEGER NOT NULL,
-	`mime_type` TEXT,
-	`hash` BINARY NOT NULL,
-	`filename` TEXT NOT NULL
+CREATE TABLE `image_files`(
+	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	`blob_id` TEXT NOT NULL,
+	`mime_type` TEXT NOT NULL,
+	`name` TEXT
 );
