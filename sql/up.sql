@@ -45,6 +45,14 @@ CREATE TABLE `tv_episodes`(
 	`description` TEXT
 );
 
+-- Rip Job Tracking --
+CREATE TABLE `rip_jobs`(
+	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	`start_time` INTEGER NOT NULL,
+	`disc_title` TEXT,
+	`suspected_contents` STRING
+);
+
 -- File Tracking --
 
 CREATE TABLE `video_files`(
@@ -62,17 +70,20 @@ CREATE TABLE `video_files`(
 	`resolution_height` INTEGER NOT NULL,
 	`length` INTEGER NOT NULL,
 	`original_mkv_hash` BINARY NOT NULL,
-	`audio_hash` BINARY NOT NULL
+	`audio_hash` BINARY NOT NULL,
+	`rip_job` INTEGER
 );
 
 CREATE TABLE `subtitle_files`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-	`blob_id` TEXT NOT NULL
+	`blob_id` TEXT NOT NULL,
+	`video_file` INTEGER NOT NULL
 );
 
 CREATE TABLE `image_files`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`blob_id` TEXT NOT NULL,
 	`mime_type` TEXT NOT NULL,
-	`name` TEXT
+	`name` TEXT,
+	`rip_job` INTEGER
 );

@@ -52,6 +52,13 @@ pub struct TvEpisodesItem {
     pub description: Option<String>,
 }
 
+pub struct RipJobsItem {
+	pub id: Option<i64>,
+	pub start_time: i64,
+	pub disc_title: Option<String>,
+	pub suspected_contents: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum VideoType {
     Untagged = 0,
@@ -95,11 +102,13 @@ pub struct VideoFilesItem {
 	pub length: u32,
 	pub original_mkv_hash: Vec<u8>,
 	pub audio_hash: Vec<u8>,
+	pub rip_job: Option<i64>,
 }
 
 pub struct SubtitleFilesItem {
 	pub id: Option<i64>,
 	pub blob_id: String,
+	pub video_file: i64,
 }
 
 pub struct ImageFilesItem {
@@ -107,4 +116,5 @@ pub struct ImageFilesItem {
 	pub blob_id: String,
 	pub mime_type: String,
 	pub name: Option<String>,
+	pub rip_job: Option<i64>,
 }
