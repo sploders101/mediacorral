@@ -69,7 +69,7 @@ CREATE TABLE `tv_files`(
 CREATE TABLE `untagged_media`(
 	`blob_id` INTEGER NOT NULL PRIMARY KEY,
 	`subtitle_id` INTEGER
-)
+);
 
 -- Video File Stream Info --
 
