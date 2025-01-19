@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct MoviesItem {
-    pub id: i64,
+    pub id: Option<i64>,
     pub tmdb_id: Option<String>,
     pub poster_blob: Option<i64>,
     pub title: String,
@@ -13,7 +13,7 @@ pub struct MoviesItem {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct MoviesSpecialFeaturesItem {
-    pub id: i64,
+    pub id: Option<i64>,
     pub movie_id: i64,
     pub thumbnail_blob: Option<i64>,
     pub title: String,
@@ -24,7 +24,7 @@ pub struct MoviesSpecialFeaturesItem {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct TvShowsItem {
-    pub id: i64,
+    pub id: Option<i64>,
     pub tmdb_id: Option<String>,
     pub poster_blob: Option<i64>,
     pub title: String,
@@ -33,7 +33,7 @@ pub struct TvShowsItem {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct TvSeasonsItem {
-    pub id: i64,
+    pub id: Option<i64>,
     pub tv_show_id: i64,
     pub season_number: i64,
     pub poster_blob: Option<i64>,
@@ -43,7 +43,7 @@ pub struct TvSeasonsItem {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct TvEpisodesItem {
-    pub id: i64,
+    pub id: Option<i64>,
     pub tv_show_id: i64,
     pub tv_season_id: i64,
     pub episode_number: i64,
@@ -108,7 +108,7 @@ pub struct SubtitleMetadataItem {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct BlobItem {
-    pub id: i64,
+    pub id: Option<i64>,
     pub creation_time: i64,
     pub mime_type: Option<String>,
     pub hash: Vec<u8>,
