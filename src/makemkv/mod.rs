@@ -16,7 +16,6 @@ pub struct Makemkv {
 impl Makemkv {
     pub fn rip(device: impl AsRef<str>, destination: &Path) -> std::io::Result<Self> {
         let device = device.as_ref();
-        // -r --messages=-stdout --progress=-same --noscan mkv dev:/dev/sr2 all ./tmp/
         let mut command = Command::new("makemkvcon")
             .arg("-r")
             .arg("--messages=-stdout")
