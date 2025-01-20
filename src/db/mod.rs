@@ -209,7 +209,7 @@ pub async fn insert_rip_jobs(db: &Db, rip_job: &RipJobsItem) -> Result<i64, sqlx
 
 pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i64, sqlx::Error> {
     let video_type = video_file.video_type.to_db();
-    let mkv_hash = video_file.original_mkv_hash.as_slice();
+    let mkv_hash = video_file.original_video_hash.as_slice();
     let result = sqlx::query!(
         "
             INSERT INTO video_files (
@@ -220,7 +220,7 @@ pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i
                 resolution_width,
                 resolution_height,
                 length,
-                original_mkv_hash,
+                original_video_hash,
                 rip_job
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (id) DO UPDATE SET
@@ -230,7 +230,7 @@ pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i
                 resolution_width = ?,
                 resolution_height = ?,
                 length = ?,
-                original_mkv_hash = ?,
+                original_video_hash = ?,
                 rip_job = ?
         ",
         video_file.id,

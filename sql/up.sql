@@ -69,7 +69,7 @@ CREATE TABLE `video_files`(
 	`resolution_width` INTEGER NOT NULL,
 	`resolution_height` INTEGER NOT NULL,
 	`length` INTEGER NOT NULL,
-	`original_mkv_hash` BINARY NOT NULL,
+	`original_video_hash` BINARY NOT NULL,
 	`rip_job` INTEGER
 );
 

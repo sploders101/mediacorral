@@ -36,7 +36,7 @@ pub async fn insert_video(
             resolution_width: info.width as _,
             resolution_height: info.height as _,
             length: info.length as _,
-            original_mkv_hash: info.hash,
+            original_video_hash: info.hash,
             rip_job,
         },
     )
