@@ -113,15 +113,17 @@ impl RipDirHandle {
                     &path,
                     &self.blob_dir,
                     *video_id,
-                    Some(self.job_id),
                 )
                 .await?;
             }
         }
 
+        let _ = tokio::fs::remove_dir_all(self.directory).await;
+
         return Ok(());
     }
     pub async fn discard(self) {
+        // TODO: Remove rip job
         let _ = tokio::fs::remove_dir_all(self.directory).await;
     }
 }

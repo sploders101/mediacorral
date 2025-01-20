@@ -50,8 +50,16 @@ pub async fn insert_subtitles(
     path: &Path,
     blob_dir: &Path,
     video_id: i64,
-    rip_job: Option<i64>,
 ) -> anyhow::Result<i64> {
+    let uuid = Uuid::new_v4().to_string();
+    tokio::fs::rename(path, blob_dir.join(&uuid)).await?;
+    let id = db_funcs::insert_subtitle_file(db, &schemas::SubtitleFilesItem {
+        id: None,
+        blob_id: uuid,
+        video_file: video_id,
+    }).await?;
+
+    return Ok(id);
 }
 
 fn get_timestamp() -> i64 {

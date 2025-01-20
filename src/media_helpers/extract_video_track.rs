@@ -29,7 +29,7 @@ pub struct VideoMeta {
 
 /// Collects metadata about the video track (including hash)
 pub async fn get_video_info(file: &Path) -> anyhow::Result<VideoMeta> {
-    let (length, vid_tracks) = get_video_tracks(file.clone()).await?;
+    let (length, vid_tracks) = get_video_tracks(file).await?;
     let vid_track = match vid_tracks.get(0) {
         Some(track) => track,
         None => anyhow::bail!("Missing video track"),
