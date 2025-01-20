@@ -7,7 +7,7 @@ use tokio::{
 };
 
 mod csv;
-mod messaging;
+pub mod messaging;
 
 pub struct Makemkv {
     command: Child,

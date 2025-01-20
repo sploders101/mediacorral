@@ -1,29 +1,10 @@
-use std::{io::ErrorKind, path::{Path, PathBuf}, sync::Arc};
+pub use rip_dir::RipDirHandle;
+use std::{io::ErrorKind, path::PathBuf, sync::Arc};
 
-use uuid::Uuid;
+use crate::tagging::types::SuspectedContents;
 
-#[must_use]
-pub struct RipDirHandle {
-    directory: PathBuf,
-}
-impl AsRef<PathBuf> for RipDirHandle {
-    fn as_ref(&self) -> &PathBuf {
-        return &self.directory;
-    }
-}
-impl AsRef<Path> for RipDirHandle {
-    fn as_ref(&self) -> &Path {
-        return &self.directory;
-    }
-}
-impl RipDirHandle {
-    pub async fn import(self) {
-        todo!();
-    }
-    pub async fn discard(self) {
-        let _ = tokio::fs::remove_dir_all(self.directory).await;
-    }
-}
+mod rip_dir;
+mod util_funcs;
 
 pub struct BlobStorageController {
     blob_dir: PathBuf,
@@ -84,12 +65,18 @@ impl BlobStorageController {
         });
     }
 
-    pub async fn create_rip_dir(&self) -> std::io::Result<RipDirHandle> {
-        let uuid = Uuid::new_v4();
-        let rip_dir = self.rip_dir.join(uuid.to_string());
-        tokio::fs::create_dir(&rip_dir).await?;
-        return Ok(RipDirHandle {
-            directory: rip_dir,
-        });
+    pub async fn create_rip_dir(
+        &self,
+        disc_title: Option<String>,
+        suspected_contents: Option<SuspectedContents>,
+    ) -> anyhow::Result<RipDirHandle> {
+        return Ok(RipDirHandle::new(
+            Arc::clone(&self.db_connection),
+            self.blob_dir.clone(),
+            &self.rip_dir,
+            disc_title,
+            suspected_contents,
+        )
+        .await?);
     }
 }

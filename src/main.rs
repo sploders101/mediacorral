@@ -1,9 +1,15 @@
-#[macro_use] extern crate rocket;
+#[macro_use]
+extern crate rocket;
 
-mod makemkv;
-mod drive_controller;
+mod application;
 mod blob_storage;
+mod config;
 mod db;
+mod drive_controller;
+mod makemkv;
+mod media_helpers;
+mod task_queue;
+mod tagging;
 
 #[get("/")]
 fn index() -> &'static str {

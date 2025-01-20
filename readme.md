@@ -40,3 +40,13 @@ Unfortunately, I'm probably not going to get Plex, Emby, and Jellyfin on board (
 An exports directory is a directory intended to match the pattern expected by a given media player. This will start off as hard-coded options, but will be expanded to add user-configurable options later. These directories will be scrapped and re-assembled from entries in the database upon request, with differential updates when new content is added. Essentially, they are just file trees of either symbolic or hard links to the original content in the blob storage directory.
 
 The goal of this is to allow me to easily restructure my files with no risk of losing the original content, as well as provide different "views" of the content for Plex, Emby, and Possibly Jellyfin. Plex is more polished, but Emby actually works reliably. Even so, I'm having trouble getting my family to see eye-to-eye with me on this, so I maintain both, and it's pretty tedious. Mediacorral will allow you to catalogue once, and export for both servers.
+
+## Installation
+
+TODO. I'm thinking a docker container since there's a few moving parts.
+
+### Dependencies
+
+* vobsubocr
+* bdsup2sub.jar
+* mkvtoolnix

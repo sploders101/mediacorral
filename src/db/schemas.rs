@@ -100,8 +100,7 @@ pub struct VideoFilesItem {
 	pub resolution_width: u32,
 	pub resolution_height: u32,
 	pub length: u32,
-	pub original_mkv_hash: Vec<u8>,
-	pub audio_hash: Vec<u8>,
+	pub original_mkv_hash: [u8; 16],
 	pub rip_job: Option<i64>,
 }
 
