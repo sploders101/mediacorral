@@ -47,19 +47,6 @@ impl Application {
 
         return Ok(self.drives.get(&path).context("Drive not found")?);
     }
-
-    pub fn create_autoripper(self: &Arc<Self>) -> impl Future<Output = ()> {
-        let this = Arc::clone(self);
-        return async move {
-            let mut events = std::pin::pin!(disc_insert_events());
-            while let Some(insertion) = events.next().await {
-                if let Ok(drive) = this.get_drive(&Path::new(&insertion.device)) {
-                    println!("Ripping {}", insertion.disc_name);
-                    drive.rip(Some(insertion.disc_name), None, true);
-                }
-            }
-        };
-    }
 }
 
 fn canonicalize_drive_path(drive_path: &Path) -> anyhow::Result<String> {

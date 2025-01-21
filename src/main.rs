@@ -1,7 +1,16 @@
-use std::{ops::Deref, path::Path, sync::Arc};
-
 use application::Application;
-use drive_controller::ActiveDriveCommand;
+use async_udev::disc_insert_events;
+use futures::StreamExt;
+use rocket::{
+    http::{ContentType, Status},
+    response::{stream::TextStream, Responder},
+    serde::json::Json,
+    Response, State,
+};
+use serde::Deserialize;
+use std::{io::Cursor, path::Path, sync::Arc};
+use tagging::types::SuspectedContents;
+use tokio::sync::Mutex;
 
 #[macro_use]
 extern crate rocket;
@@ -17,9 +26,68 @@ mod media_helpers;
 mod tagging;
 mod task_queue;
 
+struct AnyhowError(anyhow::Error);
+impl<'r, 'o: 'r> Responder<'r, 'o> for AnyhowError {
+    fn respond_to(self, _request: &'r rocket::Request<'_>) -> rocket::response::Result<'o> {
+        let mut response = Response::new();
+        response.set_status(Status::InternalServerError);
+        response.set_header(ContentType::Text);
+        let body = format!("{}", self.0);
+        let body = Vec::from(body.as_bytes());
+        response.set_sized_body(body.len(), Cursor::new(body));
+        return Ok(response);
+    }
+}
+impl From<anyhow::Error> for AnyhowError {
+    fn from(value: anyhow::Error) -> Self {
+        return Self(value);
+    }
+}
+
+struct AutoripEnabler(Arc<Mutex<bool>>);
+
+#[get("/autorip")]
+async fn get_autorip(enabler: &State<AutoripEnabler>) -> Json<bool> {
+    return Json(*enabler.inner().0.lock().await);
+}
+
+#[post("/autorip", data = "<data>")]
+async fn post_autorip(enabler: &State<AutoripEnabler>, data: Json<bool>) {
+    *enabler.inner().0.lock().await = data.0;
+}
+
+#[derive(Deserialize)]
+struct RipInstruction {
+    device: String,
+    disc_name: Option<String>,
+    suspected_contents: Option<SuspectedContents>,
+    autoeject: bool,
+}
+
+#[post("/rip", data = "<data>")]
+async fn post_rip(
+    application: &State<Arc<Application>>,
+    data: Json<RipInstruction>,
+) -> Result<(), AnyhowError> {
+    application
+        .inner()
+        .get_drive(&Path::new(&data.0.device))?
+        .rip(
+            data.0.disc_name,
+            data.0.suspected_contents,
+            data.0.autoeject,
+        );
+
+    return Ok(());
+}
+
 #[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
+fn index(application: &State<Arc<Application>>) -> TextStream![&str] {
+    return TextStream! {
+        for drive in application.list_drives() {
+            yield drive.get_devname();
+        }
+    };
 }
 
 #[launch]
@@ -36,56 +104,38 @@ async fn rocket() -> _ {
     );
 
     let mut application = Application::new(db, blob_dir).await.unwrap();
-    application.register_drive(&Path::new("/dev/sr1")).await.unwrap();
-    application.register_drive(&Path::new("/dev/sr2")).await.unwrap();
+    let drives =
+        std::env::var("DISC_DRIVES").expect("Missing comma-separated DISC_DRIVES variable");
+    for drive in drives.split_whitespace() {
+        application.register_drive(&Path::new(drive)).await.unwrap();
+    }
     let application = Arc::new(application);
+    let enable_autorip = std::env::var("ENABLE_AUTORIP")
+        .map(|item| match item.as_str() {
+            "1" | "yes" | "on" => true,
+            "0" | "no" | "off" => false,
+            _ => panic!("Invalid value for ENABLE_AUTORIP"),
+        })
+        .unwrap_or(false);
+    let enable_autorip = Arc::new(Mutex::new(enable_autorip));
+    create_autoripper(Arc::clone(&enable_autorip), Arc::clone(&application));
 
-    let mut sr1 = application.get_drive(&Path::new("/dev/sr1")).unwrap().watch_state();
-    let mut sr2 = application.get_drive(&Path::new("/dev/sr2")).unwrap().watch_state();
+    rocket::build()
+        .manage(application)
+        .manage(AutoripEnabler(enable_autorip))
+        .mount("/", routes![index, get_autorip, post_autorip, post_rip])
+}
 
-    let mut autoripper = std::pin::pin!(application.create_autoripper());
-
-    loop {
-        tokio::select! {
-            _ = &mut autoripper => {
-                panic!("Somewhing went wrong. Restart mediacorral");
+pub fn create_autoripper(enabler: Arc<Mutex<bool>>, application: Arc<Application>) {
+    tokio::task::spawn(async move {
+        let mut events = std::pin::pin!(disc_insert_events());
+        while let Some(insertion) = events.next().await {
+            if !*enabler.lock().await {
+                continue;
             }
-            _ = sr1.changed() => {
-                match &sr1.borrow_and_update().active_command {
-                    ActiveDriveCommand::None => println!("sr1: Finished"),
-                    ActiveDriveCommand::Error { message } => println!("sr1: Error:\n{message}"),
-                    ActiveDriveCommand::Ripping {
-                        cprog_title,
-                        cprog_value,
-                        tprog_title,
-                        tprog_value,
-                        max_prog_value,
-                        logs,
-                    } => {
-                        let logs = logs.iter().fold(String::new(), |prev, curr| prev + "    " + curr + "\n");
-                        println!("sr1:\n  cprog: {}/{} ({})\n  tprog: {}/{} ({})\n  logs: \n{}", cprog_value, max_prog_value, cprog_title, tprog_value, max_prog_value, tprog_title, logs);
-                    },
-                }
-            }
-            _ = sr2.changed() => {
-                match &sr2.borrow_and_update().active_command {
-                    ActiveDriveCommand::None => println!("sr2: Finished"),
-                    ActiveDriveCommand::Error { message } => println!("sr2: Error:\n{message}"),
-                    ActiveDriveCommand::Ripping {
-                        cprog_title,
-                        cprog_value,
-                        tprog_title,
-                        tprog_value,
-                        max_prog_value,
-                        logs,
-                    } => {
-                        let logs = logs.iter().fold(String::new(), |prev, curr| prev + "    " + curr + "\n");
-                        println!("sr2:\n  cprog: {}/{} ({})\n  tprog: {}/{} ({})\n  logs: \n{}", cprog_value, max_prog_value, cprog_title, tprog_value, max_prog_value, tprog_title, logs);
-                    },
-                }
+            if let Ok(drive) = application.get_drive(&Path::new(&insertion.device)) {
+                drive.rip(Some(insertion.disc_name), None, true);
             }
         }
-    }
-
-    // rocket::build().mount("/", routes![index])
+    });
 }
