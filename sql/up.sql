@@ -80,6 +80,25 @@ CREATE TABLE `subtitle_files`(
 	`video_file` INTEGER NOT NULL
 );
 
+-- Contains subtitles downloaded from Opensubtitles before they've been processed.
+CREATE TABLE `ost_downloads`(
+	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	`video_type` INTEGER NOT NULL,
+	`match_id` INTEGER NOT NULL,
+	`filename` STRING NOT NULL,
+	`ost_url` TEXT NOT NULL,
+	`blob_id` TEXT NOT NULL
+);
+
+-- Contains information about the comparisons made between video files
+CREATE TABLE `match_info`(
+	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	`video_file_id` INTEGER NOT NULL,
+	`ost_download_id` INTEGER NOT NULL,
+	`distance` INTEGER NOT NULL,
+	`max_distance` INTEGER NOT NULL
+);
+
 CREATE TABLE `image_files`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`blob_id` TEXT NOT NULL,
