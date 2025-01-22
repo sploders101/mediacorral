@@ -79,4 +79,31 @@ impl BlobStorageController {
         )
         .await?);
     }
+
+    pub async fn add_ost_subtitles(
+        &self,
+        video_type: VideoType,
+        match_id: i64,
+        ost_url: String,
+        filename: String,
+        data: String,
+    ) -> anyhow::Result<i64> {
+        let uuid = Uuid::new_v4().to_string();
+        let mut file = File::open(self.blob_dir.join(&uuid)).await?;
+        file.write_all(data.as_bytes()).await?;
+        let id = insert_ost_download_item(
+            &self.db_connection,
+            &OstDownloadsItem {
+                id: None,
+                video_type,
+                match_id,
+                filename,
+                ost_url,
+                blob_id: uuid,
+            },
+        )
+        .await?;
+
+        return Ok(id);
+    }
 }
