@@ -1377,6 +1377,7 @@ dependencies = [
  "matroska",
  "md5",
  "nix 0.29.0",
+ "pathdiff",
  "reqwest",
  "rocket",
  "serde",
@@ -1656,6 +1657,12 @@ dependencies = [
  "smallvec",
  "windows-targets 0.52.6",
 ]
+
+[[package]]
+name = "pathdiff"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df94ce210e5bc13cb6651479fa48d14f601d9858cfe0467f43ae157023b938d3"
 
 [[package]]
 name = "pear"

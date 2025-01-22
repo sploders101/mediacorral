@@ -1,7 +1,19 @@
 pub use rip_dir::RipDirHandle;
-use std::{io::ErrorKind, path::PathBuf, sync::Arc};
+use std::{
+    io::ErrorKind,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
+use tokio::{fs::File, io::AsyncWriteExt};
+use uuid::Uuid;
 
-use crate::tagging::types::SuspectedContents;
+use crate::{
+    db::{
+        insert_ost_download_item,
+        schemas::{OstDownloadsItem, VideoType},
+    },
+    tagging::types::SuspectedContents,
+};
 
 mod rip_dir;
 mod util_funcs;
@@ -105,5 +117,45 @@ impl BlobStorageController {
         .await?;
 
         return Ok(id);
+    }
+
+    pub fn get_file_path(&self, id: String) -> PathBuf {
+        return self.blob_dir.join(id);
+    }
+
+    /// Creates a hard link to a blob at `destination`.
+    ///
+    /// This is useful, for example, if your media center is running in a container
+    /// that does not have access to the blobs directory.
+    pub async fn hard_link(
+        &self,
+        id: String,
+        destination: impl AsRef<Path>,
+    ) -> std::io::Result<()> {
+        return tokio::fs::hard_link(self.get_file_path(id), destination).await;
+    }
+
+    /// Creates a symlink to a blob at `destination`
+    pub async fn symbolic_link(
+        &self,
+        id: String,
+        destination: impl AsRef<Path>,
+    ) -> std::io::Result<()> {
+        if !destination.as_ref().is_absolute() {
+            return Err(std::io::Error::new(
+                ErrorKind::InvalidInput,
+                "Destination must be absolute",
+            ));
+        }
+        let source = self.get_file_path(id);
+        let dest_dir = destination.as_ref().parent().unwrap();
+
+        // I already verify that both paths are absolute. This shouldn't fail.
+        let relative = pathdiff::diff_paths(source, dest_dir)
+            .expect("Error finding relative path in symbolic_link");
+
+        tokio::fs::symlink(relative, destination).await?;
+
+        return Ok(());
     }
 }
