@@ -1,6 +1,6 @@
-use std::{path::Path, process::Stdio};
 use csv::CsvRowIter;
 use messaging::MakemkvMessage;
+use std::{path::Path, process::Stdio};
 use tokio::{
     io::{AsyncBufReadExt, BufReader, Lines},
     process::{Child, ChildStdout, Command},

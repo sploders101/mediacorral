@@ -108,13 +108,7 @@ impl RipDirHandle {
         // Insert subtitles now that we have video IDs to link them to
         for (name, path) in upload_subtitles {
             if let Some(video_id) = video_blobs.get(&name) {
-                util_funcs::insert_subtitles(
-                    &self.db,
-                    &path,
-                    &self.blob_dir,
-                    *video_id,
-                )
-                .await?;
+                util_funcs::insert_subtitles(&self.db, &path, &self.blob_dir, *video_id).await?;
             }
         }
 

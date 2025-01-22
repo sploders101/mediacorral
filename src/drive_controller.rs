@@ -179,7 +179,12 @@ impl DriveController {
 
     // TODO: Fix race condition (if two rip calls happen simultaneously, one should fail)
     /// Rip the disc in the drive and add its contents to storage, ready to catalogue.
-    pub fn rip(&self, disc_name: Option<String>, suspected_contents: Option<SuspectedContents>, autoeject: bool) {
+    pub fn rip(
+        &self,
+        disc_name: Option<String>,
+        suspected_contents: Option<SuspectedContents>,
+        autoeject: bool,
+    ) {
         let _ = self.commander.try_send(DriveCommand::Rip {
             disc_name,
             suspected_contents,

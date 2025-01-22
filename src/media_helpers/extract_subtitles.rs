@@ -11,9 +11,7 @@ use tokio::process::Command;
 
 /// Gets the track to be used for comparison with OST
 pub async fn get_comparison_track(file: PathBuf) -> anyhow::Result<Option<Track>> {
-    let mut tracks = tokio::task::spawn_blocking(move || {
-        get_subtitle_tracks(&file)
-    }).await??;
+    let mut tracks = tokio::task::spawn_blocking(move || get_subtitle_tracks(&file)).await??;
     if tracks.len() == 0 {
         return Ok(None);
     }
