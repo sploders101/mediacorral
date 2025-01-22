@@ -1,5 +1,4 @@
--- Movie Metadata --
-
+-- Contains a cache of TMDB data for a movie
 CREATE TABLE `movies`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`tmdb_id` TEXT,
@@ -8,6 +7,7 @@ CREATE TABLE `movies`(
 	`description` TEXT
 );
 
+-- Contains information about a special feature from a movie
 CREATE TABLE `movies_special_features`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`movie_id` INTEGER NOT NULL,
@@ -16,8 +16,7 @@ CREATE TABLE `movies_special_features`(
 	`description` TEXT
 );
 
--- TV Show Metadata --
-
+-- Contains a cache of TMDB data for a TV show
 CREATE TABLE `tv_shows`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`tmdb_id` TEXT,
@@ -26,6 +25,7 @@ CREATE TABLE `tv_shows`(
 	`description` TEXT
 );
 
+-- Contains a cache of TMDB data for a TV season (part of a TV show)
 CREATE TABLE `tv_seasons`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`tv_show_id` INTEGER NOT NULL,
@@ -35,6 +35,7 @@ CREATE TABLE `tv_seasons`(
 	`description` TEXT
 );
 
+-- Contains a cache of TMDB data for a TV episode (part of a TV season)
 CREATE TABLE `tv_episodes`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`tv_show_id` INTEGER NOT NULL,
@@ -45,7 +46,7 @@ CREATE TABLE `tv_episodes`(
 	`description` TEXT
 );
 
--- Rip Job Tracking --
+-- Contains information about each rip job. Useful for grouping video files by the discs they came from.
 CREATE TABLE `rip_jobs`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`start_time` INTEGER NOT NULL,
@@ -53,8 +54,7 @@ CREATE TABLE `rip_jobs`(
 	`suspected_contents` STRING
 );
 
--- File Tracking --
-
+-- Contains references to the files containing video content
 CREATE TABLE `video_files`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	-- Video type:
@@ -73,6 +73,7 @@ CREATE TABLE `video_files`(
 	`rip_job` INTEGER
 );
 
+-- Contains subtitle files extracted from the mkv used for comparison
 CREATE TABLE `subtitle_files`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`blob_id` TEXT NOT NULL,
