@@ -284,6 +284,80 @@ pub async fn insert_subtitle_file(
     return Ok(result.last_insert_rowid());
 }
 
+pub async fn insert_ost_download_item(
+    db: &Db,
+    ost_download_item: &OstDownloadsItem,
+) -> Result<i64, sqlx::Error> {
+    let result = sqlx::query!(
+        "
+            INSERT INTO ost_downloads (
+                id,
+                video_type,
+                match_id,
+                filename,
+                ost_url,
+                blob_id
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT (id) DO UPDATE SET
+                video_type = ?,
+                match_id = ?,
+                filename = ?,
+                ost_url = ?,
+                blob_id = ?
+        ",
+        ost_download_item.id,
+        ost_download_item.video_type,
+        ost_download_item.match_id,
+        ost_download_item.filename,
+        ost_download_item.ost_url,
+        ost_download_item.blob_id,
+        ost_download_item.video_type,
+        ost_download_item.match_id,
+        ost_download_item.filename,
+        ost_download_item.ost_url,
+        ost_download_item.blob_id,
+    )
+    .execute(db)
+    .await?;
+
+    return Ok(result.last_insert_rowid());
+}
+
+pub async fn insert_match_info_item(
+    db: &Db,
+    match_info_item: &MatchInfoItem,
+) -> Result<i64, sqlx::Error> {
+    let result = sqlx::query!(
+        "
+            INSERT INTO match_info (
+                id,
+                video_file_id,
+                ost_download_id,
+                distance,
+                max_distance
+            ) VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT (id) DO UPDATE SET
+                video_file_id = ?,
+                ost_download_id = ?,
+                distance = ?,
+                max_distance = ?
+        ",
+        match_info_item.id,
+        match_info_item.video_file_id,
+        match_info_item.ost_download_id,
+        match_info_item.distance,
+        match_info_item.max_distance,
+        match_info_item.video_file_id,
+        match_info_item.ost_download_id,
+        match_info_item.distance,
+        match_info_item.max_distance,
+    )
+    .execute(db)
+    .await?;
+
+    return Ok(result.last_insert_rowid());
+}
+
 pub async fn insert_image_file(db: &Db, image_file: &ImageFilesItem) -> Result<i64, sqlx::Error> {
     let result = sqlx::query!(
         "

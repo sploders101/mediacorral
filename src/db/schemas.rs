@@ -110,6 +110,23 @@ pub struct SubtitleFilesItem {
 	pub video_file: i64,
 }
 
+pub struct OstDownloadsItem {
+	pub id: Option<i64>,
+	pub video_type: VideoType,
+	pub match_id: i64,
+	pub filename: String,
+	pub ost_url: String,
+	pub blob_id: String,
+}
+
+pub struct MatchInfoItem {
+	pub id: Option<i64>,
+	pub video_file_id: i64,
+	pub ost_download_id: i64,
+	pub distance: u32,
+	pub max_distance: u32,
+}
+
 pub struct ImageFilesItem {
 	pub id: Option<i64>,
 	pub blob_id: String,
