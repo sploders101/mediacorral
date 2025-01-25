@@ -1,15 +1,11 @@
 use application::Application;
-use async_udev::disc_insert_events;
-use futures::StreamExt;
 use rocket::{
     http::{ContentType, Status},
-    response::{stream::TextStream, Responder},
-    serde::json::Json,
-    Response, State,
+    response::Responder,
+    Response,
 };
-use serde::Deserialize;
+use routes::create_autoripper;
 use std::{io::Cursor, path::Path, sync::Arc};
-use tagging::types::SuspectedContents;
 use tokio::sync::Mutex;
 
 #[macro_use]
@@ -23,8 +19,11 @@ mod db;
 mod drive_controller;
 mod makemkv;
 mod media_helpers;
+mod routes;
 mod tagging;
 mod task_queue;
+
+struct AutoripEnabler(Arc<Mutex<bool>>);
 
 struct AnyhowError(anyhow::Error);
 impl<'r, 'o: 'r> Responder<'r, 'o> for AnyhowError {
@@ -42,52 +41,6 @@ impl From<anyhow::Error> for AnyhowError {
     fn from(value: anyhow::Error) -> Self {
         return Self(value);
     }
-}
-
-struct AutoripEnabler(Arc<Mutex<bool>>);
-
-#[get("/autorip")]
-async fn get_autorip(enabler: &State<AutoripEnabler>) -> Json<bool> {
-    return Json(*enabler.inner().0.lock().await);
-}
-
-#[post("/autorip", data = "<data>")]
-async fn post_autorip(enabler: &State<AutoripEnabler>, data: Json<bool>) {
-    *enabler.inner().0.lock().await = data.0;
-}
-
-#[derive(Deserialize)]
-struct RipInstruction {
-    device: String,
-    disc_name: Option<String>,
-    suspected_contents: Option<SuspectedContents>,
-    autoeject: bool,
-}
-
-#[post("/rip", data = "<data>")]
-async fn post_rip(
-    application: &State<Arc<Application>>,
-    data: Json<RipInstruction>,
-) -> Result<(), AnyhowError> {
-    application
-        .inner()
-        .get_drive(&Path::new(&data.0.device))?
-        .rip(
-            data.0.disc_name,
-            data.0.suspected_contents,
-            data.0.autoeject,
-        );
-
-    return Ok(());
-}
-
-#[get("/")]
-fn index(application: &State<Arc<Application>>) -> TextStream![&str] {
-    return TextStream! {
-        for drive in application.list_drives() {
-            yield drive.get_devname();
-        }
-    };
 }
 
 #[launch]
@@ -123,19 +76,7 @@ async fn rocket() -> _ {
     rocket::build()
         .manage(application)
         .manage(AutoripEnabler(enable_autorip))
-        .mount("/", routes![index, get_autorip, post_autorip, post_rip])
-}
-
-pub fn create_autoripper(enabler: Arc<Mutex<bool>>, application: Arc<Application>) {
-    tokio::task::spawn(async move {
-        let mut events = std::pin::pin!(disc_insert_events());
-        while let Some(insertion) = events.next().await {
-            if !*enabler.lock().await {
-                continue;
-            }
-            if let Ok(drive) = application.get_drive(&Path::new(&insertion.device)) {
-                drive.rip(Some(insertion.disc_name), None, true);
-            }
-        }
-    });
+        .mount("/ripping", routes::ripping_routes())
+        .mount("/data_imports", routes::data_imports_routes())
+        .mount("/tagging", routes::tagging_routes())
 }

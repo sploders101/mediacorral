@@ -1,29 +1,35 @@
 use std::{
     collections::HashMap,
-    future::Future,
     path::{Path, PathBuf},
     sync::Arc,
 };
 
 use anyhow::Context;
-use futures::StreamExt;
 use sqlx::SqlitePool;
 
 use crate::{
-    async_udev::disc_insert_events, blob_storage::BlobStorageController,
-    drive_controller::DriveController,
+    blob_storage::BlobStorageController, config::TMDB_API_KEY, drive_controller::DriveController,
+    tagging::importers::tmdb::TmdbImporter,
 };
 
 pub struct Application {
     db: Arc<SqlitePool>,
     blob_controller: Arc<BlobStorageController>,
+    tmdb_importer: TmdbImporter,
     drives: HashMap<String, DriveController>,
 }
 impl Application {
     pub async fn new(db: Arc<SqlitePool>, path: impl Into<PathBuf>) -> anyhow::Result<Self> {
+        let blob_controller = Arc::new(BlobStorageController::new(Arc::clone(&db), path).await?);
+        let tmdb_importer = TmdbImporter::new(
+            Arc::clone(&db),
+            String::clone(&TMDB_API_KEY),
+            Arc::clone(&blob_controller),
+        )?;
         return Ok(Self {
-            blob_controller: Arc::new(BlobStorageController::new(Arc::clone(&db), path).await?),
             db,
+            blob_controller,
+            tmdb_importer,
             drives: HashMap::new(),
         });
     }
@@ -46,6 +52,10 @@ impl Application {
         let path = canonicalize_drive_path(drive_path)?;
 
         return Ok(self.drives.get(&path).context("Drive not found")?);
+    }
+
+    pub fn importer(&self) -> &TmdbImporter {
+        return &self.tmdb_importer;
     }
 }
 

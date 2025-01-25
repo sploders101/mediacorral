@@ -9,8 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     db::{
-        insert_ost_download_item,
-        schemas::{OstDownloadsItem, VideoType},
+        insert_image_file, insert_ost_download_item, schemas::{ImageFilesItem, OstDownloadsItem, VideoType}
     },
     tagging::types::SuspectedContents,
 };
@@ -117,6 +116,20 @@ impl BlobStorageController {
         .await?;
 
         return Ok(id);
+    }
+
+    pub async fn add_image(&self, name: Option<String>, mime_type: String) -> anyhow::Result<(i64, File)> {
+        let uuid = Uuid::new_v4().to_string();
+        let file = File::open(self.blob_dir.join(&uuid)).await?;
+        let id = insert_image_file(&self.db_connection, &ImageFilesItem {
+            id: None,
+            blob_id: uuid,
+            mime_type,
+            name,
+            rip_job: None,
+        }).await?;
+
+        return Ok((id, file));
     }
 
     pub fn get_file_path(&self, id: String) -> PathBuf {

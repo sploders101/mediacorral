@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct MoviesItem {
     pub id: Option<i64>,
-    pub tmdb_id: Option<String>,
+    pub tmdb_id: Option<i32>,
     pub poster_blob: Option<i64>,
     pub title: String,
     pub description: Option<String>,
@@ -25,7 +25,7 @@ pub struct MoviesSpecialFeaturesItem {
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct TvShowsItem {
     pub id: Option<i64>,
-    pub tmdb_id: Option<String>,
+    pub tmdb_id: Option<i32>,
     pub poster_blob: Option<i64>,
     pub title: String,
     pub description: Option<String>,
@@ -35,7 +35,7 @@ pub struct TvShowsItem {
 pub struct TvSeasonsItem {
     pub id: Option<i64>,
     pub tv_show_id: i64,
-    pub season_number: i64,
+    pub season_number: u16,
     pub poster_blob: Option<i64>,
     pub title: String,
     pub description: Option<String>,
@@ -46,7 +46,7 @@ pub struct TvEpisodesItem {
     pub id: Option<i64>,
     pub tv_show_id: i64,
     pub tv_season_id: i64,
-    pub episode_number: i64,
+    pub episode_number: u16,
     pub thumbnail_blob: Option<i64>,
     pub title: Option<String>,
     pub description: Option<String>,

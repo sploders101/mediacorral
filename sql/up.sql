@@ -1,7 +1,7 @@
 -- Contains a cache of TMDB data for a movie
 CREATE TABLE `movies`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-	`tmdb_id` TEXT,
+	`tmdb_id` INTEGER UNIQUE,
 	`poster_blob` INTEGER,
 	`title` TEXT NOT NULL,
 	`description` TEXT
@@ -19,7 +19,7 @@ CREATE TABLE `movies_special_features`(
 -- Contains a cache of TMDB data for a TV show
 CREATE TABLE `tv_shows`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-	`tmdb_id` TEXT,
+	`tmdb_id` INTEGER UNIQUE,
 	`poster_blob` INTEGER,
 	`title` TEXT NOT NULL,
 	`description` TEXT
@@ -34,6 +34,7 @@ CREATE TABLE `tv_seasons`(
 	`title` TEXT NOT NULL,
 	`description` TEXT
 );
+CREATE UNIQUE INDEX tv_season_tmdb ON tv_seasons (tv_show_id, season_number);
 
 -- Contains a cache of TMDB data for a TV episode (part of a TV season)
 CREATE TABLE `tv_episodes`(
@@ -45,6 +46,7 @@ CREATE TABLE `tv_episodes`(
 	`title` TEXT,
 	`description` TEXT
 );
+CREATE UNIQUE INDEX tv_episode_tmdb ON tv_episodes (tv_season_id, episode_number);
 
 -- Contains information about each rip job. Useful for grouping video files by the discs they came from.
 CREATE TABLE `rip_jobs`(

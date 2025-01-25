@@ -36,6 +36,34 @@ pub async fn insert_movie(db: &Db, movie: &MoviesItem) -> Result<i64, sqlx::Erro
     return Ok(result.last_insert_rowid());
 }
 
+pub async fn insert_tmdb_movie(db: &Db, movie: &MoviesItem) -> Result<i64, sqlx::Error> {
+    let result = sqlx::query!(
+        "
+            INSERT INTO movies (
+                tmdb_id,
+                poster_blob,
+                title,
+                description
+            ) VALUES (?, ?, ?, ?)
+            ON CONFLICT (tmdb_id) DO UPDATE SET
+                poster_blob = ?,
+                title = ?,
+                description = ?
+        ",
+        movie.tmdb_id,
+        movie.poster_blob,
+        movie.title,
+        movie.description,
+        movie.poster_blob,
+        movie.title,
+        movie.description,
+    )
+    .execute(db)
+    .await?;
+
+    return Ok(result.last_insert_rowid());
+}
+
 pub async fn insert_movies_special_feature(
     db: &Db,
     movie_special_feature: &MoviesSpecialFeaturesItem,
@@ -103,6 +131,34 @@ pub async fn insert_tv_show(db: &Db, tv_show: &TvShowsItem) -> Result<i64, sqlx:
     return Ok(result.last_insert_rowid());
 }
 
+pub async fn insert_tmdb_tv_show(db: &Db, tv_show: &TvShowsItem) -> Result<i64, sqlx::Error> {
+    let result = sqlx::query!(
+        "
+            INSERT INTO tv_shows (
+                tmdb_id,
+                poster_blob,
+                title,
+                description
+            ) VALUES (?, ?, ?, ?)
+            ON CONFLICT (tmdb_id) DO UPDATE SET
+                poster_blob = ?,
+                title = ?,
+                description = ?
+        ",
+        tv_show.tmdb_id,
+        tv_show.poster_blob,
+        tv_show.title,
+        tv_show.description,
+        tv_show.poster_blob,
+        tv_show.title,
+        tv_show.description,
+    )
+    .execute(db)
+    .await?;
+
+    return Ok(result.last_insert_rowid());
+}
+
 pub async fn insert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64, sqlx::Error> {
     let result = sqlx::query!(
         "
@@ -129,6 +185,36 @@ pub async fn insert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64,
         tv_season.description,
         tv_season.tv_show_id,
         tv_season.season_number,
+        tv_season.poster_blob,
+        tv_season.title,
+        tv_season.description,
+    )
+    .execute(db)
+    .await?;
+
+    return Ok(result.last_insert_rowid());
+}
+
+pub async fn upsert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64, sqlx::Error> {
+    let result = sqlx::query!(
+        "
+            INSERT INTO tv_seasons (
+                tv_show_id,
+                season_number,
+                poster_blob,
+                title,
+                description
+            ) VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT (tv_show_id, season_number) DO UPDATE SET
+                poster_blob = ?,
+                title = ?,
+                description = ?
+        ",
+        tv_season.tv_show_id,
+        tv_season.season_number,
+        tv_season.poster_blob,
+        tv_season.title,
+        tv_season.description,
         tv_season.poster_blob,
         tv_season.title,
         tv_season.description,
@@ -169,6 +255,36 @@ pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
         tv_episode.tv_show_id,
         tv_episode.tv_season_id,
         tv_episode.episode_number,
+        tv_episode.thumbnail_blob,
+        tv_episode.title,
+        tv_episode.description,
+    )
+    .execute(db)
+    .await?;
+
+    return Ok(result.last_insert_rowid());
+}
+
+pub async fn upsert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i64, sqlx::Error> {
+    let result = sqlx::query!(
+        "
+            INSERT INTO tv_episodes (
+                tv_season_id,
+                episode_number,
+                thumbnail_blob,
+                title,
+                description
+            ) VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT (tv_season_id, episode_number) DO UPDATE SET
+                thumbnail_blob = ?,
+                title = ?,
+                description = ?
+        ",
+        tv_episode.tv_season_id,
+        tv_episode.episode_number,
+        tv_episode.thumbnail_blob,
+        tv_episode.title,
+        tv_episode.description,
         tv_episode.thumbnail_blob,
         tv_episode.title,
         tv_episode.description,
@@ -257,6 +373,32 @@ pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i
     return Ok(result.last_insert_rowid());
 }
 
+pub async fn tag_video_file(
+    db: &Db,
+    id: i64,
+    video_type: VideoType,
+    match_id: i64,
+) -> Result<(), sqlx::Error> {
+    let video_type = video_type.to_db();
+    sqlx::query!(
+        "
+            update video_files
+            set
+                video_type = ?,
+                match_id = ?
+            where
+                id = ?;
+        ",
+        video_type,
+        match_id,
+        id,
+    )
+    .execute(db)
+    .await?;
+
+    return Ok(());
+}
+
 pub async fn insert_subtitle_file(
     db: &Db,
     subtitle_file: &SubtitleFilesItem,
@@ -288,6 +430,7 @@ pub async fn insert_ost_download_item(
     db: &Db,
     ost_download_item: &OstDownloadsItem,
 ) -> Result<i64, sqlx::Error> {
+    let video_type = ost_download_item.video_type.to_db();
     let result = sqlx::query!(
         "
             INSERT INTO ost_downloads (
@@ -306,12 +449,12 @@ pub async fn insert_ost_download_item(
                 blob_id = ?
         ",
         ost_download_item.id,
-        ost_download_item.video_type,
+        video_type,
         ost_download_item.match_id,
         ost_download_item.filename,
         ost_download_item.ost_url,
         ost_download_item.blob_id,
-        ost_download_item.video_type,
+        video_type,
         ost_download_item.match_id,
         ost_download_item.filename,
         ost_download_item.ost_url,
