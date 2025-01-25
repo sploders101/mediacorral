@@ -262,5 +262,6 @@ async fn handle_events(
             }
         });
     }
+    sender.send_modify(|state| state.active_command = ActiveDriveCommand::None);
     return Ok(());
 }
