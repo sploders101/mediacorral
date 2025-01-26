@@ -50,5 +50,5 @@ async fn get_job(
 }
 
 pub fn get_routes() -> impl Into<Vec<Route>> {
-    return routes![post_tag_file, get_untagged_jobs,];
+    return routes![post_tag_file, get_untagged_jobs, get_job];
 }
