@@ -20,13 +20,11 @@ pub struct TmdbAnyTitle {
     pub overview: Option<String>,
     pub poster_path: Option<String>,
     pub media_type: String,
-    pub genre_ids: Option<Vec<i32>>,
 }
 
 /// Search result for a movie
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TmdbMovieResult {
-    pub genre_ids: Option<Vec<u32>>,
     pub id: i32,
     pub original_language: Option<String>,
     pub original_title: Option<String>,
@@ -41,7 +39,6 @@ pub struct TmdbMovieResult {
 /// Search result for a TV show
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TmdbTvResult {
-    pub genre_ids: Option<Vec<u32>>,
     pub id: i32,
     pub origin_country: Option<Vec<String>>,
     pub original_language: Option<String>,
