@@ -14,7 +14,8 @@ pub struct TmdbQueryResults<T> {
 pub struct TmdbAnyTitle {
     pub backdrop_path: Option<String>,
     pub id: i32,
-    pub name: String,
+    pub name: Option<String>,
+    pub title: Option<String>,
     pub original_name: Option<String>,
     pub overview: Option<String>,
     pub poster_path: Option<String>,
@@ -32,7 +33,8 @@ pub struct TmdbMovieResult {
     pub overview: Option<String>,
     pub poster_path: Option<String>,
     pub release_date: Option<String>,
-    pub title: String,
+    pub name: Option<String>,
+    pub title: Option<String>,
     pub video: bool,
 }
 
@@ -47,7 +49,8 @@ pub struct TmdbTvResult {
     pub overview: Option<String>,
     pub poster_path: Option<String>,
     pub first_air_date: Option<String>,
-    pub name: String,
+    pub name: Option<String>,
+    pub title: Option<String>,
 }
 
 /// Describes a genre from a lookup
@@ -91,7 +94,8 @@ pub struct TmdbMovieDetails {
     pub poster_path: Option<String>,
     pub release_date: String,
     pub runtime: u32,
-    pub title: String,
+    pub title: Option<String>,
+    pub name: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

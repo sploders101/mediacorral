@@ -174,17 +174,21 @@ impl TmdbImporter {
 
         let poster_blob = self.get_poster(response.poster_path).await.ok();
 
-        db::insert_tmdb_movie(
-            &self.db,
-            &MoviesItem {
-                id: None,
-                tmdb_id: Some(movie_id),
-                poster_blob,
-                title: response.title,
-                description: response.overview,
-            },
-        )
-        .await?;
+        if let Some(title) = response.title.or(response.name) {
+            db::insert_tmdb_movie(
+                &self.db,
+                &MoviesItem {
+                    id: None,
+                    tmdb_id: Some(movie_id),
+                    poster_blob,
+                    title: title,
+                    description: response.overview,
+                },
+            )
+            .await?;
+        } else {
+            anyhow::bail!("Content missing name");
+        }
 
         return Ok(());
     }
