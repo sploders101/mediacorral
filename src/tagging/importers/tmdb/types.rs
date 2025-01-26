@@ -14,18 +14,18 @@ pub struct TmdbQueryResults<T> {
 pub struct TmdbAnyTitle {
     pub backdrop_path: String,
     pub id: i32,
-    pub title: String,
-    pub original_language: String,
-    pub original_title: String,
+    pub name: String,
+    pub original_name: String,
     pub overview: String,
     pub poster_path: String,
     pub media_type: String,
-    pub genre_ids: Vec<u32>,
+    pub original_language: String,
+    pub genre_ids: Vec<i32>,
     pub popularity: f32,
-    pub release_date: String,
-    pub video: bool,
+    pub first_air_date: String,
     pub vote_average: f32,
     pub vote_count: u32,
+    pub origin_country: Vec<String>,
 }
 
 /// Search result for a movie
