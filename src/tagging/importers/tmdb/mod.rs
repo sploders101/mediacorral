@@ -135,7 +135,11 @@ impl TmdbImporter {
         return Ok(response.json().await?);
     }
 
-    async fn get_poster(&self, poster_path: String) -> anyhow::Result<i64> {
+    async fn get_poster(&self, poster_path: Option<String>) -> anyhow::Result<i64> {
+        let poster_path = match poster_path {
+            Some(path) => path,
+            None => anyhow::bail!("Missing poster"),
+        };
         let mut response = self
             .agent
             .get(format!("{IMAGE_BASE}/{poster_path}"))
@@ -177,7 +181,7 @@ impl TmdbImporter {
                 tmdb_id: Some(movie_id),
                 poster_blob,
                 title: response.title,
-                description: Some(response.overview),
+                description: response.overview,
             },
         )
         .await?;
@@ -224,7 +228,7 @@ impl TmdbImporter {
                 tmdb_id: Some(tv_id),
                 poster_blob,
                 title: response.name,
-                description: Some(response.overview),
+                description: response.overview,
             },
         )
         .await?;
@@ -238,7 +242,7 @@ impl TmdbImporter {
                     season_number: season_details.season_number,
                     poster_blob: self.get_poster(season_details.poster_path).await.ok(),
                     title: season_details.name,
-                    description: Some(season_details.overview),
+                    description: season_details.overview,
                 },
             )
             .await?;
@@ -253,7 +257,7 @@ impl TmdbImporter {
                         episode_number: episode.episode_number,
                         thumbnail_blob: self.get_poster(episode.still_path).await.ok(),
                         title: Some(episode.name),
-                        description: Some(episode.overview),
+                        description: episode.overview,
                     },
                 )
                 .await?;
