@@ -776,8 +776,8 @@ pub async fn get_rip_jobs_with_untagged_videos(
             OFFSET ?
         ",
     )
-    .bind(skip)
     .bind(limit)
+    .bind(skip)
     .fetch_all(db)
     .await?);
 }
