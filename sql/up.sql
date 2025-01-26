@@ -53,7 +53,7 @@ CREATE TABLE `rip_jobs`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`start_time` INTEGER NOT NULL,
 	`disc_title` TEXT,
-	`suspected_contents` STRING
+	`suspected_contents` TEXT
 );
 
 -- Contains references to the files containing video content

@@ -25,6 +25,12 @@ mod task_queue;
 
 struct AutoripEnabler(Arc<Mutex<bool>>);
 
+/// This should be removed at some point, but is fine for an MVP.
+/// This wraps any error type and provides a 500 response code, because
+/// apparently, the default `Responder` implementation for `Result` doesn't.
+/// Also, `anyhow::Error` apparently doesn't implement `std::error::Error`,
+/// and blanket implementations don't mix with concrete ones for some ridiculous
+/// reason, forcing this to exist as a separate type.
 struct AnyhowError(anyhow::Error);
 impl<'r, 'o: 'r> Responder<'r, 'o> for AnyhowError {
     fn respond_to(self, _request: &'r rocket::Request<'_>) -> rocket::response::Result<'o> {
@@ -43,6 +49,27 @@ impl From<anyhow::Error> for AnyhowError {
     }
 }
 
+/// This should be removed at some point, but is fine for an MVP.
+/// This wraps any error type and provides a 500 response code, because
+/// apparently, the default `Responder` implementation for `Result` doesn't.
+struct AnyError(Box<dyn std::error::Error + Send + Sync + 'static>);
+impl<'r, 'o: 'r> Responder<'r, 'o> for AnyError {
+    fn respond_to(self, _request: &'r rocket::Request<'_>) -> rocket::response::Result<'o> {
+        let mut response = Response::new();
+        response.set_status(Status::InternalServerError);
+        response.set_header(ContentType::Text);
+        let body = format!("{}", self.0);
+        let body = Vec::from(body.as_bytes());
+        response.set_sized_body(body.len(), Cursor::new(body));
+        return Ok(response);
+    }
+}
+impl<T: std::error::Error + Send + Sync + 'static> From<T> for AnyError {
+    fn from(value: T) -> Self {
+        return Self(Box::from(value));
+    }
+}
+
 #[launch]
 async fn rocket() -> _ {
     let data_dir = std::env::var("DATA_DIR").unwrap();
@@ -58,7 +85,7 @@ async fn rocket() -> _ {
 
     let mut application = Application::new(db, blob_dir).await.unwrap();
     let drives =
-        std::env::var("DISC_DRIVES").expect("Missing comma-separated DISC_DRIVES variable");
+        std::env::var("DISC_DRIVES").expect("Missing whitespace-separated DISC_DRIVES variable");
     for drive in drives.split_whitespace() {
         application.register_drive(&Path::new(drive)).await.unwrap();
     }

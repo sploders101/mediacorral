@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     db::{
-        insert_image_file, insert_ost_download_item, schemas::{ImageFilesItem, OstDownloadsItem, VideoType}
+        delete_blob, insert_image_file, insert_ost_download_item, schemas::{ImageFilesItem, OstDownloadsItem, VideoType}
     },
     tagging::types::SuspectedContents,
 };
@@ -130,6 +130,14 @@ impl BlobStorageController {
         }).await?;
 
         return Ok((id, file));
+    }
+
+    pub async fn delete_blob(&self, blob_id: &str) -> anyhow::Result<()> {
+        delete_blob(&self.db_connection, blob_id).await?;
+        let file_path = self.blob_dir.join(blob_id);
+        tokio::fs::remove_file(file_path).await?;
+
+        return Ok(());
     }
 
     pub fn get_file_path(&self, id: String) -> PathBuf {

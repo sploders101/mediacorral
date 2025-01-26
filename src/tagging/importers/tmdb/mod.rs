@@ -18,7 +18,7 @@ use crate::{
     },
 };
 
-mod types;
+pub mod types;
 
 static USER_AGENT: &'static str = concat!("mediacorral@", env!("CARGO_PKG_VERSION"));
 
@@ -68,12 +68,17 @@ impl TmdbImporter {
         &self,
         query: &str,
         language: Option<&str>,
+        page: u32,
     ) -> TmdbResult<TmdbQueryResults<TmdbAnyTitle>> {
         // TODO: Configure a BASE_URL variable and use that
         let response = self
             .agent
             .get("https://api.themoviedb.org/3/search/multi")
-            .query(&[("query", Some(query)), ("language", language)])
+            .query(&[
+                ("query", Some(query)),
+                ("language", language),
+                ("page", Some(page.to_string().as_str())),
+            ])
             .send()
             .await?
             .error_for_status()?;
@@ -239,15 +244,19 @@ impl TmdbImporter {
             .await?;
 
             for episode in season_details.episodes {
-                let _episode_id = db::upsert_tv_episode(&self.db, &db::schemas::TvEpisodesItem {
-                    id: None,
-                    tv_show_id: series_id,
-                    tv_season_id: season_id,
-                    episode_number: episode.episode_number,
-                    thumbnail_blob: self.get_poster(episode.still_path).await.ok(),
-                    title: Some(episode.name),
-                    description: Some(episode.overview),
-                }).await?;
+                let _episode_id = db::upsert_tv_episode(
+                    &self.db,
+                    &db::schemas::TvEpisodesItem {
+                        id: None,
+                        tv_show_id: series_id,
+                        tv_season_id: season_id,
+                        episode_number: episode.episode_number,
+                        thumbnail_blob: self.get_poster(episode.still_path).await.ok(),
+                        title: Some(episode.name),
+                        description: Some(episode.overview),
+                    },
+                )
+                .await?;
             }
         }
 

@@ -63,7 +63,6 @@ async fn get_rip_status(
     application: &State<Arc<Application>>,
     device: String,
 ) -> Json<Option<DriveState>> {
-    let application = application.inner();
     return Json(match application.get_drive(&Path::new(&device)) {
         Ok(device) => Some(device.watch_state().borrow().clone()),
         Err(_err) => None,
@@ -75,7 +74,6 @@ async fn get_rip_status_stream(
     application: &State<Arc<Application>>,
     device: String,
 ) -> Result<EventStream![Event], AnyhowError> {
-    let application = application.inner();
     let drive = application.get_drive(&Path::new(&device))?;
     let mut state = drive.watch_state();
     return Ok(EventStream! {
@@ -112,6 +110,6 @@ pub fn get_routes() -> impl Into<Vec<Route>> {
         get_list_drives,
         post_rip,
         get_rip_status,
-        get_rip_status_stream
+        get_rip_status_stream,
     ];
 }

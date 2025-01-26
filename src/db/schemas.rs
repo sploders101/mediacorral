@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
 
 // Movie Metadata
 
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct MoviesItem {
     pub id: Option<i64>,
     pub tmdb_id: Option<i32>,
@@ -11,7 +12,7 @@ pub struct MoviesItem {
     pub description: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct MoviesSpecialFeaturesItem {
     pub id: Option<i64>,
     pub movie_id: i64,
@@ -22,7 +23,7 @@ pub struct MoviesSpecialFeaturesItem {
 
 // TV Show Metadata
 
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct TvShowsItem {
     pub id: Option<i64>,
     pub tmdb_id: Option<i32>,
@@ -31,7 +32,7 @@ pub struct TvShowsItem {
     pub description: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct TvSeasonsItem {
     pub id: Option<i64>,
     pub tv_show_id: i64,
@@ -41,7 +42,7 @@ pub struct TvSeasonsItem {
     pub description: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct TvEpisodesItem {
     pub id: Option<i64>,
     pub tv_show_id: i64,
@@ -52,6 +53,7 @@ pub struct TvEpisodesItem {
     pub description: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct RipJobsItem {
     pub id: Option<i64>,
     pub start_time: i64,
@@ -59,33 +61,16 @@ pub struct RipJobsItem {
     pub suspected_contents: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, sqlx::Type)]
+#[repr(i32)]
 pub enum VideoType {
     Untagged = 0,
     Movie = 1,
     SpecialFeature = 2,
     TvEpisode = 3,
 }
-impl VideoType {
-    pub fn to_db(self) -> i64 {
-        return match self {
-            Self::Untagged => 0,
-            Self::Movie => 1,
-            Self::SpecialFeature => 2,
-            Self::TvEpisode => 3,
-        };
-    }
-    pub fn from_db(int: i64) -> Self {
-        return match int {
-            0 => Self::Untagged,
-            1 => Self::Movie,
-            2 => Self::SpecialFeature,
-            3 => Self::TvEpisode,
-            _ => Self::Untagged,
-        };
-    }
-}
 
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct VideoFilesItem {
     pub id: Option<i64>,
     ///  Video type:
@@ -100,16 +85,18 @@ pub struct VideoFilesItem {
     pub resolution_width: u32,
     pub resolution_height: u32,
     pub length: u32,
-    pub original_video_hash: [u8; 16],
+    pub original_video_hash: Vec<u8>,
     pub rip_job: Option<i64>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct SubtitleFilesItem {
     pub id: Option<i64>,
     pub blob_id: String,
     pub video_file: i64,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct OstDownloadsItem {
     pub id: Option<i64>,
     pub video_type: VideoType,
@@ -119,6 +106,7 @@ pub struct OstDownloadsItem {
     pub blob_id: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct MatchInfoItem {
     pub id: Option<i64>,
     pub video_file_id: i64,
@@ -127,6 +115,7 @@ pub struct MatchInfoItem {
     pub max_distance: u32,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct ImageFilesItem {
     pub id: Option<i64>,
     pub blob_id: String,

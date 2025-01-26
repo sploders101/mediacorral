@@ -3,8 +3,6 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use anyhow::Context;
-use matroska::Matroska;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -36,7 +34,7 @@ pub async fn insert_video(
             resolution_width: info.width as _,
             resolution_height: info.height as _,
             length: info.length as _,
-            original_video_hash: info.hash,
+            original_video_hash: Vec::from(info.hash),
             rip_job,
         },
     )
