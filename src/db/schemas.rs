@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 use sqlx::prelude::FromRow;
 
 // Movie Metadata
@@ -70,6 +71,7 @@ pub enum VideoType {
     TvEpisode = 3,
 }
 
+#[serde_as]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct VideoFilesItem {
     pub id: Option<i64>,
@@ -85,6 +87,7 @@ pub struct VideoFilesItem {
     pub resolution_width: u32,
     pub resolution_height: u32,
     pub length: u32,
+    #[serde_as(as = "serde_with::hex::Hex")]
     pub original_video_hash: Vec<u8>,
     pub rip_job: Option<i64>,
 }
