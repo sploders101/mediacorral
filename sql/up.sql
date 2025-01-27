@@ -4,6 +4,7 @@ CREATE TABLE `movies`(
 	`tmdb_id` INTEGER UNIQUE,
 	`poster_blob` INTEGER,
 	`title` TEXT NOT NULL,
+	`release_year` TEXT,
 	`description` TEXT
 );
 
@@ -22,6 +23,7 @@ CREATE TABLE `tv_shows`(
 	`tmdb_id` INTEGER UNIQUE,
 	`poster_blob` INTEGER,
 	`title` TEXT NOT NULL,
+	`original_release_year` TEXT,
 	`description` TEXT
 );
 

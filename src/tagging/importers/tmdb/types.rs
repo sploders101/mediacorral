@@ -89,7 +89,7 @@ pub struct TmdbMovieDetails {
     pub imdb_id: u32,
     pub overview: Option<String>,
     pub poster_path: Option<String>,
-    pub release_date: String,
+    pub release_date: Option<String>,
     pub runtime: u32,
     pub title: Option<String>,
     pub name: Option<String>,

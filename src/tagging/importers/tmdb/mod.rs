@@ -181,7 +181,10 @@ impl TmdbImporter {
                     id: None,
                     tmdb_id: Some(movie_id),
                     poster_blob,
-                    title: title,
+                    title,
+                    release_year: response
+                        .release_date
+                        .and_then(|item| item.split('-').next().map(String::from)),
                     description: response.overview,
                 },
             )
@@ -232,6 +235,9 @@ impl TmdbImporter {
                 tmdb_id: Some(tv_id),
                 poster_blob,
                 title: response.name,
+                release_year: response
+                    .first_air_date
+                    .and_then(|item| item.split('-').next().map(String::from)),
                 description: response.overview,
             },
         )
