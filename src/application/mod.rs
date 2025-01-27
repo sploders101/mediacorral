@@ -1,25 +1,40 @@
 use std::{
     collections::HashMap,
+    fs::File,
+    io::Read,
     path::{Path, PathBuf},
     sync::Arc,
 };
 
 use anyhow::Context;
+use levenshtein::levenshtein;
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use sqlx::SqlitePool;
+use tokio::{
+    sync::Mutex,
+    task::{AbortHandle, JoinHandle},
+};
 use types::JobInfo;
 
 use crate::{
     blob_storage::BlobStorageController,
-    config::TMDB_API_KEY,
+    config::{OST_API_KEY, OST_PASSWORD, OST_USERNAME, TMDB_API_KEY},
     db::{
-        delete_rip_job, get_matches_from_rip, get_movies, get_rip_image_blobs, get_rip_job,
-        get_rip_jobs_with_untagged_videos, get_rip_video_blobs, get_tv_episodes, get_tv_seasons,
-        get_tv_shows, get_untagged_videos_from_job, get_videos_from_rip,
-        schemas::{MoviesItem, RipJobsItem, TvEpisodesItem, TvSeasonsItem, TvShowsItem, VideoType},
+        add_suspicion, delete_rip_job, get_episode_id_from_tmdb, get_matches_from_rip, get_movies,
+        get_rip_image_blobs, get_rip_job, get_rip_jobs_with_untagged_videos, get_rip_video_blobs,
+        get_tv_episodes, get_tv_seasons, get_tv_shows, get_untagged_videos_from_job,
+        get_videos_from_rip, insert_match_info_item,
+        schemas::{
+            MatchInfoItem, MoviesItem, RipJobsItem, TvEpisodesItem, TvSeasonsItem, TvShowsItem,
+            VideoType,
+        },
         tag_video_file,
     },
     drive_controller::DriveController,
-    tagging::importers::tmdb::TmdbImporter,
+    tagging::{
+        importers::{opensubtitles::OpenSubtitles, tmdb::TmdbImporter},
+        types::SuspectedContents,
+    },
 };
 
 pub mod types;
@@ -28,6 +43,8 @@ pub struct Application {
     db: Arc<SqlitePool>,
     blob_controller: Arc<BlobStorageController>,
     tmdb_importer: TmdbImporter,
+    opensubtitles: Arc<OpenSubtitles>,
+    suspicion_analyzers: Arc<Mutex<HashMap<i64, JoinHandle<()>>>>,
     drives: HashMap<String, DriveController>,
 }
 impl Application {
@@ -38,14 +55,22 @@ impl Application {
             String::clone(&TMDB_API_KEY),
             Arc::clone(&blob_controller),
         )?;
+        let opensubtitles = Arc::new(OpenSubtitles::new(
+            String::clone(&OST_API_KEY),
+            String::clone(&OST_USERNAME),
+            String::clone(&OST_PASSWORD),
+        ));
         return Ok(Self {
             db,
             blob_controller,
             tmdb_importer,
+            opensubtitles,
+            suspicion_analyzers: Arc::new(Mutex::new(HashMap::new())),
             drives: HashMap::new(),
         });
     }
 
+    /// Register a drive to be controlled by Mediacorral
     pub async fn register_drive(&mut self, drive_path: &Path) -> anyhow::Result<()> {
         let path = canonicalize_drive_path(drive_path)?;
         self.drives.insert(
@@ -56,16 +81,19 @@ impl Application {
         return Ok(());
     }
 
+    /// Lists the drives in Mediacorral's control
     pub fn list_drives(&self) -> impl Iterator<Item = &DriveController> {
         return self.drives.values();
     }
 
+    /// Gets the drive controller for the requested drive
     pub fn get_drive(&self, drive_path: &Path) -> anyhow::Result<&DriveController> {
         let path = canonicalize_drive_path(drive_path)?;
 
         return Ok(self.drives.get(&path).context("Drive not found")?);
     }
 
+    /// Gets data for a specific rip job with all the info needed for tagging
     pub async fn get_job_info(&self, rip_job: i64) -> anyhow::Result<JobInfo> {
         let job_info = get_rip_job(&self.db, rip_job).await?;
         let video_files = get_videos_from_rip(&self.db, rip_job).await?;
@@ -83,26 +111,32 @@ impl Application {
         });
     }
 
+    /// Gets the metadata imporer so we can import from TMDB
     pub fn importer(&self) -> &TmdbImporter {
         return &self.tmdb_importer;
     }
 
+    /// Lists the movies we have in our metadata database
     pub async fn list_movies(&self) -> anyhow::Result<Vec<MoviesItem>> {
         return Ok(get_movies(&self.db).await?);
     }
 
+    /// Lists the TV series we have in our metadata database
     pub async fn list_tv_series(&self) -> anyhow::Result<Vec<TvShowsItem>> {
         return Ok(get_tv_shows(&self.db).await?);
     }
 
+    /// Lists the TV seasons from the given show from our metadata database
     pub async fn list_tv_seasons(&self, series_id: i64) -> anyhow::Result<Vec<TvSeasonsItem>> {
         return Ok(get_tv_seasons(&self.db, series_id).await?);
     }
 
+    /// Lists TV episodes from the given season from our metadata database
     pub async fn list_tv_episodes(&self, season_id: i64) -> anyhow::Result<Vec<TvEpisodesItem>> {
         return Ok(get_tv_episodes(&self.db, season_id).await?);
     }
 
+    /// Tags a video file, matching it with the metadata we have in our database
     pub async fn tag_video(
         &self,
         video_id: i64,
@@ -113,12 +147,53 @@ impl Application {
         return Ok(());
     }
 
+    /// Gets a list of all untagged rip jobs
     pub async fn get_untagged_jobs(
         &self,
         skip: u32,
         limit: u32,
     ) -> anyhow::Result<Vec<RipJobsItem>> {
         return Ok(get_rip_jobs_with_untagged_videos(&self.db, skip, limit).await?);
+    }
+
+    pub async fn is_suspecting(&self, rip_job: i64) -> bool {
+        return self.suspicion_analyzers.lock().await.contains_key(&rip_job);
+    }
+
+    /// Adds suspected contents for the rip job, triggering the process of analysis
+    pub async fn suspect_content(
+        &self,
+        rip_job: i64,
+        suspected_contents: Option<SuspectedContents>,
+    ) -> anyhow::Result<()> {
+        let mut suspicion_analyzers = self.suspicion_analyzers.lock().await;
+        if let Some(analyzer) = suspicion_analyzers.remove(&rip_job) {
+            analyzer.abort();
+        }
+        add_suspicion(&self.db, rip_job, suspected_contents.as_ref()).await?;
+        match suspected_contents {
+            Some(SuspectedContents::Movie { tmdb_id }) => {
+                // TODO: Add analyzer
+            }
+            Some(SuspectedContents::TvEpisodes { episode_tmdb_ids }) => {
+                let opensubtitles = Arc::clone(&self.opensubtitles);
+                let db = Arc::clone(&self.db);
+                let blob_controller = Arc::clone(&self.blob_controller);
+                suspicion_analyzers.insert(
+                    rip_job,
+                    tokio::task::spawn(analyze_subtitles(
+                        db,
+                        opensubtitles,
+                        blob_controller,
+                        rip_job,
+                        episode_tmdb_ids,
+                    )),
+                );
+            }
+            None => {}
+        }
+
+        return Ok(());
     }
 
     /// Deletes any untagged videos from a rip job
@@ -166,4 +241,83 @@ fn canonicalize_drive_path(drive_path: &Path) -> anyhow::Result<String> {
             .to_str()
             .context("Invalid path")?,
     ));
+}
+
+/// This function downloads all subtitles for the given tmdb ids and compares them
+/// against the files in the database, creating `match_info` records that can be used
+/// for tagging.
+///
+/// This function is really gross, not that memory efficient, etc, but it should work
+/// for now. I'm just trying to get this working. I really don't want to use the Xbox anymore...
+async fn analyze_subtitles(
+    db: Arc<SqlitePool>,
+    ost: Arc<OpenSubtitles>,
+    blobs: Arc<BlobStorageController>,
+    rip_job: i64,
+    tmdb_ids: Vec<i32>,
+) {
+    let videos = match get_rip_video_blobs(&db, rip_job).await {
+        Ok(result) => result,
+        Err(_err) => return,
+    };
+
+    for tmdb_id in tmdb_ids {
+        let internal_id = match get_episode_id_from_tmdb(&db, tmdb_id).await {
+            Ok(id) => id,
+            Err(_err) => continue,
+        };
+        let (subtitle_name, subtitles) = match ost.find_best_subtitles(tmdb_id).await {
+            Ok(subtitles) => subtitles,
+            Err(_err) => continue,
+        };
+        let subtitle_id = match blobs
+            .add_ost_subtitles(
+                VideoType::TvEpisode,
+                internal_id,
+                subtitle_name,
+                subtitles.clone(),
+            )
+            .await
+        {
+            Ok(id) => id,
+            Err(_err) => continue,
+        };
+        let video_matches = {
+            let blobs = Arc::clone(&blobs);
+            videos.clone().into_par_iter().filter_map(move |video| {
+                let subtitle_blob = match video.subtitle_blob {
+                    Some(ref blob) => blob,
+                    None => return None,
+                };
+                let subtitles_path = blobs.get_file_path(subtitle_blob);
+                let mut file = match std::fs::File::open(subtitles_path) {
+                    Ok(file) => file,
+                    Err(_err) => return None,
+                };
+                let mut file_subtitles = String::new();
+                if let Err(_err) = file.read_to_string(&mut file_subtitles) {
+                    return None;
+                };
+                let distance = levenshtein(&subtitles, &file_subtitles);
+                let max_distance = subtitles.len().max(file_subtitles.len());
+                return Some((video, distance, max_distance));
+            })
+        };
+        let video_matches: Vec<_> = tokio::task::spawn_blocking(move || video_matches.collect())
+            .await
+            .unwrap();
+        for (video_match, distance, max_distance) in video_matches {
+            let _ = insert_match_info_item(
+                &db,
+                &MatchInfoItem {
+                    id: None,
+                    video_file_id: video_match.job_id,
+                    ost_download_id: subtitle_id,
+                    distance: distance as _,
+                    max_distance: max_distance as _,
+                },
+            )
+            .await;
+        }
+    }
 }

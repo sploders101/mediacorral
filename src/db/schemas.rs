@@ -38,6 +38,7 @@ pub struct TvShowsItem {
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct TvSeasonsItem {
     pub id: Option<i64>,
+    pub tmdb_id: Option<i32>,
     pub tv_show_id: i64,
     pub season_number: u16,
     pub poster_blob: Option<i64>,
@@ -48,6 +49,7 @@ pub struct TvSeasonsItem {
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct TvEpisodesItem {
     pub id: Option<i64>,
+    pub tmdb_id: Option<i32>,
     pub tv_show_id: i64,
     pub tv_season_id: i64,
     pub episode_number: u16,
@@ -107,7 +109,6 @@ pub struct OstDownloadsItem {
     pub video_type: VideoType,
     pub match_id: i64,
     pub filename: String,
-    pub ost_url: String,
     pub blob_id: String,
 }
 

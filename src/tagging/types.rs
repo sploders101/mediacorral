@@ -4,16 +4,9 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "type")]
 pub enum SuspectedContents {
     Movie {
-        tmdb_id: String,
+        tmdb_id: i32,
     },
     TvEpisodes {
-        tmdb_id: String,
-        episodes: Vec<Episode>,
+        episode_tmdb_ids: Vec<i32>,
     },
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct Episode {
-    season: u32,
-    episode: u32,
 }

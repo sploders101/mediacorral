@@ -248,6 +248,7 @@ impl TmdbImporter {
                 &self.db,
                 &db::schemas::TvSeasonsItem {
                     id: None,
+                    tmdb_id: Some(season_details.id),
                     tv_show_id: series_id,
                     season_number: season_details.season_number,
                     poster_blob: self.get_poster(season_details.poster_path).await.ok(),
@@ -262,6 +263,7 @@ impl TmdbImporter {
                     &self.db,
                     &db::schemas::TvEpisodesItem {
                         id: None,
+                        tmdb_id: Some(episode.id),
                         tv_show_id: series_id,
                         tv_season_id: season_id,
                         episode_number: episode.episode_number,

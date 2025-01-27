@@ -25,3 +25,4 @@ pathdiff = "0.2.3"
 thiserror = "2.0.11"
 serde_with = { version = "3.12.0", features = ["hex"] }
 levenshtein = "1.0.5"
+rayon = "1.10.0"

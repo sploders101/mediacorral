@@ -1,6 +1,8 @@
 use schemas::*;
 use serde::{Deserialize, Serialize};
-use sqlx::prelude::FromRow;
+use sqlx::{prelude::FromRow, Row};
+
+use crate::tagging::types::SuspectedContents;
 
 pub mod schemas;
 
@@ -219,6 +221,7 @@ pub async fn get_tv_seasons(db: &Db, series_id: i64) -> Result<Vec<TvSeasonsItem
         "
             SELECT
                 id,
+                tmdb_id,
                 tv_show_id,
                 season_number,
                 poster_blob,
@@ -239,6 +242,7 @@ pub async fn get_tv_episodes(db: &Db, season_id: i64) -> Result<Vec<TvEpisodesIt
         "
             SELECT
                 id,
+                tmdb_id,
                 tv_show_id,
                 tv_season_id,
                 episode_number,
@@ -260,13 +264,15 @@ pub async fn insert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64,
         "
             INSERT INTO tv_seasons (
                 id,
+                tmdb_id,
                 tv_show_id,
                 season_number,
                 poster_blob,
                 title,
                 description
-            ) VALUES (?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (id) DO UPDATE SET
+                tmdb_id = ?,
                 tv_show_id = ?,
                 season_number = ?,
                 poster_blob = ?,
@@ -275,11 +281,13 @@ pub async fn insert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64,
         ",
     )
     .bind(tv_season.id)
+    .bind(tv_season.tmdb_id)
     .bind(tv_season.tv_show_id)
     .bind(tv_season.season_number)
     .bind(tv_season.poster_blob)
     .bind(&tv_season.title)
     .bind(&tv_season.description)
+    .bind(tv_season.tmdb_id)
     .bind(tv_season.tv_show_id)
     .bind(tv_season.season_number)
     .bind(tv_season.poster_blob)
@@ -295,18 +303,20 @@ pub async fn upsert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64,
     let result = sqlx::query(
         "
             INSERT INTO tv_seasons (
+                tmdb_id,
                 tv_show_id,
                 season_number,
                 poster_blob,
                 title,
                 description
-            ) VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT (tv_show_id, season_number) DO UPDATE SET
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (tmdb_id) DO UPDATE SET
                 poster_blob = ?,
                 title = ?,
                 description = ?
         ",
     )
+    .bind(tv_season.tmdb_id)
     .bind(tv_season.tv_show_id)
     .bind(tv_season.season_number)
     .bind(tv_season.poster_blob)
@@ -326,14 +336,16 @@ pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
         "
             INSERT INTO tv_episodes (
                 id,
+                tmdb_id,
                 tv_show_id,
                 tv_season_id,
                 episode_number,
                 thumbnail_blob,
                 title,
                 description
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (id) DO UPDATE SET
+                tmdb_id = ?,
                 tv_show_id = ?,
                 tv_season_id = ?,
                 episode_number = ?,
@@ -343,12 +355,14 @@ pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
         ",
     )
     .bind(tv_episode.id)
+    .bind(tv_episode.tmdb_id)
     .bind(tv_episode.tv_show_id)
     .bind(tv_episode.tv_season_id)
     .bind(tv_episode.episode_number)
     .bind(tv_episode.thumbnail_blob)
     .bind(&tv_episode.title)
     .bind(&tv_episode.description)
+    .bind(tv_episode.tmdb_id)
     .bind(tv_episode.tv_show_id)
     .bind(tv_episode.tv_season_id)
     .bind(tv_episode.episode_number)
@@ -365,18 +379,20 @@ pub async fn upsert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
     let result = sqlx::query(
         "
             INSERT INTO tv_episodes (
+                tmdb_id,
                 tv_season_id,
                 episode_number,
                 thumbnail_blob,
                 title,
                 description
-            ) VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT (tv_season_id, episode_number) DO UPDATE SET
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT (tmdb_id) DO UPDATE SET
                 thumbnail_blob = ?,
                 title = ?,
                 description = ?
         ",
     )
+    .bind(tv_episode.tmdb_id)
     .bind(tv_episode.tv_season_id)
     .bind(tv_episode.episode_number)
     .bind(tv_episode.thumbnail_blob)
@@ -389,6 +405,22 @@ pub async fn upsert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
     .await?;
 
     return Ok(result.last_insert_rowid());
+}
+
+pub async fn get_episode_id_from_tmdb(db: &Db, tmdb_id: i32) -> Result<i64, sqlx::Error> {
+    return sqlx::query(
+        "
+            SELECT
+                id
+            FROM tv_episodes
+            WHERE
+                tmdb_id = ?
+        ",
+    )
+    .bind(tmdb_id)
+    .fetch_one(db)
+    .await
+    .map(|item| item.get(0));
 }
 
 pub async fn insert_rip_jobs(db: &Db, rip_job: &RipJobsItem) -> Result<i64, sqlx::Error> {
@@ -417,6 +449,27 @@ pub async fn insert_rip_jobs(db: &Db, rip_job: &RipJobsItem) -> Result<i64, sqlx
     .await?;
 
     return Ok(result.last_insert_rowid());
+}
+
+pub async fn add_suspicion(
+    db: &Db,
+    rip_job: i64,
+    suspicion: Option<&SuspectedContents>,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "
+            UPDATE rip_jobs
+            SET
+                suspected_contents = ?
+            WHERE
+                id = ?
+        ",
+    )
+    .bind(suspicion.map(|suspicion| serde_json::to_string(&suspicion).unwrap()))
+    .bind(rip_job)
+    .execute(db)
+    .await?;
+    return Ok(());
 }
 
 pub async fn get_rip_job(db: &Db, rip_job: i64) -> Result<RipJobsItem, sqlx::Error> {
@@ -550,14 +603,12 @@ pub async fn insert_ost_download_item(
                 video_type,
                 match_id,
                 filename,
-                ost_url,
                 blob_id
-            ) VALUES (?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?)
             ON CONFLICT (id) DO UPDATE SET
                 video_type = ?,
                 match_id = ?,
                 filename = ?,
-                ost_url = ?,
                 blob_id = ?
         ",
     )
@@ -565,12 +616,10 @@ pub async fn insert_ost_download_item(
     .bind(ost_download_item.video_type)
     .bind(ost_download_item.match_id)
     .bind(&ost_download_item.filename)
-    .bind(&ost_download_item.ost_url)
     .bind(&ost_download_item.blob_id)
     .bind(ost_download_item.video_type)
     .bind(ost_download_item.match_id)
     .bind(&ost_download_item.filename)
-    .bind(&ost_download_item.ost_url)
     .bind(&ost_download_item.blob_id)
     .execute(db)
     .await?;
@@ -676,6 +725,7 @@ pub async fn delete_blob(db: &Db, blob_id: &str) -> Result<(), sqlx::Error> {
 
 #[derive(Serialize, Deserialize, Debug, Clone, FromRow)]
 pub struct RipVideoBlobs {
+    pub id: i64,
     pub job_id: i64,
     pub video_blob: String,
     pub subtitle_blob: Option<String>,
@@ -686,6 +736,7 @@ pub async fn get_rip_video_blobs(db: &Db, rip_job: i64) -> Result<Vec<RipVideoBl
     return Ok(sqlx::query_as(
         "
             SELECT
+                video_files.id as id,
                 rip_jobs.id as job_id,
                 video_files.blob_id as video_blob,
                 subtitle_files.blob_id as subtitle_blob
@@ -751,6 +802,7 @@ pub async fn get_untagged_videos_from_job(
     return Ok(sqlx::query_as(
         "
             SELECT
+                video_files.id as id,
                 rip_jobs.id as job_id,
                 video_files.blob_id as video_blob,
                 subtitle_files.blob_id as subtitle_blob

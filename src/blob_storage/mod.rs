@@ -96,7 +96,6 @@ impl BlobStorageController {
         &self,
         video_type: VideoType,
         match_id: i64,
-        ost_url: String,
         filename: String,
         data: String,
     ) -> anyhow::Result<i64> {
@@ -110,7 +109,6 @@ impl BlobStorageController {
                 video_type,
                 match_id,
                 filename,
-                ost_url,
                 blob_id: uuid,
             },
         )
@@ -149,7 +147,7 @@ impl BlobStorageController {
         return Ok(());
     }
 
-    pub fn get_file_path(&self, id: String) -> PathBuf {
+    pub fn get_file_path(&self, id: &String) -> PathBuf {
         return self.blob_dir.join(id);
     }
 
@@ -159,7 +157,7 @@ impl BlobStorageController {
     /// that does not have access to the blobs directory.
     pub async fn hard_link(
         &self,
-        id: String,
+        id: &String,
         destination: impl AsRef<Path>,
     ) -> std::io::Result<()> {
         return tokio::fs::hard_link(self.get_file_path(id), destination).await;
@@ -168,7 +166,7 @@ impl BlobStorageController {
     /// Creates a symlink to a blob at `destination`
     pub async fn symbolic_link(
         &self,
-        id: String,
+        id: &String,
         destination: impl AsRef<Path>,
     ) -> std::io::Result<()> {
         if !destination.as_ref().is_absolute() {

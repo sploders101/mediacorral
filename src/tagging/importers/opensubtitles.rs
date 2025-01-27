@@ -17,6 +17,15 @@ pub struct OpenSubtitles {
     auth_token: Mutex<Option<(SystemTime, String)>>,
 }
 impl OpenSubtitles {
+    pub fn new(api_key: String, username: String, password: String) -> Self {
+        return Self {
+            agent: reqwest::Client::new(),
+            api_key,
+            username,
+            password,
+            auth_token: Mutex::new(None),
+        };
+    }
     async fn login(&self, auth_token: &mut Option<(SystemTime, String)>) -> reqwest::Result<()> {
         let response: LoginResponse = self
             .agent
@@ -125,12 +134,13 @@ impl OpenSubtitles {
 
     /// Finds the best subtitles by grabbing up to 3 and comparing them. The one that
     /// matches more closely with the rest gets picked.
-    pub async fn find_best_subtitles(&self, tmdb_id: i32) -> anyhow::Result<String> {
+    /// returns `(file_name, subtitles)`
+    pub async fn find_best_subtitles(&self, tmdb_id: i32) -> anyhow::Result<(String, String)> {
         let subtitle_results = self.find_subtitles(tmdb_id).await?.into_iter().take(3);
 
         let mut subtitles = Vec::with_capacity(3);
         for subtitle_summary in subtitle_results {
-            subtitles.push(self.download_subtitles(subtitle_summary.file_id).await?);
+            subtitles.push((subtitle_summary.name, self.download_subtitles(subtitle_summary.file_id).await?));
         }
 
         match subtitles.len() {
@@ -139,8 +149,8 @@ impl OpenSubtitles {
             2 => {
                 let file1 = subtitles.pop().unwrap();
                 let file2 = subtitles.pop().unwrap();
-                let distance = levenshtein::levenshtein(&file1, &file2);
-                let max_distance = file1.len().max(file2.len());
+                let distance = levenshtein::levenshtein(&file1.1, &file2.1);
+                let max_distance = file1.1.len().max(file2.1.len());
                 if distance > max_distance / 4 {
                     anyhow::bail!("Couldn't find reliable subtitles");
                 }
@@ -150,39 +160,39 @@ impl OpenSubtitles {
                 let file1 = subtitles.pop().unwrap();
                 let file2 = subtitles.pop().unwrap();
                 let file3 = subtitles.pop().unwrap();
-                let distance1 = levenshtein::levenshtein(&file1, &file2);
-                let distance2 = levenshtein::levenshtein(&file2, &file3);
-                let distance3 = levenshtein::levenshtein(&file3, &file1);
-                let max_distance = file1.len().max(file2.len()).max(file3.len());
+                let distance1 = levenshtein::levenshtein(&file1.1, &file2.1);
+                let distance2 = levenshtein::levenshtein(&file2.1, &file3.1);
+                let distance3 = levenshtein::levenshtein(&file3.1, &file1.1);
+                let max_distance = file1.1.len().max(file2.1.len()).max(file3.1.len());
 
-                let mut distances = vec![distance1, distance2, distance3];
-                distances.sort();
+                let mut distances = vec![(1, distance1), (2, distance2), (3, distance3)];
+                distances.sort_by_key(|item| item.1);
 
-                if distances[0] > max_distance / 4 {
+                if distances[0].0 > max_distance / 4 {
                     anyhow::bail!("Couldn't find reliable subtitles");
                 }
 
-                if distances[0] == distance1 {
-                    if distances[1] == distance2 {
+                if distances[0].0 == 1 {
+                    if distances[1].0 == 2 {
                         return Ok(file2);
                     } else {
                         return Ok(file1);
                     }
-                } else if distances[0] == distance2 {
-                    if distances[1] == distance1 {
+                } else if distances[0].0 == 2 {
+                    if distances[1].0 == 1 {
                         return Ok(file2);
                     } else {
                         return Ok(file3);
                     }
-                } else if distances[0] == distance3 {
-                    if distances[1] == distance1 {
+                } else if distances[0].0 == 3 {
+                    if distances[1].0 == 1 {
                         return Ok(file1);
                     } else {
                         return Ok(file3);
                     }
                 }
 
-                todo!();
+                unreachable!();
             }
             _ => unreachable!(),
         }
