@@ -271,7 +271,7 @@ async fn analyze_subtitles(
             Err(_err) => continue,
         };
         let (subtitle_name, subtitles) = match ost.find_best_subtitles(tmdb_id).await {
-            Ok(subtitles) => (subtitles.0, strip_subtitles(&subtitles.1)),
+            Ok(subtitles) => subtitles,
             Err(_err) => continue,
         };
         let subtitle_id = match blobs
@@ -286,6 +286,7 @@ async fn analyze_subtitles(
             Ok(id) => id,
             Err(_err) => continue,
         };
+        let subtitles = strip_subtitles(&subtitles);
         let video_matches = {
             let blobs = Arc::clone(&blobs);
             videos.clone().into_par_iter().filter_map(move |video| {
