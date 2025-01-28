@@ -92,6 +92,7 @@ impl OpenSubtitles {
         let files: Vec<SubtitleSummary> = search_result
             .data
             .iter()
+            .filter(|subtitle| &subtitle.attributes.language == "en")
             .flat_map(|subtitle| {
                 subtitle
                     .attributes
