@@ -31,7 +31,7 @@ pub struct TvShowsItem {
     pub tmdb_id: Option<i32>,
     pub poster_blob: Option<i64>,
     pub title: String,
-    pub release_year: Option<String>,
+    pub original_release_year: Option<String>,
     pub description: Option<String>,
 }
 

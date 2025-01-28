@@ -137,14 +137,14 @@ pub async fn insert_tv_show(db: &Db, tv_show: &TvShowsItem) -> Result<i64, sqlx:
                 tmdb_id,
                 poster_blob,
                 title,
-                release_year,
+                original_release_year,
                 description
             ) VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT (id) DO UPDATE SET
                 tmdb_id = ?,
                 poster_blob = ?,
                 title = ?,
-                release_year = ?,
+                original_release_year = ?,
                 description = ?
         ",
     )
@@ -152,12 +152,12 @@ pub async fn insert_tv_show(db: &Db, tv_show: &TvShowsItem) -> Result<i64, sqlx:
     .bind(tv_show.tmdb_id)
     .bind(tv_show.poster_blob)
     .bind(&tv_show.title)
-    .bind(&tv_show.release_year)
+    .bind(&tv_show.original_release_year)
     .bind(&tv_show.description)
     .bind(tv_show.tmdb_id)
     .bind(tv_show.poster_blob)
     .bind(&tv_show.title)
-    .bind(&tv_show.release_year)
+    .bind(&tv_show.original_release_year)
     .bind(&tv_show.description)
     .execute(db)
     .await?;
@@ -172,24 +172,24 @@ pub async fn insert_tmdb_tv_show(db: &Db, tv_show: &TvShowsItem) -> Result<i64, 
                 tmdb_id,
                 poster_blob,
                 title,
-                release_year,
+                original_release_year,
                 description
             ) VALUES (?, ?, ?, ?, ?)
             ON CONFLICT (tmdb_id) DO UPDATE SET
                 poster_blob = ?,
                 title = ?,
-                release_year = ?,
+                original_release_year = ?,
                 description = ?
         ",
     )
     .bind(tv_show.tmdb_id)
     .bind(tv_show.poster_blob)
     .bind(&tv_show.title)
-    .bind(&tv_show.release_year)
+    .bind(&tv_show.original_release_year)
     .bind(&tv_show.description)
     .bind(tv_show.poster_blob)
     .bind(&tv_show.title)
-    .bind(&tv_show.release_year)
+    .bind(&tv_show.original_release_year)
     .bind(&tv_show.description)
     .execute(db)
     .await?;
@@ -206,7 +206,7 @@ pub async fn get_tv_shows(db: &Db) -> Result<Vec<TvShowsItem>, sqlx::Error> {
                 tmdb_id,
                 poster_blob,
                 title,
-                release_year,
+                original_release_year,
                 description
             FROM tv_shows
             LIMIT 1000

@@ -235,7 +235,7 @@ impl TmdbImporter {
                 tmdb_id: Some(tv_id),
                 poster_blob,
                 title: response.name,
-                release_year: response
+                original_release_year: response
                     .first_air_date
                     .and_then(|item| item.split('-').next().map(String::from)),
                 description: response.overview,
