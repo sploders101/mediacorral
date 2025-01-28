@@ -5,9 +5,40 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     application::{types::JobInfo, Application},
-    db::schemas::{RipJobsItem, VideoType},
+    db::schemas::{MoviesItem, RipJobsItem, TvEpisodesItem, TvSeasonsItem, TvShowsItem, VideoType},
+    tagging::types::SuspectedContents,
     AnyhowError,
 };
+
+#[get("/metadata/movies/list")]
+async fn get_list_movies(
+    application: &State<Arc<Application>>,
+) -> Result<Json<Vec<MoviesItem>>, AnyhowError> {
+    return Ok(Json(application.list_movies().await?));
+}
+
+#[get("/metadata/tv/list")]
+async fn get_list_tv(
+    application: &State<Arc<Application>>,
+) -> Result<Json<Vec<TvShowsItem>>, AnyhowError> {
+    return Ok(Json(application.list_tv_series().await?));
+}
+
+#[get("/metadata/tv/<series_id>/seasons")]
+async fn get_list_tv_seasons(
+    application: &State<Arc<Application>>,
+    series_id: i64,
+) -> Result<Json<Vec<TvSeasonsItem>>, AnyhowError> {
+    return Ok(Json(application.list_tv_seasons(series_id).await?));
+}
+
+#[get("/metadata/tv/seasons/<season_id>/episodes")]
+async fn get_list_tv_episodes(
+    application: &State<Arc<Application>>,
+    season_id: i64,
+) -> Result<Json<Vec<TvEpisodesItem>>, AnyhowError> {
+    return Ok(Json(application.list_tv_episodes(season_id).await?));
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TagFile {
@@ -49,6 +80,45 @@ async fn get_job(
     return Ok(Json(results));
 }
 
+#[get("/jobs/<job_id>/analysis_status")]
+async fn analyzing_job(application: &State<Arc<Application>>, job_id: i64) -> Json<bool> {
+    return Json(application.is_analyzing(job_id).await);
+}
+
+#[post("/jobs/<job_id>/suspicion", data = "<contents>")]
+async fn suspect_job(
+    application: &State<Arc<Application>>,
+    job_id: i64,
+    contents: Json<Option<SuspectedContents>>,
+) -> Result<(), AnyhowError> {
+    application.suspect_content(job_id, contents.0).await?;
+    return Ok(());
+}
+
+#[post("/jobs/<job_id>/prune")]
+async fn prune_job(application: &State<Arc<Application>>, job_id: i64) -> Result<(), AnyhowError> {
+    application.prune_rip_job(job_id).await?;
+    return Ok(());
+}
+
+#[delete("/jobs/<job_id>")]
+async fn delete_job(application: &State<Arc<Application>>, job_id: i64) -> Result<(), AnyhowError> {
+    application.delete_rip_job(job_id).await?;
+    return Ok(());
+}
+
 pub fn get_routes() -> impl Into<Vec<Route>> {
-    return routes![post_tag_file, get_untagged_jobs, get_job];
+    return routes![
+        get_list_movies,
+        get_list_tv,
+        get_list_tv_seasons,
+        get_list_tv_episodes,
+        post_tag_file,
+        get_untagged_jobs,
+        get_job,
+        analyzing_job,
+        suspect_job,
+        prune_job,
+        delete_job,
+    ];
 }

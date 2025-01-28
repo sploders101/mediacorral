@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    fs::File,
     io::Read,
     path::{Path, PathBuf},
     sync::Arc,
@@ -8,12 +7,9 @@ use std::{
 
 use anyhow::Context;
 use levenshtein::levenshtein;
-use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use sqlx::SqlitePool;
-use tokio::{
-    sync::Mutex,
-    task::{AbortHandle, JoinHandle},
-};
+use tokio::{sync::Mutex, task::JoinHandle};
 use types::JobInfo;
 
 use crate::{
@@ -156,7 +152,7 @@ impl Application {
         return Ok(get_rip_jobs_with_untagged_videos(&self.db, skip, limit).await?);
     }
 
-    pub async fn is_suspecting(&self, rip_job: i64) -> bool {
+    pub async fn is_analyzing(&self, rip_job: i64) -> bool {
         return self.suspicion_analyzers.lock().await.contains_key(&rip_job);
     }
 
@@ -166,8 +162,8 @@ impl Application {
         rip_job: i64,
         suspected_contents: Option<SuspectedContents>,
     ) -> anyhow::Result<()> {
-        let mut suspicion_analyzers = self.suspicion_analyzers.lock().await;
-        if let Some(analyzer) = suspicion_analyzers.remove(&rip_job) {
+        let mut unlocked_suspicion_analyzers = self.suspicion_analyzers.lock().await;
+        if let Some(analyzer) = unlocked_suspicion_analyzers.remove(&rip_job) {
             analyzer.abort();
         }
         add_suspicion(&self.db, rip_job, suspected_contents.as_ref()).await?;
@@ -179,15 +175,20 @@ impl Application {
                 let opensubtitles = Arc::clone(&self.opensubtitles);
                 let db = Arc::clone(&self.db);
                 let blob_controller = Arc::clone(&self.blob_controller);
-                suspicion_analyzers.insert(
+                let suspicion_analyzers = Arc::clone(&self.suspicion_analyzers);
+                unlocked_suspicion_analyzers.insert(
                     rip_job,
-                    tokio::task::spawn(analyze_subtitles(
-                        db,
-                        opensubtitles,
-                        blob_controller,
-                        rip_job,
-                        episode_tmdb_ids,
-                    )),
+                    tokio::task::spawn(async move {
+                        analyze_subtitles(
+                            db,
+                            opensubtitles,
+                            blob_controller,
+                            rip_job,
+                            episode_tmdb_ids,
+                        )
+                        .await;
+                        suspicion_analyzers.lock().await.remove(&rip_job);
+                    }),
                 );
             }
             None => {}

@@ -140,7 +140,10 @@ impl OpenSubtitles {
 
         let mut subtitles = Vec::with_capacity(3);
         for subtitle_summary in subtitle_results {
-            subtitles.push((subtitle_summary.name, self.download_subtitles(subtitle_summary.file_id).await?));
+            subtitles.push((
+                subtitle_summary.name,
+                self.download_subtitles(subtitle_summary.file_id).await?,
+            ));
         }
 
         match subtitles.len() {
