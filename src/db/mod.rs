@@ -380,12 +380,13 @@ pub async fn upsert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
         "
             INSERT INTO tv_episodes (
                 tmdb_id,
+                tv_show_id,
                 tv_season_id,
                 episode_number,
                 thumbnail_blob,
                 title,
                 description
-            ) VALUES (?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (tmdb_id) DO UPDATE SET
                 thumbnail_blob = ?,
                 title = ?,
@@ -393,6 +394,7 @@ pub async fn upsert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
         ",
     )
     .bind(tv_episode.tmdb_id)
+    .bind(tv_episode.tv_show_id)
     .bind(tv_episode.tv_season_id)
     .bind(tv_episode.episode_number)
     .bind(tv_episode.thumbnail_blob)
