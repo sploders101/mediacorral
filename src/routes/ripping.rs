@@ -89,6 +89,18 @@ async fn get_rip_status_stream(
     });
 }
 
+#[post("/eject?<device>")]
+async fn post_eject(application: &State<Arc<Application>>, device: String) -> Result<(), AnyhowError> {
+    application.get_drive(Path::new(&device))?.eject();
+    return Ok(());
+}
+
+#[post("/retract?<device>")]
+async fn post_retract(application: &State<Arc<Application>>, device: String) -> Result<(), AnyhowError> {
+    application.get_drive(Path::new(&device))?.retract();
+    return Ok(());
+}
+
 pub fn create_autoripper(enabler: Arc<Mutex<bool>>, application: Arc<Application>) {
     tokio::task::spawn(async move {
         let mut events = std::pin::pin!(disc_insert_events());
@@ -111,5 +123,7 @@ pub fn get_routes() -> impl Into<Vec<Route>> {
         post_rip,
         get_rip_status,
         get_rip_status_stream,
+        post_eject,
+        post_retract,
     ];
 }
