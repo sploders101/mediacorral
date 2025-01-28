@@ -309,7 +309,7 @@ pub async fn upsert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64,
                 poster_blob,
                 title,
                 description
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT (tmdb_id) DO UPDATE SET
                 poster_blob = ?,
                 title = ?,
