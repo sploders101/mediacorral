@@ -100,7 +100,7 @@ impl BlobStorageController {
         data: String,
     ) -> anyhow::Result<i64> {
         let uuid = Uuid::new_v4().to_string();
-        let mut file = File::open(self.blob_dir.join(&uuid)).await?;
+        let mut file = File::create(self.blob_dir.join(&uuid)).await?;
         file.write_all(data.as_bytes()).await?;
         let id = insert_ost_download_item(
             &self.db_connection,

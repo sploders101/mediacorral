@@ -312,7 +312,7 @@ async fn analyze_subtitles(
                 &db,
                 &MatchInfoItem {
                     id: None,
-                    video_file_id: video_match.job_id,
+                    video_file_id: video_match.id,
                     ost_download_id: subtitle_id,
                     distance: distance as _,
                     max_distance: max_distance as _,
