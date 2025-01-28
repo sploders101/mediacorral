@@ -28,7 +28,10 @@ use crate::{
     },
     drive_controller::DriveController,
     tagging::{
-        importers::{opensubtitles::OpenSubtitles, tmdb::TmdbImporter},
+        importers::{
+            opensubtitles::{strip_subtitles, OpenSubtitles},
+            tmdb::TmdbImporter,
+        },
         types::SuspectedContents,
     },
 };
@@ -268,7 +271,7 @@ async fn analyze_subtitles(
             Err(_err) => continue,
         };
         let (subtitle_name, subtitles) = match ost.find_best_subtitles(tmdb_id).await {
-            Ok(subtitles) => subtitles,
+            Ok(subtitles) => (subtitles.0, strip_subtitles(&subtitles.1)),
             Err(_err) => continue,
         };
         let subtitle_id = match blobs
@@ -299,6 +302,7 @@ async fn analyze_subtitles(
                 if let Err(_err) = file.read_to_string(&mut file_subtitles) {
                     return None;
                 };
+                file_subtitles = strip_subtitles(&file_subtitles);
                 let distance = levenshtein(&subtitles, &file_subtitles);
                 let max_distance = subtitles.len().max(file_subtitles.len());
                 return Some((video, distance, max_distance));

@@ -1,3 +1,4 @@
+use lazy_regex::regex;
 use reqwest::StatusCode;
 use serde::Deserialize;
 use serde_json::json;
@@ -146,70 +147,90 @@ impl OpenSubtitles {
             ));
         }
 
-        return tokio::task::spawn_blocking(move || {
-            match subtitles.len() {
-                0 => anyhow::bail!("No subtitles found"),
-                1 => return Ok(subtitles.pop().unwrap()),
-                2 => {
-                    let file1 = subtitles.pop().unwrap();
-                    let file2 = subtitles.pop().unwrap();
-                    let distance = levenshtein::levenshtein(&file1.1, &file2.1);
-                    let max_distance = file1.1.len().max(file2.1.len());
-                    if distance > max_distance / 4 {
-                        anyhow::bail!("Couldn't find reliable subtitles");
-                    }
-                    return Ok(file1);
+        return tokio::task::spawn_blocking(move || match subtitles.len() {
+            0 => anyhow::bail!("No subtitles found"),
+            1 => return Ok(subtitles.pop().unwrap()),
+            2 => {
+                let file1 = subtitles.pop().unwrap();
+                let file2 = subtitles.pop().unwrap();
+                let distance = levenshtein::levenshtein(&file1.1, &file2.1);
+                let max_distance = file1.1.len().max(file2.1.len());
+                if distance > max_distance / 4 {
+                    anyhow::bail!("Couldn't find reliable subtitles");
                 }
-                3 => {
-                    let file1 = subtitles.pop().unwrap();
-                    let file2 = subtitles.pop().unwrap();
-                    let file3 = subtitles.pop().unwrap();
-                    let mut distance1: Option<usize> = None;
-                    let mut distance2: Option<usize> = None;
-                    let mut distance3: Option<usize> = None;
-                    rayon::scope(|s| {
-                        s.spawn(|_| distance1 = Some(levenshtein::levenshtein(&file1.1, &file2.1)));
-                        s.spawn(|_| distance2 = Some(levenshtein::levenshtein(&file2.1, &file3.1)));
-                        s.spawn(|_| distance3 = Some(levenshtein::levenshtein(&file3.1, &file1.1)));
-                    });
-                    let distance1 = distance1.unwrap();
-                    let distance2 = distance2.unwrap();
-                    let distance3 = distance3.unwrap();
-                    let max_distance = file1.1.len().max(file2.1.len()).max(file3.1.len());
-
-                    let mut distances = vec![(1, distance1), (2, distance2), (3, distance3)];
-                    distances.sort_by_key(|item| item.1);
-
-                    if distances[0].0 > max_distance / 4 {
-                        anyhow::bail!("Couldn't find reliable subtitles");
-                    }
-
-                    if distances[0].0 == 1 {
-                        if distances[1].0 == 2 {
-                            return Ok(file2);
-                        } else {
-                            return Ok(file1);
-                        }
-                    } else if distances[0].0 == 2 {
-                        if distances[1].0 == 1 {
-                            return Ok(file2);
-                        } else {
-                            return Ok(file3);
-                        }
-                    } else if distances[0].0 == 3 {
-                        if distances[1].0 == 1 {
-                            return Ok(file1);
-                        } else {
-                            return Ok(file3);
-                        }
-                    }
-
-                    unreachable!();
-                }
-                _ => unreachable!(),
+                return Ok(file1);
             }
-        }).await.unwrap();
+            3 => {
+                let file1 = subtitles.pop().unwrap();
+                let file2 = subtitles.pop().unwrap();
+                let file3 = subtitles.pop().unwrap();
+                let mut distance1: Option<usize> = None;
+                let mut distance2: Option<usize> = None;
+                let mut distance3: Option<usize> = None;
+                let file1_stripped = strip_subtitles(&file1.1);
+                let file2_stripped = strip_subtitles(&file2.1);
+                let file3_stripped = strip_subtitles(&file3.1);
+                rayon::scope(|s| {
+                    s.spawn(|_| {
+                        distance1 = Some(levenshtein::levenshtein(&file1_stripped, &file2_stripped))
+                    });
+                    s.spawn(|_| {
+                        distance2 = Some(levenshtein::levenshtein(&file2_stripped, &file3_stripped))
+                    });
+                    s.spawn(|_| {
+                        distance3 = Some(levenshtein::levenshtein(&file3_stripped, &file1_stripped))
+                    });
+                });
+                let distance1 = distance1.unwrap();
+                let distance2 = distance2.unwrap();
+                let distance3 = distance3.unwrap();
+                let max_distance = file1.1.len().max(file2.1.len()).max(file3.1.len());
+
+                let mut distances = vec![(1, distance1), (2, distance2), (3, distance3)];
+                distances.sort_by_key(|item| item.1);
+
+                if distances[0].0 > max_distance / 4 {
+                    anyhow::bail!("Couldn't find reliable subtitles");
+                }
+
+                if distances[0].0 == 1 {
+                    if distances[1].0 == 2 {
+                        return Ok(file2);
+                    } else {
+                        return Ok(file1);
+                    }
+                } else if distances[0].0 == 2 {
+                    if distances[1].0 == 1 {
+                        return Ok(file2);
+                    } else {
+                        return Ok(file3);
+                    }
+                } else if distances[0].0 == 3 {
+                    if distances[1].0 == 1 {
+                        return Ok(file1);
+                    } else {
+                        return Ok(file3);
+                    }
+                }
+
+                unreachable!();
+            }
+            _ => unreachable!(),
+        })
+        .await
+        .unwrap();
     }
+}
+
+/// Strips symbols from subtitles that may cause issues during comparison
+pub fn strip_subtitles(subs: &str) -> String {
+    let intermediate = regex!(
+        r"(?:<\s*[^>]*>|<\s*/\s*a>)|(?:^.*-->.*$|^[0-9]+$|[^a-zA-Z0-9 ?\.,!\n]|^\s*-*\s*|\r)"m
+    )
+    .replace_all(subs, "");
+    return regex!(r"[\n ]{1,}")
+        .replace_all(&intermediate, " ")
+        .into_owned();
 }
 
 #[derive(Debug, Deserialize, Clone)]
