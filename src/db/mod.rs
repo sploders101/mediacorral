@@ -25,6 +25,7 @@ pub async fn insert_movie(db: &Db, movie: &MoviesItem) -> Result<i64, sqlx::Erro
                 title = ?,
                 release_year = ?,
                 description = ?
+            RETURNING id
         ",
     )
     .bind(movie.id)
@@ -38,10 +39,10 @@ pub async fn insert_movie(db: &Db, movie: &MoviesItem) -> Result<i64, sqlx::Erro
     .bind(&movie.title)
     .bind(&movie.release_year)
     .bind(&movie.description)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn insert_tmdb_movie(db: &Db, movie: &MoviesItem) -> Result<i64, sqlx::Error> {
@@ -59,6 +60,7 @@ pub async fn insert_tmdb_movie(db: &Db, movie: &MoviesItem) -> Result<i64, sqlx:
                 title = ?,
                 release_year = ?,
                 description = ?
+            RETURNING id
         ",
     )
     .bind(movie.tmdb_id)
@@ -70,10 +72,10 @@ pub async fn insert_tmdb_movie(db: &Db, movie: &MoviesItem) -> Result<i64, sqlx:
     .bind(&movie.title)
     .bind(&movie.release_year)
     .bind(&movie.description)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn get_movies(db: &Db) -> Result<Vec<MoviesItem>, sqlx::Error> {
@@ -112,6 +114,7 @@ pub async fn insert_movies_special_feature(
                 thumbnail_blob = ?,
                 title = ?,
                 description = ?
+            RETURNING id
         ",
     )
     .bind(movie_special_feature.id)
@@ -123,10 +126,10 @@ pub async fn insert_movies_special_feature(
     .bind(movie_special_feature.thumbnail_blob)
     .bind(&movie_special_feature.title)
     .bind(&movie_special_feature.description)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn insert_tv_show(db: &Db, tv_show: &TvShowsItem) -> Result<i64, sqlx::Error> {
@@ -146,6 +149,7 @@ pub async fn insert_tv_show(db: &Db, tv_show: &TvShowsItem) -> Result<i64, sqlx:
                 title = ?,
                 original_release_year = ?,
                 description = ?
+            RETURNING id
         ",
     )
     .bind(tv_show.id)
@@ -159,10 +163,10 @@ pub async fn insert_tv_show(db: &Db, tv_show: &TvShowsItem) -> Result<i64, sqlx:
     .bind(&tv_show.title)
     .bind(&tv_show.original_release_year)
     .bind(&tv_show.description)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn insert_tmdb_tv_show(db: &Db, tv_show: &TvShowsItem) -> Result<i64, sqlx::Error> {
@@ -180,6 +184,7 @@ pub async fn insert_tmdb_tv_show(db: &Db, tv_show: &TvShowsItem) -> Result<i64, 
                 title = ?,
                 original_release_year = ?,
                 description = ?
+            RETURNING id
         ",
     )
     .bind(tv_show.tmdb_id)
@@ -191,10 +196,10 @@ pub async fn insert_tmdb_tv_show(db: &Db, tv_show: &TvShowsItem) -> Result<i64, 
     .bind(&tv_show.title)
     .bind(&tv_show.original_release_year)
     .bind(&tv_show.description)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 // TODO: Add paging
@@ -278,6 +283,7 @@ pub async fn insert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64,
                 poster_blob = ?,
                 title = ?,
                 description = ?
+            RETURNING id
         ",
     )
     .bind(tv_season.id)
@@ -293,10 +299,10 @@ pub async fn insert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64,
     .bind(tv_season.poster_blob)
     .bind(&tv_season.title)
     .bind(&tv_season.description)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn upsert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64, sqlx::Error> {
@@ -314,6 +320,7 @@ pub async fn upsert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64,
                 poster_blob = ?,
                 title = ?,
                 description = ?
+            RETURNING id
         ",
     )
     .bind(tv_season.tmdb_id)
@@ -325,10 +332,10 @@ pub async fn upsert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64,
     .bind(tv_season.poster_blob)
     .bind(&tv_season.title)
     .bind(&tv_season.description)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i64, sqlx::Error> {
@@ -352,6 +359,7 @@ pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
                 thumbnail_blob = ?,
                 title = ?,
                 description = ?
+            RETURNING id
         ",
     )
     .bind(tv_episode.id)
@@ -369,10 +377,10 @@ pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
     .bind(tv_episode.thumbnail_blob)
     .bind(&tv_episode.title)
     .bind(&tv_episode.description)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn upsert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i64, sqlx::Error> {
@@ -391,6 +399,7 @@ pub async fn upsert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
                 thumbnail_blob = ?,
                 title = ?,
                 description = ?
+            RETURNING id
         ",
     )
     .bind(tv_episode.tmdb_id)
@@ -403,10 +412,10 @@ pub async fn upsert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
     .bind(tv_episode.thumbnail_blob)
     .bind(&tv_episode.title)
     .bind(&tv_episode.description)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn get_episode_id_from_tmdb(db: &Db, tmdb_id: i32) -> Result<i64, sqlx::Error> {
@@ -438,6 +447,7 @@ pub async fn insert_rip_jobs(db: &Db, rip_job: &RipJobsItem) -> Result<i64, sqlx
                 start_time = ?,
                 disc_title = ?,
                 suspected_contents = ?
+            RETURNING id
         ",
     )
     .bind(rip_job.id)
@@ -447,10 +457,10 @@ pub async fn insert_rip_jobs(db: &Db, rip_job: &RipJobsItem) -> Result<i64, sqlx
     .bind(rip_job.start_time)
     .bind(&rip_job.disc_title)
     .bind(&rip_job.suspected_contents)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn add_suspicion(
@@ -517,6 +527,7 @@ pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i
                 length = ?,
                 original_video_hash = ?,
                 rip_job = ?
+            RETURNING id
         ",
     )
     .bind(video_file.id)
@@ -536,10 +547,10 @@ pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i
     .bind(video_file.length)
     .bind(mkv_hash)
     .bind(video_file.rip_job)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn tag_video_file(
@@ -581,6 +592,7 @@ pub async fn insert_subtitle_file(
             ON CONFLICT (id) DO UPDATE SET
                 blob_id = ?,
                 video_file = ?
+            RETURNING id
         ",
     )
     .bind(subtitle_file.id)
@@ -588,10 +600,10 @@ pub async fn insert_subtitle_file(
     .bind(subtitle_file.video_file)
     .bind(&subtitle_file.blob_id)
     .bind(subtitle_file.video_file)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn insert_ost_download_item(
@@ -612,6 +624,7 @@ pub async fn insert_ost_download_item(
                 match_id = ?,
                 filename = ?,
                 blob_id = ?
+            RETURNING id
         ",
     )
     .bind(ost_download_item.id)
@@ -623,10 +636,10 @@ pub async fn insert_ost_download_item(
     .bind(ost_download_item.match_id)
     .bind(&ost_download_item.filename)
     .bind(&ost_download_item.blob_id)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn insert_match_info_item(
@@ -647,6 +660,7 @@ pub async fn insert_match_info_item(
                 ost_download_id = ?,
                 distance = ?,
                 max_distance = ?
+            RETURNING id
         ",
     )
     .bind(match_info_item.id)
@@ -658,10 +672,10 @@ pub async fn insert_match_info_item(
     .bind(match_info_item.ost_download_id)
     .bind(match_info_item.distance)
     .bind(match_info_item.max_distance)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn insert_image_file(db: &Db, image_file: &ImageFilesItem) -> Result<i64, sqlx::Error> {
@@ -679,6 +693,7 @@ pub async fn insert_image_file(db: &Db, image_file: &ImageFilesItem) -> Result<i
                 mime_type = ?,
                 name = ?,
                 rip_job = ?
+            RETURNING id
         ",
     )
     .bind(image_file.id)
@@ -690,10 +705,10 @@ pub async fn insert_image_file(db: &Db, image_file: &ImageFilesItem) -> Result<i
     .bind(&image_file.mime_type)
     .bind(&image_file.name)
     .bind(image_file.rip_job)
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    return Ok(result.last_insert_rowid());
+    return Ok(result.get(0));
 }
 
 pub async fn delete_blob(db: &Db, blob_id: &str) -> Result<(), sqlx::Error> {
