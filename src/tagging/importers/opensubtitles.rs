@@ -2,7 +2,7 @@ use lazy_regex::regex;
 use reqwest::StatusCode;
 use serde::Deserialize;
 use serde_json::json;
-use std::time::SystemTime;
+use std::{cmp::Ordering, time::SystemTime};
 use tokio::sync::Mutex;
 
 #[derive(Deserialize)]
@@ -90,7 +90,7 @@ impl OpenSubtitles {
             .json()
             .await?;
 
-        let files: Vec<SubtitleSummary> = search_result
+        let mut files: Vec<SubtitleSummary> = search_result
             .data
             .iter()
             .filter(|subtitle| &subtitle.attributes.language == "en")
@@ -108,9 +108,19 @@ impl OpenSubtitles {
                             subtitle.attributes.uploader.rank,
                         ),
                         file_id: file.file_id,
+                        uploader: subtitle.attributes.uploader.clone(),
                     })
             })
             .collect();
+
+        files.sort_by(|a, b| {
+            match numeric_rank(&a.uploader.rank).cmp(&numeric_rank(&b.uploader.rank)) {
+                Ordering::Less => return Ordering::Less,
+                Ordering::Greater => return Ordering::Greater,
+                Ordering::Equal => return Ordering::Equal,
+            }
+            // May add more criteria later. Not sure yet.
+        });
 
         return Ok(files);
     }
@@ -235,6 +245,18 @@ pub fn strip_subtitles(subs: &str) -> String {
         .into_owned();
 }
 
+/// Converts an uploader's rank into a numeric value for sorting
+fn numeric_rank(rank: &str) -> usize {
+    return match a.uploader.rank {
+        "Administrator" => 100,
+        "Application Developers" => 40,
+        "Gold member" => 30,
+        "Bronze Member" => 20,
+        "anonymous" => 0,
+        _ => 10,
+    };
+}
+
 #[derive(Debug, Deserialize, Clone)]
 struct SearchResults {
     // total_pages: u32,
@@ -284,9 +306,10 @@ struct STFile {
 }
 
 #[derive(Debug, Clone)]
-struct SubtitleSummary {
+pub struct SubtitleSummary {
     name: String,
     file_id: u32,
+    uploader: OSTUploader,
 }
 
 #[derive(Debug, Deserialize, Clone)]
