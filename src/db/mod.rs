@@ -642,6 +642,32 @@ pub async fn insert_ost_download_item(
     return Ok(result.get(0));
 }
 
+pub async fn get_ost_download_items_by_match(
+    db: &Db,
+    video_type: VideoType,
+    match_id: i64,
+) -> Result<Vec<OstDownloadsItem>, sqlx::Error> {
+    let results = sqlx::query_as(
+        "
+            SELECT
+                id,
+                video_type,
+                match_id,
+                filename,
+                blob_id
+            FROM ost_downloads
+            WHERE
+                video_type = ?
+                AND match_id = ?
+        ",
+    )
+    .bind(video_type)
+    .bind(match_id)
+    .fetch_all(db)
+    .await?;
+    return Ok(results);
+}
+
 pub async fn insert_match_info_item(
     db: &Db,
     match_info_item: &MatchInfoItem,

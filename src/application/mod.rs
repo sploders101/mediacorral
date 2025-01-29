@@ -9,7 +9,7 @@ use anyhow::Context;
 use levenshtein::levenshtein;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use sqlx::SqlitePool;
-use tokio::{sync::Mutex, task::JoinHandle};
+use tokio::{io::AsyncReadExt, sync::Mutex, task::JoinHandle};
 use types::JobInfo;
 
 use crate::{
@@ -17,9 +17,9 @@ use crate::{
     config::{OST_API_KEY, OST_PASSWORD, OST_USERNAME, TMDB_API_KEY},
     db::{
         add_suspicion, delete_rip_job, get_episode_id_from_tmdb, get_matches_from_rip, get_movies,
-        get_rip_image_blobs, get_rip_job, get_rip_jobs_with_untagged_videos, get_rip_video_blobs,
-        get_tv_episodes, get_tv_seasons, get_tv_shows, get_untagged_videos_from_job,
-        get_videos_from_rip, insert_match_info_item,
+        get_ost_download_items_by_match, get_rip_image_blobs, get_rip_job,
+        get_rip_jobs_with_untagged_videos, get_rip_video_blobs, get_tv_episodes, get_tv_seasons,
+        get_tv_shows, get_untagged_videos_from_job, get_videos_from_rip, insert_match_info_item,
         schemas::{
             MatchInfoItem, MoviesItem, RipJobsItem, TvEpisodesItem, TvSeasonsItem, TvShowsItem,
             VideoType,
@@ -247,6 +247,27 @@ fn canonicalize_drive_path(drive_path: &Path) -> anyhow::Result<String> {
     ));
 }
 
+macro_rules! try_skip {
+    (return, $item:expr) => {
+        match $item {
+            Ok(result) => result,
+            Err(err) => {
+                eprintln!("{err}");
+                return;
+            }
+        }
+    };
+    ($item:expr) => {
+        match $item {
+            Ok(result) => result,
+            Err(err) => {
+                eprintln!("{err}");
+                continue;
+            }
+        }
+    };
+}
+
 /// This function downloads all subtitles for the given tmdb ids and compares them
 /// against the files in the database, creating `match_info` records that can be used
 /// for tagging.
@@ -260,31 +281,39 @@ async fn analyze_subtitles(
     rip_job: i64,
     tmdb_ids: Vec<i32>,
 ) {
-    let videos = match get_rip_video_blobs(&db, rip_job).await {
-        Ok(result) => result,
-        Err(_err) => return,
-    };
+    // First, clear out any existing results
+
+    // Then, grab new ones
+    let videos = try_skip!(return, get_rip_video_blobs(&db, rip_job).await);
 
     for tmdb_id in tmdb_ids {
-        let internal_id = match get_episode_id_from_tmdb(&db, tmdb_id).await {
-            Ok(id) => id,
-            Err(_err) => continue,
-        };
-        let (subtitle_name, subtitles) = match ost.find_best_subtitles(tmdb_id).await {
-            Ok(subtitles) => subtitles,
-            Err(_err) => continue,
-        };
-        let subtitle_id = match blobs
-            .add_ost_subtitles(
-                VideoType::TvEpisode,
-                internal_id,
-                subtitle_name,
-                subtitles.clone(),
-            )
-            .await
-        {
-            Ok(id) => id,
-            Err(_err) => continue,
+        let internal_id = try_skip!(get_episode_id_from_tmdb(&db, tmdb_id).await);
+        let mut cached_subtitles = try_skip!(
+            get_ost_download_items_by_match(&db, VideoType::TvEpisode, internal_id).await
+        );
+        let (subtitle_id, subtitles) = match cached_subtitles.len() {
+            0 => {
+                let (subtitle_name, subtitles) = try_skip!(ost.find_best_subtitles(tmdb_id).await);
+                let subtitle_id = try_skip!(
+                    blobs
+                        .add_ost_subtitles(
+                            VideoType::TvEpisode,
+                            internal_id,
+                            subtitle_name,
+                            subtitles.clone(),
+                        )
+                        .await
+                );
+                (subtitle_id, subtitles)
+            }
+            _ => {
+                let subtitle = cached_subtitles.swap_remove(0);
+                let mut subtitles = String::new();
+                let file_path = blobs.get_file_path(&subtitle.blob_id);
+                let mut file = try_skip!(tokio::fs::File::open(&file_path).await);
+                try_skip!(file.read_to_string(&mut subtitles).await);
+                (subtitle.id.unwrap(), subtitles)
+            }
         };
         let subtitles = strip_subtitles(&subtitles);
         let video_matches = {
