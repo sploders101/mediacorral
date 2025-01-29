@@ -51,6 +51,7 @@ impl OpenSubtitles {
         &self,
         req_fn: impl Fn() -> reqwest::RequestBuilder,
     ) -> reqwest::Result<reqwest::Response> {
+        println!("Making OST request");
         let query_start = SystemTime::now();
         loop {
             let mut auth_token = self.auth_token.lock().await;

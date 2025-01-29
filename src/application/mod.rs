@@ -335,6 +335,9 @@ async fn analyze_subtitles(
                 file_subtitles = strip_subtitles(&file_subtitles);
                 let distance = levenshtein(&subtitles, &file_subtitles);
                 let max_distance = subtitles.len().max(file_subtitles.len());
+                println!("Subtitles:      {}", subtitles.len());
+                println!("File Subtitles: {}", file_subtitles.len());
+                println!("Max Distance:   {}", max_distance);
                 return Some((video, distance, max_distance));
             })
         };
