@@ -90,13 +90,19 @@ async fn get_rip_status_stream(
 }
 
 #[post("/eject?<device>")]
-async fn post_eject(application: &State<Arc<Application>>, device: String) -> Result<(), AnyhowError> {
+async fn post_eject(
+    application: &State<Arc<Application>>,
+    device: String,
+) -> Result<(), AnyhowError> {
     application.get_drive(Path::new(&device))?.eject();
     return Ok(());
 }
 
 #[post("/retract?<device>")]
-async fn post_retract(application: &State<Arc<Application>>, device: String) -> Result<(), AnyhowError> {
+async fn post_retract(
+    application: &State<Arc<Application>>,
+    device: String,
+) -> Result<(), AnyhowError> {
     application.get_drive(Path::new(&device))?.retract();
     return Ok(());
 }
