@@ -247,13 +247,13 @@ pub fn strip_subtitles(subs: &str) -> String {
 
 /// Converts an uploader's rank into a numeric value for sorting
 fn numeric_rank(rank: &str) -> usize {
-    return match a.uploader.rank {
-        "Administrator" => 100,
-        "Application Developers" => 40,
-        "Gold member" => 30,
-        "Bronze Member" => 20,
-        "anonymous" => 0,
-        _ => 10,
+    return match rank {
+        "Administrator" => 0,
+        "Application Developers" => 10,
+        "Gold member" => 20,
+        "Bronze Member" => 30,
+        "anonymous" => 100,
+        _ => 90,
     };
 }
 
