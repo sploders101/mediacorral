@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    db::schemas::{MatchInfoItem, VideoFilesItem},
+    db::{
+        schemas::{MatchInfoItem, OstDownloadsItem, VideoFilesItem},
+        RipVideoBlobs,
+    },
     tagging::types::SuspectedContents,
 };
 
@@ -13,4 +16,6 @@ pub struct JobInfo {
     pub suspected_contents: Option<SuspectedContents>,
     pub video_files: Vec<VideoFilesItem>,
     pub matches: Vec<MatchInfoItem>,
+    pub subtitle_maps: Vec<RipVideoBlobs>,
+    pub ost_subtitle_files: Vec<OstDownloadsItem>,
 }

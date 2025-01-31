@@ -970,6 +970,33 @@ pub async fn get_matches_from_rip(
     return Ok(results);
 }
 
+pub async fn get_ost_subtitles_from_rip(
+    db: &Db,
+    rip_job: i64,
+) -> Result<Vec<OstDownloadsItem>, sqlx::Error> {
+    let results: Vec<OstDownloadsItem> = sqlx::query_as(
+        "
+            SELECT
+                ost_downloads.id,
+                ost_downloads.video_type,
+                ost_downloads.match_id,
+                ost_downloads.filename,
+                ost_downloads.blob_id
+            FROM video_files
+            INNER JOIN match_info ON
+                video_files.id = match_info.video_file_id
+            INNER JOIN ost_downloads ON
+                ost_downloads.id = match_info.ost_download_id
+            WHERE video_files.rip_job = ?
+            GROUP BY ost_downloads.id
+        ",
+    )
+    .bind(rip_job)
+    .fetch_all(db)
+    .await?;
+    return Ok(results);
+}
+
 pub async fn purge_matches_from_rip(
     db: &Db,
     rip_job: i64,

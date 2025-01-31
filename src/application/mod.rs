@@ -17,10 +17,11 @@ use crate::{
     config::{OST_API_KEY, OST_PASSWORD, OST_USERNAME, TMDB_API_KEY},
     db::{
         add_suspicion, delete_rip_job, get_episode_id_from_tmdb, get_matches_from_rip, get_movies,
-        get_ost_download_items_by_match, get_ost_download_items_by_show_id, get_rip_image_blobs,
-        get_rip_job, get_rip_jobs_with_untagged_videos, get_rip_video_blobs, get_tv_episodes,
-        get_tv_seasons, get_tv_shows, get_untagged_videos_from_job, get_videos_from_rip,
-        insert_match_info_item, purge_matches_from_rip,
+        get_ost_download_items_by_match, get_ost_download_items_by_show_id,
+        get_ost_subtitles_from_rip, get_rip_image_blobs, get_rip_job,
+        get_rip_jobs_with_untagged_videos, get_rip_video_blobs, get_tv_episodes, get_tv_seasons,
+        get_tv_shows, get_untagged_videos_from_job, get_videos_from_rip, insert_match_info_item,
+        purge_matches_from_rip,
         schemas::{
             MatchInfoItem, MoviesItem, RipJobsItem, TvEpisodesItem, TvSeasonsItem, TvShowsItem,
             VideoType,
@@ -98,6 +99,8 @@ impl Application {
         let job_info = get_rip_job(&self.db, rip_job).await?;
         let video_files = get_videos_from_rip(&self.db, rip_job).await?;
         let matches = get_matches_from_rip(&self.db, rip_job).await?;
+        let subtitle_maps = get_rip_video_blobs(&self.db, rip_job).await?;
+        let ost_subtitle_files = get_ost_subtitles_from_rip(&self.db, rip_job).await?;
 
         return Ok(JobInfo {
             id: job_info.id,
@@ -108,6 +111,8 @@ impl Application {
                 .and_then(|contents| serde_json::from_str(&contents).ok()),
             video_files,
             matches,
+            subtitle_maps,
+            ost_subtitle_files,
         });
     }
 
