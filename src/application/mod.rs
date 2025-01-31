@@ -111,7 +111,7 @@ impl Application {
         });
     }
 
-    /// Gets the metadata imporer so we can import from TMDB
+    /// Gets the metadata importer so we can import from TMDB
     pub fn importer(&self) -> &TmdbImporter {
         return &self.tmdb_importer;
     }
