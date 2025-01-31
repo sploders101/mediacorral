@@ -1,6 +1,6 @@
 use schemas::*;
 use serde::{Deserialize, Serialize};
-use sqlx::{prelude::FromRow, Row};
+use sqlx::{prelude::FromRow, sqlite::SqliteRow, Row};
 
 use crate::tagging::types::SuspectedContents;
 
@@ -668,6 +668,29 @@ pub async fn get_ost_download_items_by_match(
     return Ok(results);
 }
 
+pub async fn get_ost_download_items_by_show_id(
+    db: &Db,
+    show_id: i64,
+) -> Result<Vec<String>, sqlx::Error> {
+    let results = sqlx::query(
+        "
+            SELECT
+                ost_downloads.blob_id
+            FROM ost_downloads
+            INNER JOIN tv_episodes ON
+                ost_downloads.match_id = tv_episodes.id
+            WHERE
+                ost_downloads.video_type = 3
+                AND tv_episodes.tv_show_id = ?
+        ",
+    )
+    .bind(show_id)
+    .map(|row: SqliteRow| row.get(0))
+    .fetch_all(db)
+    .await?;
+    return Ok(results);
+}
+
 pub async fn insert_match_info_item(
     db: &Db,
     match_info_item: &MatchInfoItem,
@@ -939,6 +962,30 @@ pub async fn get_matches_from_rip(
                 video_files.id = match_info.video_file_id
             WHERE
                 video_files.rip_job = ?
+        ",
+    )
+    .bind(rip_job)
+    .fetch_all(db)
+    .await?;
+    return Ok(results);
+}
+
+pub async fn purge_matches_from_rip(
+    db: &Db,
+    rip_job: i64,
+) -> Result<Vec<MatchInfoItem>, sqlx::Error> {
+    let results: Vec<MatchInfoItem> = sqlx::query_as(
+        "
+            DELETE FROM match_info
+            WHERE id IN (
+                SELECT
+                    match_info.id
+                FROM match_info
+                INNER JOIN video_files ON
+                    video_files.id = match_info.video_file_id
+                WHERE
+                    video_files.rip_job = ?
+            )
         ",
     )
     .bind(rip_job)

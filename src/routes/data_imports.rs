@@ -11,6 +11,15 @@ use crate::{
     AnyError, AnyhowError,
 };
 
+#[delete("/ost/subtitles/show/<show_id>")]
+async fn purge_ost_subtitles_for_show(
+    application: &State<Arc<Application>>,
+    show_id: i64,
+) -> Result<(), AnyhowError> {
+    application.purge_ost_subtitles_by_show(show_id).await?;
+    return Ok(());
+}
+
 #[get("/tmdb/any/search?<query>&<language>&<page>")]
 async fn get_search_tmdb_multi(
     application: &State<Arc<Application>>,
@@ -110,5 +119,6 @@ pub fn get_routes() -> impl Into<Vec<Route>> {
         get_search_tmdb_movies,
         post_import_tmdb_tv,
         post_import_tmdb_movie,
+        purge_ost_subtitles_for_show,
     ];
 }

@@ -17,9 +17,10 @@ use crate::{
     config::{OST_API_KEY, OST_PASSWORD, OST_USERNAME, TMDB_API_KEY},
     db::{
         add_suspicion, delete_rip_job, get_episode_id_from_tmdb, get_matches_from_rip, get_movies,
-        get_ost_download_items_by_match, get_rip_image_blobs, get_rip_job,
-        get_rip_jobs_with_untagged_videos, get_rip_video_blobs, get_tv_episodes, get_tv_seasons,
-        get_tv_shows, get_untagged_videos_from_job, get_videos_from_rip, insert_match_info_item,
+        get_ost_download_items_by_match, get_ost_download_items_by_show_id, get_rip_image_blobs,
+        get_rip_job, get_rip_jobs_with_untagged_videos, get_rip_video_blobs, get_tv_episodes,
+        get_tv_seasons, get_tv_shows, get_untagged_videos_from_job, get_videos_from_rip,
+        insert_match_info_item, purge_matches_from_rip,
         schemas::{
             MatchInfoItem, MoviesItem, RipJobsItem, TvEpisodesItem, TvSeasonsItem, TvShowsItem,
             VideoType,
@@ -155,6 +156,20 @@ impl Application {
         return Ok(get_rip_jobs_with_untagged_videos(&self.db, skip, limit).await?);
     }
 
+    pub async fn purge_ost_subtitles_by_show(&self, show_id: i64) -> anyhow::Result<()> {
+        let blob_ids = get_ost_download_items_by_show_id(&self.db, show_id)
+            .await
+            .context("Couldn't find ost items")?;
+        for blob_id in blob_ids {
+            self.blob_controller
+                .delete_blob(&blob_id)
+                .await
+                .context("Couldn't delete blob")?;
+        }
+
+        return Ok(());
+    }
+
     pub async fn is_analyzing(&self, rip_job: i64) -> bool {
         return self.suspicion_analyzers.lock().await.contains_key(&rip_job);
     }
@@ -282,6 +297,7 @@ async fn analyze_subtitles(
     tmdb_ids: Vec<i32>,
 ) {
     // First, clear out any existing results
+    try_skip!(return, purge_matches_from_rip(&db, rip_job).await);
 
     // Then, grab new ones
     let videos = try_skip!(return, get_rip_video_blobs(&db, rip_job).await);
