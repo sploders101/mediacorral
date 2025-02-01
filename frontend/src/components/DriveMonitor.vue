@@ -2,7 +2,7 @@
 import { BASE_URL } from "@/scripts/config";
 
 interface DriveStatus {
-	active_command: ActiveDriveCommand,
+	active_command: ActiveDriveCommand;
 }
 type ActiveDriveCommand =
 	| { type: "None" }
@@ -59,21 +59,29 @@ onBeforeUnmount(() => {
 		<v-card-subtitle>Status: {{ currentStatus }}</v-card-subtitle>
 		<v-card-text>
 			<template v-if="driveStatus?.active_command.type == 'Ripping'">
-				<v-label :text="`Current: ${driveStatus.active_command.cprog_title}`"/>
+				<v-label :text="`Current: ${driveStatus.active_command.cprog_title}`" />
 				<v-progress-linear
-					:model-value="driveStatus.active_command.cprog_value / driveStatus.active_command.max_prog_value * 100"
+					:model-value="
+						(driveStatus.active_command.cprog_value /
+							driveStatus.active_command.max_prog_value) *
+						100
+					"
 					buffer-value="0"
 					color="red"
 					stream
-					/>
-				<v-label :text="`Total: ${driveStatus?.active_command.tprog_title}`"/>
+				/>
+				<v-label :text="`Total: ${driveStatus?.active_command.tprog_title}`" />
 				<v-progress-linear
-					:model-value="driveStatus.active_command.tprog_value / driveStatus.active_command.max_prog_value * 100"
+					:model-value="
+						(driveStatus.active_command.tprog_value /
+							driveStatus.active_command.max_prog_value) *
+						100
+					"
 					buffer-value="0"
 					color="blue"
 					stream
-					/>
-				<v-divider style="margin-top: 0.5rem; margin-bottom: 0.5rem;"/>
+				/>
+				<v-divider style="margin-top: 0.5rem; margin-bottom: 0.5rem" />
 				<pre>{{ driveStatus.active_command.logs.join("\n") }}</pre>
 			</template>
 		</v-card-text>
