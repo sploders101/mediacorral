@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, watch};
@@ -52,9 +52,20 @@ pub enum ActiveDriveCommand {
     },
 }
 
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, Eq, PartialEq)]
+pub enum DriveStatus {
+    #[default]
+    Unknown,
+    Empty,
+    TrayOpen,
+    NotReady,
+    Loaded,
+}
+
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 pub struct DriveState {
     pub active_command: ActiveDriveCommand,
+    pub status: DriveStatus,
 }
 
 macro_rules! setup_macros {
@@ -116,7 +127,7 @@ impl DriveController {
     ) -> std::io::Result<Self> {
         let (state_sender, current_state) = watch::channel(DriveState::default());
         let (commander, mut command_receiver) = mpsc::channel(1);
-        let ejector = eject::device::Device::open(&drive)?;
+        let mut ejector = eject::device::Device::open(&drive)?;
 
         let task = {
             let drive = drive.clone();
@@ -125,39 +136,73 @@ impl DriveController {
                     // Give macros access to contextual state
                     setup_macros!(state_sender, 'command);
 
-                    while let Some(command) = command_receiver.recv().await {
-                        match command {
-                            DriveCommand::Rip {
-                                disc_name,
-                                suspected_contents,
-                                autoeject,
-                            } => {
-                                // Attempt to get disc name if unspecified
-                                let disc_name = match disc_name {
-                                    Some(disc_name) => Some(disc_name),
-                                    None => get_disc_name(&drive).await,
-                                };
+                    enum Event {
+                        Stop,
+                        PollTimeout,
+                        Message(DriveCommand),
+                    }
 
-                                // Allocate rip directory
-                                let rip_dir = match blob_controller
-                                    .create_rip_dir(disc_name, suspected_contents)
-                                    .await
-                                {
-                                    Ok(rip_dir) => rip_dir,
-                                    Err(err) => throw!(err),
-                                };
-
-                                // Start rip job and communicate status updates
-                                let rip_job = try_skip!(Makemkv::rip(&drive, &rip_dir.as_ref()), discard rip_dir);
-                                try_skip!(handle_events(rip_job, &state_sender).await, discard rip_dir);
-                                tokio::task::spawn(rip_dir.import());
-                                if autoeject {
-                                    try_skip!(ejector.eject());
-                                }
-                            }
-                            DriveCommand::Eject => try_skip!(ejector.eject()),
-                            DriveCommand::Retract => try_skip!(ejector.retract()),
+                    let result: Event = tokio::select! {
+                        result = command_receiver.recv() => match result {
+                            Some(result) => Event::Message(result),
+                            None => Event::Stop,
+                        },
+                        _ = tokio::time::sleep(Duration::from_secs(1)) => Event::PollTimeout,
+                    };
+                    match result {
+                        Event::Stop => {
+                            break 'command;
                         }
+                        Event::PollTimeout => {
+                            let (status, ejector_return) =
+                                tokio::task::spawn_blocking(move || (ejector.status(), ejector))
+                                    .await
+                                    .unwrap();
+                            ejector = ejector_return;
+                            state_sender.send_if_modified(move |value|{
+                                let new_status = match status {
+                                    Ok(eject::device::DriveStatus::Empty) => DriveStatus::Empty,
+                                    Ok(eject::device::DriveStatus::TrayOpen) => DriveStatus::TrayOpen,
+                                    Ok(eject::device::DriveStatus::NotReady) => DriveStatus::NotReady,
+                                    Ok(eject::device::DriveStatus::Loaded) => DriveStatus::Loaded,
+                                    Err(_) => DriveStatus::Unknown,
+                                };
+                                let was_changed = value.status != new_status;
+                                value.status = new_status;
+                                return was_changed;
+                            });
+                        }
+                        Event::Message(DriveCommand::Rip {
+                            disc_name,
+                            suspected_contents,
+                            autoeject,
+                        }) => {
+                            // Attempt to get disc name if unspecified
+                            let disc_name = match disc_name {
+                                Some(disc_name) => Some(disc_name),
+                                None => get_disc_name(&drive).await,
+                            };
+
+                            // Allocate rip directory
+                            let rip_dir = match blob_controller
+                                .create_rip_dir(disc_name, suspected_contents)
+                                .await
+                            {
+                                Ok(rip_dir) => rip_dir,
+                                Err(err) => throw!(err),
+                            };
+
+                            // Start rip job and communicate status updates
+                            let rip_job =
+                                try_skip!(Makemkv::rip(&drive, &rip_dir.as_ref()), discard rip_dir);
+                            try_skip!(handle_events(rip_job, &state_sender).await, discard rip_dir);
+                            tokio::task::spawn(rip_dir.import());
+                            if autoeject {
+                                try_skip!(ejector.eject());
+                            }
+                        }
+                        Event::Message(DriveCommand::Eject) => try_skip!(ejector.eject()),
+                        Event::Message(DriveCommand::Retract) => try_skip!(ejector.retract()),
                     }
                 }
             })
