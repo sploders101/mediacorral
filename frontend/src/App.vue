@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { useRouter, type RouteLocation } from "vue-router";
+import vuetify from "./plugins/vuetify";
 
 const router = useRouter();
 
-const drawer = ref(true);
+const drawer = ref(false);
 
 function goto(name: RouteLocation["name"]) {
 	router.push({
@@ -22,8 +23,9 @@ function goto(name: RouteLocation["name"]) {
 			<v-app-bar-title> Mediacorral </v-app-bar-title>
 		</v-app-bar>
 		<v-navigation-drawer
-			:location="$vuetify.display.mobile ? 'bottom' : undefined"
-			:rail="drawer"
+			location="left"
+			:rail="$vuetify.display.mobile ? false : !drawer"
+			:modelValue="$vuetify.display.mobile ? drawer : true"
 		>
 			<v-list density="compact" nav>
 				<v-list-item
