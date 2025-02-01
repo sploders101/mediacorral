@@ -103,7 +103,7 @@ async fn rocket() -> _ {
     rocket::build()
         .manage(application)
         .manage(AutoripEnabler(enable_autorip))
-        .mount("/ripping", routes::ripping_routes())
-        .mount("/data_imports", routes::data_imports_routes())
-        .mount("/tagging", routes::tagging_routes())
+        .mount("/api/ripping", routes::ripping_routes())
+        .mount("/api/data_imports", routes::data_imports_routes())
+        .mount("/api/tagging", routes::tagging_routes())
 }
