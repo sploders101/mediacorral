@@ -14,6 +14,7 @@ use crate::{
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(tag = "type")]
 pub enum DriveCommand {
     /// Rip the disc in the drive
     Rip {
@@ -28,6 +29,7 @@ pub enum DriveCommand {
 }
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[serde(tag = "type")]
 pub enum ActiveDriveCommand {
     #[default]
     None,
