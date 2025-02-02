@@ -163,13 +163,17 @@ impl DriveController {
                                     .unwrap();
                             ejector = ejector_return;
 
-                            let disc_name = get_disc_name(&drive).await; 
+                            let disc_name = get_disc_name(&drive).await;
 
-                            state_sender.send_if_modified(move |value|{
+                            state_sender.send_if_modified(move |value| {
                                 let new_status = match status {
                                     Ok(eject::device::DriveStatus::Empty) => DriveStatus::Empty,
-                                    Ok(eject::device::DriveStatus::TrayOpen) => DriveStatus::TrayOpen,
-                                    Ok(eject::device::DriveStatus::NotReady) => DriveStatus::NotReady,
+                                    Ok(eject::device::DriveStatus::TrayOpen) => {
+                                        DriveStatus::TrayOpen
+                                    }
+                                    Ok(eject::device::DriveStatus::NotReady) => {
+                                        DriveStatus::NotReady
+                                    }
                                     Ok(eject::device::DriveStatus::Loaded) => DriveStatus::Loaded,
                                     Err(_) => DriveStatus::Unknown,
                                 };
@@ -195,17 +199,31 @@ impl DriveController {
 
                             // Allocate rip directory
                             let rip_dir = match blob_controller
-                                .create_rip_dir(disc_name, suspected_contents)
+                                .create_rip_dir(disc_name.clone(), suspected_contents)
                                 .await
                             {
                                 Ok(rip_dir) => rip_dir,
                                 Err(err) => throw!(err),
                             };
 
+                            let job_id = rip_dir.job_id();
+                            state_sender.send_modify(move |value| {
+                                value.disc_name = disc_name;
+                                value.active_command = ActiveDriveCommand::Ripping {
+                                    job_id,
+                                    cprog_title: String::new(),
+                                    cprog_value: 0,
+                                    tprog_title: String::new(),
+                                    tprog_value: 0,
+                                    max_prog_value: 1,
+                                    logs: Vec::new(),
+                                };
+                            });
+
                             // Start rip job and communicate status updates
                             let rip_job =
                                 try_skip!(Makemkv::rip(&drive, &rip_dir.as_ref()), discard rip_dir);
-                            try_skip!(handle_events(rip_dir.job_id(), rip_job, &state_sender).await, discard rip_dir);
+                            try_skip!(handle_events(job_id, rip_job, &state_sender).await, discard rip_dir);
                             tokio::task::spawn(rip_dir.import());
                             if autoeject {
                                 try_skip!(ejector.eject());
