@@ -17,6 +17,14 @@ async fn get_list_movies(
     return Ok(Json(application.list_movies().await?));
 }
 
+#[get("/metadata/tmdb/tv/movies/<tmdb_id>")]
+async fn get_movie_by_tmdb_id(
+    application: &State<Arc<Application>>,
+    tmdb_id: i32,
+) -> Result<Json<MoviesItem>, AnyhowError> {
+    return Ok(Json(application.get_movie_by_tmdb_id(tmdb_id).await?));
+}
+
 #[get("/metadata/tv/list")]
 async fn get_list_tv(
     application: &State<Arc<Application>>,
@@ -46,6 +54,14 @@ async fn get_tv_episode(
     episode_id: i64,
 ) -> Result<Json<TvEpisodesItem>, AnyhowError> {
     return Ok(Json(application.get_tv_episode(episode_id).await?));
+}
+
+#[get("/metadata/tmdb/tv/episodes/<tmdb_id>")]
+async fn get_tv_episode_by_tmdb_id(
+    application: &State<Arc<Application>>,
+    tmdb_id: i32,
+) -> Result<Json<TvEpisodesItem>, AnyhowError> {
+    return Ok(Json(application.get_tv_episode_by_tmdb_id(tmdb_id).await?));
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -128,10 +144,12 @@ async fn delete_job(application: &State<Arc<Application>>, job_id: i64) -> Resul
 pub fn get_routes() -> impl Into<Vec<Route>> {
     return routes![
         get_list_movies,
+        get_movie_by_tmdb_id,
         get_list_tv,
         get_list_tv_seasons,
         get_list_tv_episodes,
         get_tv_episode,
+        get_tv_episode_by_tmdb_id,
         post_tag_file,
         get_untagged_jobs,
         get_job,

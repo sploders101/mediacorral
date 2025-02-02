@@ -96,6 +96,28 @@ pub async fn get_movies(db: &Db) -> Result<Vec<MoviesItem>, sqlx::Error> {
     return Ok(result);
 }
 
+pub async fn get_movie_by_tmdb_id(db: &Db, tmdb_id: i32) -> Result<MoviesItem, sqlx::Error> {
+    let result = sqlx::query_as(
+        "
+            SELECT
+                id,
+                tmdb_id,
+                poster_blob,
+                title,
+                release_year,
+                description
+            FROM movies
+            WHERE
+                tmdb_id = ?
+            LIMIT 1
+        ",
+    )
+    .bind(tmdb_id)
+    .fetch_one(db)
+    .await?;
+    return Ok(result);
+}
+
 pub async fn insert_movies_special_feature(
     db: &Db,
     movie_special_feature: &MoviesSpecialFeaturesItem,
@@ -278,7 +300,32 @@ pub async fn get_tv_episode_by_id(db: &Db, episode_id: i64) -> Result<TvEpisodes
                 description
             FROM tv_episodes
             WHERE id = ?
-            LIMIT 1000
+            LIMIT 1
+        ",
+    )
+    .bind(episode_id)
+    .fetch_one(db)
+    .await?);
+}
+
+pub async fn get_tv_episode_by_tmdb_id(
+    db: &Db,
+    episode_id: i32,
+) -> Result<TvEpisodesItem, sqlx::Error> {
+    return Ok(sqlx::query_as(
+        "
+            SELECT
+                id,
+                tmdb_id,
+                tv_show_id,
+                tv_season_id,
+                episode_number,
+                thumbnail_blob,
+                title,
+                description
+            FROM tv_episodes
+            WHERE tmdb_id = ?
+            LIMIT 1
         ",
     )
     .bind(episode_id)

@@ -16,12 +16,13 @@ use crate::{
     blob_storage::BlobStorageController,
     config::{OST_API_KEY, OST_PASSWORD, OST_USERNAME, TMDB_API_KEY},
     db::{
-        add_suspicion, delete_rip_job, get_episode_id_from_tmdb, get_matches_from_rip, get_movies,
-        get_ost_download_items_by_match, get_ost_download_items_by_show_id,
-        get_ost_subtitles_from_rip, get_rip_image_blobs, get_rip_job,
-        get_rip_jobs_with_untagged_videos, get_rip_video_blobs, get_tv_episode_by_id,
-        get_tv_episodes, get_tv_seasons, get_tv_shows, get_untagged_videos_from_job,
-        get_videos_from_rip, insert_match_info_item, purge_matches_from_rip, rename_rip_job,
+        add_suspicion, delete_rip_job, get_episode_id_from_tmdb, get_matches_from_rip,
+        get_movie_by_tmdb_id, get_movies, get_ost_download_items_by_match,
+        get_ost_download_items_by_show_id, get_ost_subtitles_from_rip, get_rip_image_blobs,
+        get_rip_job, get_rip_jobs_with_untagged_videos, get_rip_video_blobs, get_tv_episode_by_id,
+        get_tv_episode_by_tmdb_id, get_tv_episodes, get_tv_seasons, get_tv_shows,
+        get_untagged_videos_from_job, get_videos_from_rip, insert_match_info_item,
+        purge_matches_from_rip, rename_rip_job,
         schemas::{
             MatchInfoItem, MoviesItem, RipJobsItem, TvEpisodesItem, TvSeasonsItem, TvShowsItem,
             VideoType,
@@ -131,6 +132,11 @@ impl Application {
         return Ok(get_movies(&self.db).await?);
     }
 
+    /// Gets a single movie by its TMDB ID
+    pub async fn get_movie_by_tmdb_id(&self, tmdb_id: i32) -> anyhow::Result<MoviesItem> {
+        return Ok(get_movie_by_tmdb_id(&self.db, tmdb_id).await?);
+    }
+
     /// Lists the TV series we have in our metadata database
     pub async fn list_tv_series(&self) -> anyhow::Result<Vec<TvShowsItem>> {
         return Ok(get_tv_shows(&self.db).await?);
@@ -149,6 +155,11 @@ impl Application {
     /// Gets a single TV episode by its ID
     pub async fn get_tv_episode(&self, episode_id: i64) -> anyhow::Result<TvEpisodesItem> {
         return Ok(get_tv_episode_by_id(&self.db, episode_id).await?);
+    }
+
+    /// Gets a single TV episode by its TMDB ID
+    pub async fn get_tv_episode_by_tmdb_id(&self, tmdb_id: i32) -> anyhow::Result<TvEpisodesItem> {
+        return Ok(get_tv_episode_by_tmdb_id(&self.db, tmdb_id).await?);
     }
 
     /// Tags a video file, matching it with the metadata we have in our database
