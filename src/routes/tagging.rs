@@ -24,7 +24,7 @@ async fn get_list_tv(
     return Ok(Json(application.list_tv_series().await?));
 }
 
-#[get("/metadata/tv/<series_id>/seasons")]
+#[get("/metadata/tv/<series_id>/seasons", rank = 1)]
 async fn get_list_tv_seasons(
     application: &State<Arc<Application>>,
     series_id: i64,
@@ -40,7 +40,7 @@ async fn get_list_tv_episodes(
     return Ok(Json(application.list_tv_episodes(season_id).await?));
 }
 
-#[get("/metadata/tv/episodes/<episode_id>")]
+#[get("/metadata/tv/episodes/<episode_id>", rank = 2)]
 async fn get_tv_episode(
     application: &State<Arc<Application>>,
     episode_id: i64,
