@@ -21,7 +21,7 @@ use crate::{
         get_ost_subtitles_from_rip, get_rip_image_blobs, get_rip_job,
         get_rip_jobs_with_untagged_videos, get_rip_video_blobs, get_tv_episodes, get_tv_seasons,
         get_tv_shows, get_untagged_videos_from_job, get_videos_from_rip, insert_match_info_item,
-        purge_matches_from_rip,
+        purge_matches_from_rip, rename_rip_job,
         schemas::{
             MatchInfoItem, MoviesItem, RipJobsItem, TvEpisodesItem, TvSeasonsItem, TvShowsItem,
             VideoType,
@@ -114,6 +114,11 @@ impl Application {
             subtitle_maps,
             ost_subtitle_files,
         });
+    }
+
+    pub async fn rename_job(&self, rip_job: i64, new_name: &str) -> anyhow::Result<()> {
+        rename_rip_job(&self.db, rip_job, new_name).await?;
+        return Ok(());
     }
 
     /// Gets the metadata importer so we can import from TMDB

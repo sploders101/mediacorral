@@ -80,6 +80,16 @@ async fn get_job(
     return Ok(Json(results));
 }
 
+#[post("/jobs/<job_id>/rename", data = "<new_name>")]
+async fn post_rename(
+    application: &State<Arc<Application>>,
+    job_id: i64,
+    new_name: Json<String>,
+) -> Result<(), AnyhowError> {
+    application.rename_job(job_id, &new_name).await?;
+    return Ok(());
+}
+
 #[get("/jobs/<job_id>/analysis_status")]
 async fn analyzing_job(application: &State<Arc<Application>>, job_id: i64) -> Json<bool> {
     return Json(application.is_analyzing(job_id).await);

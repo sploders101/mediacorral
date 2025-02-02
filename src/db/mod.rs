@@ -503,6 +503,23 @@ pub async fn get_rip_job(db: &Db, rip_job: i64) -> Result<RipJobsItem, sqlx::Err
     return Ok(result);
 }
 
+pub async fn rename_rip_job(db: &Db, rip_job: i64, new_name: &str) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "
+            UPDATE rip_jobs
+            SET
+                disc_title = ?
+            WHERE
+                id = ?
+        ",
+    )
+    .bind(rip_job)
+    .bind(new_name)
+    .execute(db)
+    .await?;
+    return Ok(());
+}
+
 pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i64, sqlx::Error> {
     let mkv_hash = video_file.original_video_hash.as_slice();
     let result = sqlx::query(
