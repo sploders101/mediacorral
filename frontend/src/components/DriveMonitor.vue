@@ -1,28 +1,27 @@
 <script lang="ts" setup>
+import type { DriveState, RipInstruction } from "@/apiTypes";
 import { BASE_URL } from "@/scripts/config";
-
-interface DriveState {
-	active_command: ActiveDriveCommand;
-	status: DriveStatus;
-}
-type DriveStatus = "Unknown" | "Empty" | "TrayOpen" | "NotReady" | "Loaded";
-type ActiveDriveCommand =
-	| { type: "None" }
-	| { type: "Error"; message: string }
-	| {
-			type: "Ripping";
-			cprog_title: string;
-			cprog_value: number;
-			tprog_title: string;
-			tprog_value: number;
-			max_prog_value: number;
-			logs: string[];
-	  };
 
 const props = defineProps<{
 	drive: string;
 }>();
 const driveStatus = ref<DriveState | null>(null);
+const discTitle = computed(() => {
+	if (driveStatus.value === null) {
+		return "Loading...";
+	}
+	switch (driveStatus.value.status) {
+		case "Unknown":
+			return "Unknown";
+		case "Empty":
+		case "TrayOpen":
+			return props.drive;
+		case "NotReady":
+			return "Loading...";
+		case "Loaded":
+			return driveStatus.value.disc_name || props.drive;
+	}
+});
 const currentStatus = computed(() => {
 	if (driveStatus.value === null) {
 		return "Fetching drive status...";
@@ -33,7 +32,7 @@ const currentStatus = computed(() => {
 		case "Error":
 			return "Error";
 		case "Ripping":
-			return "Ripping";
+			return `Ripping - Job #${driveStatus.value.active_command.job_id}`;
 		default:
 			return "Unknown";
 	}
@@ -97,23 +96,6 @@ async function closeTray() {
 	// TODO: Disable button while processing
 }
 
-type SuspectedContents =
-	| {
-			type: "Movie";
-			tmdb_id: number;
-	  }
-	| {
-			type: "TvEpisodes";
-			episode_tmdb_ids: number[];
-	  };
-
-interface RipInstruction {
-	device: string;
-	disc_name: string | null;
-	suspected_contents: SuspectedContents | null;
-	autoeject: boolean;
-}
-
 const assert = <T,>(item: T) => item;
 
 async function ripDisc() {
@@ -154,7 +136,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<v-card>
-		<v-card-title> {{ props.drive }}</v-card-title>
+		<v-card-title> {{ discTitle }}</v-card-title>
 		<v-card-subtitle>Status: {{ currentStatus }}</v-card-subtitle>
 		<v-card-text>
 			<template v-if="driveStatus?.active_command.type == 'Ripping'">
