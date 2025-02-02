@@ -162,18 +162,6 @@ pub struct TmdbTvSeasonDetails {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct TmdbCrewMember {
-    pub department: Option<String>,
-    pub job: Option<String>,
-    pub credit_id: Option<String>,
-    pub id: i32,
-    pub known_for_department: Option<String>,
-    pub name: String,
-    pub original_name: Option<String>,
-    pub profile_path: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TmdbTvEpisodeDetails {
     pub air_date: Option<String>,
     pub episode_number: u16,
@@ -184,6 +172,4 @@ pub struct TmdbTvEpisodeDetails {
     pub season_number: u16,
     pub show_id: i32,
     pub still_path: Option<String>,
-    pub crew: Option<Vec<TmdbCrewMember>>,
-    pub guest_stars: Option<Vec<TmdbCrewMember>>,
 }
