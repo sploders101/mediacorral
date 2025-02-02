@@ -126,6 +126,7 @@ pub fn get_routes() -> impl Into<Vec<Route>> {
         post_tag_file,
         get_untagged_jobs,
         get_job,
+        post_rename,
         analyzing_job,
         suspect_job,
         prune_job,
