@@ -68,6 +68,7 @@ pub enum DriveStatus {
 pub struct DriveState {
     pub active_command: ActiveDriveCommand,
     pub status: DriveStatus,
+    pub disc_name: Option<String>,
 }
 
 macro_rules! setup_macros {
@@ -161,6 +162,9 @@ impl DriveController {
                                     .await
                                     .unwrap();
                             ejector = ejector_return;
+
+                            let disc_name = get_disc_name(&drive).await; 
+
                             state_sender.send_if_modified(move |value|{
                                 let new_status = match status {
                                     Ok(eject::device::DriveStatus::Empty) => DriveStatus::Empty,
@@ -169,8 +173,12 @@ impl DriveController {
                                     Ok(eject::device::DriveStatus::Loaded) => DriveStatus::Loaded,
                                     Err(_) => DriveStatus::Unknown,
                                 };
-                                let was_changed = value.status != new_status;
+                                let mut was_changed = value.status != new_status;
                                 value.status = new_status;
+
+                                was_changed = was_changed || value.disc_name != disc_name;
+                                value.disc_name = disc_name;
+
                                 return was_changed;
                             });
                         }
