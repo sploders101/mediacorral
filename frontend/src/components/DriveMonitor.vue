@@ -1,9 +1,11 @@
 <script lang="ts" setup>
 import { BASE_URL } from "@/scripts/config";
 
-interface DriveStatus {
+interface DriveState {
 	active_command: ActiveDriveCommand;
+	status: DriveStatus;
 }
+type DriveStatus = "Unknown" | "Empty" | "TrayOpen" | "NotReady" | "Loaded";
 type ActiveDriveCommand =
 	| { type: "None" }
 	| { type: "Error"; message: string }
@@ -20,14 +22,14 @@ type ActiveDriveCommand =
 const props = defineProps<{
 	drive: string;
 }>();
-const driveStatus = ref<DriveStatus | null>(null);
+const driveStatus = ref<DriveState | null>(null);
 const currentStatus = computed(() => {
-	switch (driveStatus.value?.active_command.type) {
-		case null:
-		case undefined:
-			return "Fetching drive status...";
+	if (driveStatus.value === null) {
+		return "Fetching drive status...";
+	}
+	switch (driveStatus.value.active_command.type) {
 		case "None":
-			return "Inactive";
+			break;
 		case "Error":
 			return "Error";
 		case "Ripping":
@@ -35,7 +37,104 @@ const currentStatus = computed(() => {
 		default:
 			return "Unknown";
 	}
+	switch (driveStatus.value.status) {
+		case "Unknown":
+			return "Unknown3";
+		case "Empty":
+			return "Closed - Empty";
+		case "TrayOpen":
+			return "Tray Open";
+		case "NotReady":
+			return "Loading Disc...";
+		case "Loaded":
+			return "Disc loaded. Ready to rip.";
+	}
+
+	return "Unknown";
 });
+const showTrayAction = computed(() => {
+	if (driveStatus.value === null) return [];
+
+	if (driveStatus.value.active_command.type === "Ripping") {
+		return [];
+	}
+
+	switch (driveStatus.value.status) {
+		case "Unknown":
+			return [];
+		case "Empty":
+			return ["open"];
+		case "Loaded":
+			return ["open", "rip"];
+		case "TrayOpen":
+			return ["close"];
+		case "NotReady":
+			return [];
+	}
+
+	return [];
+});
+
+async function openTray() {
+	let response = await fetch(
+		`${BASE_URL}/ripping/eject?device=${encodeURIComponent(props.drive)}`,
+		{
+			method: "POST",
+		}
+	);
+	if (response.status !== 200) return; // TODO: add toast or something
+	// TODO: Disable button while processing
+}
+
+async function closeTray() {
+	let response = await fetch(
+		`${BASE_URL}/ripping/retract?device=${encodeURIComponent(props.drive)}`,
+		{
+			method: "POST",
+		}
+	);
+	if (response.status !== 200) return; // TODO: add toast or something
+	// TODO: Disable button while processing
+}
+
+type SuspectedContents =
+	| {
+			type: "Movie";
+			tmdb_id: number;
+	  }
+	| {
+			type: "TvEpisodes";
+			episode_tmdb_ids: number[];
+	  };
+
+interface RipInstruction {
+	device: string;
+	disc_name: string | null;
+	suspected_contents: SuspectedContents | null;
+	autoeject: boolean;
+}
+
+const assert = <T,>(item: T) => item;
+
+async function ripDisc() {
+	// TODO: Add options. Using defaults for now
+	let response = await fetch(`${BASE_URL}/ripping/rip`, {
+		method: "POST",
+		headers: {
+			"content-type": "application/json",
+		},
+		body: JSON.stringify(
+			assert<RipInstruction>({
+				autoeject: true,
+				device: props.drive,
+				disc_name: null,
+				suspected_contents: null,
+			})
+		),
+	});
+	if (response.status !== 200) return; // TODO: add toast or something
+	// TODO: Disable button while processing
+}
 
 let eventSource: EventSource | null = null;
 onMounted(() => {
@@ -85,5 +184,16 @@ onBeforeUnmount(() => {
 				<pre>{{ driveStatus.active_command.logs.join("\n") }}</pre>
 			</template>
 		</v-card-text>
+		<v-card-actions v-if="showTrayAction.length > 0">
+			<v-btn v-if="showTrayAction.includes('open')" @click="openTray()">
+				Open Tray
+			</v-btn>
+			<v-btn v-if="showTrayAction.includes('close')" @click="closeTray()">
+				Close Tray
+			</v-btn>
+			<v-btn v-if="showTrayAction.includes('rip')" @click="ripDisc()">
+				Rip Disc
+			</v-btn>
+		</v-card-actions>
 	</v-card>
 </template>
