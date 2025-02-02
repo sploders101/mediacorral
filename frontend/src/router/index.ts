@@ -7,23 +7,11 @@
 // Composables
 import { createRouter, createWebHistory } from "vue-router/auto";
 import { setupLayouts } from "virtual:generated-layouts";
-import Index from "@/pages/index.vue";
-import Ripjobs from "@/pages/ripjobs.vue";
+import { routes } from "vue-router/auto-routes";
 
 const router = createRouter({
 	history: createWebHistory(import.meta.env.BASE_URL),
-	routes: setupLayouts([
-		{
-			name: "Rip Control",
-			path: "/",
-			component: Index,
-		},
-		{
-			name: "Rip Jobs",
-			path: "/ripjobs",
-			component: Ripjobs,
-		},
-	]),
+	routes,
 });
 
 // Workaround for https://github.com/vitejs/vite/issues/11804

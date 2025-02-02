@@ -42,6 +42,8 @@ function goto(name: RouteLocation["name"]) {
 				/>
 			</v-list>
 		</v-navigation-drawer>
-		<router-view />
+		<v-main>
+			<router-view />
+		</v-main>
 	</v-app>
 </template>
