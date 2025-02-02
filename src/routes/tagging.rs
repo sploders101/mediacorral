@@ -40,6 +40,14 @@ async fn get_list_tv_episodes(
     return Ok(Json(application.list_tv_episodes(season_id).await?));
 }
 
+#[get("/metadata/tv/episodes/<episode_id>")]
+async fn get_tv_episode(
+    application: &State<Arc<Application>>,
+    episode_id: i64,
+) -> Result<Json<TvEpisodesItem>, AnyhowError> {
+    return Ok(Json(application.get_tv_episode(episode_id).await?));
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TagFile {
     file: i64,
@@ -123,6 +131,7 @@ pub fn get_routes() -> impl Into<Vec<Route>> {
         get_list_tv,
         get_list_tv_seasons,
         get_list_tv_episodes,
+        get_tv_episode,
         post_tag_file,
         get_untagged_jobs,
         get_job,

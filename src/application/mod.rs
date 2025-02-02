@@ -19,9 +19,9 @@ use crate::{
         add_suspicion, delete_rip_job, get_episode_id_from_tmdb, get_matches_from_rip, get_movies,
         get_ost_download_items_by_match, get_ost_download_items_by_show_id,
         get_ost_subtitles_from_rip, get_rip_image_blobs, get_rip_job,
-        get_rip_jobs_with_untagged_videos, get_rip_video_blobs, get_tv_episodes, get_tv_seasons,
-        get_tv_shows, get_untagged_videos_from_job, get_videos_from_rip, insert_match_info_item,
-        purge_matches_from_rip, rename_rip_job,
+        get_rip_jobs_with_untagged_videos, get_rip_video_blobs, get_tv_episode_by_id,
+        get_tv_episodes, get_tv_seasons, get_tv_shows, get_untagged_videos_from_job,
+        get_videos_from_rip, insert_match_info_item, purge_matches_from_rip, rename_rip_job,
         schemas::{
             MatchInfoItem, MoviesItem, RipJobsItem, TvEpisodesItem, TvSeasonsItem, TvShowsItem,
             VideoType,
@@ -144,6 +144,11 @@ impl Application {
     /// Lists TV episodes from the given season from our metadata database
     pub async fn list_tv_episodes(&self, season_id: i64) -> anyhow::Result<Vec<TvEpisodesItem>> {
         return Ok(get_tv_episodes(&self.db, season_id).await?);
+    }
+
+    /// Gets a single TV episode by its ID
+    pub async fn get_tv_episode(&self, episode_id: i64) -> anyhow::Result<TvEpisodesItem> {
+        return Ok(get_tv_episode_by_id(&self.db, episode_id).await?);
     }
 
     /// Tags a video file, matching it with the metadata we have in our database

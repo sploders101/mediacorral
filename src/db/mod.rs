@@ -264,6 +264,28 @@ pub async fn get_tv_episodes(db: &Db, season_id: i64) -> Result<Vec<TvEpisodesIt
     .await?);
 }
 
+pub async fn get_tv_episode_by_id(db: &Db, episode_id: i64) -> Result<TvEpisodesItem, sqlx::Error> {
+    return Ok(sqlx::query_as(
+        "
+            SELECT
+                id,
+                tmdb_id,
+                tv_show_id,
+                tv_season_id,
+                episode_number,
+                thumbnail_blob,
+                title,
+                description
+            FROM tv_episodes
+            WHERE id = ?
+            LIMIT 1000
+        ",
+    )
+    .bind(episode_id)
+    .fetch_one(db)
+    .await?);
+}
+
 pub async fn insert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64, sqlx::Error> {
     let result = sqlx::query(
         "
