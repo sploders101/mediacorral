@@ -513,8 +513,8 @@ pub async fn rename_rip_job(db: &Db, rip_job: i64, new_name: &str) -> Result<(),
                 id = ?
         ",
     )
-    .bind(rip_job)
     .bind(new_name)
+    .bind(rip_job)
     .execute(db)
     .await?;
     return Ok(());
