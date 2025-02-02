@@ -207,7 +207,8 @@ impl TmdbImporter {
             .await?
             .error_for_status()?
             .json()
-            .await?;
+            .await
+            .context("Failed to parse series information")?;
         let poster_blob = self.get_poster(response.poster_path).await.ok();
 
         // Loop over seasons and postpone database interaction until we have all the information
@@ -224,7 +225,13 @@ impl TmdbImporter {
                 .await?
                 .error_for_status()?
                 .json()
-                .await?;
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to parse season {} information",
+                        season.season_number
+                    )
+                })?;
             season_details_list.push(season_response);
         }
 

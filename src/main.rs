@@ -37,7 +37,7 @@ impl<'r, 'o: 'r> Responder<'r, 'o> for AnyhowError {
         let mut response = Response::new();
         response.set_status(Status::InternalServerError);
         response.set_header(ContentType::Text);
-        let body = format!("{}", self.0);
+        let body = format!("{:?}", self.0);
         let body = Vec::from(body.as_bytes());
         response.set_sized_body(body.len(), Cursor::new(body));
         return Ok(response);
