@@ -61,7 +61,7 @@ pub struct TmdbGenre {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TmdbProductionCompany {
     pub id: i32,
-    pub logo_path: String,
+    pub logo_path: Option<String>,
     pub name: String,
     pub origin_country: String,
 }
@@ -107,7 +107,7 @@ pub struct TmdbTvCreator {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TmdbTvNetwork {
     pub id: i32,
-    pub logo_path: String,
+    pub logo_path: Option<String>,
     pub name: String,
     pub origin_country: String,
 }
