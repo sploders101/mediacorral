@@ -66,6 +66,10 @@ impl RipDirHandle {
         return Ok(());
     }
 
+    pub fn job_id(&self) -> i64 {
+        return self.job_id;
+    }
+
     /// This imports the mkv files into the system and deletes the folder when finished.
     /// This process may involve extra work such as extracting subtitles, and could take
     /// a while, so it's probably best to spawn a task for this on the runtime.

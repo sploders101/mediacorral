@@ -37,6 +37,8 @@ pub enum ActiveDriveCommand {
     Error { message: String },
     /// Actively ripping media
     Ripping {
+        /// The ID for this job
+        job_id: i64,
         /// Title for the "Current Progress" bar
         cprog_title: String,
         /// Value for the "Current Progress" bar
@@ -195,7 +197,7 @@ impl DriveController {
                             // Start rip job and communicate status updates
                             let rip_job =
                                 try_skip!(Makemkv::rip(&drive, &rip_dir.as_ref()), discard rip_dir);
-                            try_skip!(handle_events(rip_job, &state_sender).await, discard rip_dir);
+                            try_skip!(handle_events(rip_dir.job_id(), rip_job, &state_sender).await, discard rip_dir);
                             tokio::task::spawn(rip_dir.import());
                             if autoeject {
                                 try_skip!(ejector.eject());
@@ -256,6 +258,7 @@ impl DriveController {
 
 /// Handles events from a rip job and keeps the drive state updated
 async fn handle_events(
+    job_id: i64,
     mut rip_job: Makemkv,
     sender: &watch::Sender<DriveState>,
 ) -> anyhow::Result<()> {
@@ -265,6 +268,7 @@ async fn handle_events(
                 ActiveDriveCommand::Ripping { .. } => {}
                 _ => {
                     state.active_command = ActiveDriveCommand::Ripping {
+                        job_id,
                         cprog_title: String::new(),
                         cprog_value: 0,
                         tprog_title: String::new(),
@@ -282,6 +286,7 @@ async fn handle_events(
                     ref mut tprog_value,
                     ref mut max_prog_value,
                     ref mut logs,
+                    ..
                 } => match message {
                     MakemkvMessage::Message { message } => logs.push(message),
                     MakemkvMessage::ProgressTitle {
