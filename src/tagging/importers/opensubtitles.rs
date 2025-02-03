@@ -170,7 +170,7 @@ impl OpenSubtitles {
                 let file2 = subtitles.pop().unwrap();
                 let distance = levenshtein::levenshtein(&file1.1, &file2.1);
                 let max_distance = file1.1.len().max(file2.1.len());
-                if distance > max_distance / 4 {
+                if distance > max_distance / 2 {
                     anyhow::bail!("Couldn't find reliable subtitles");
                 }
                 return Ok(file1);
@@ -204,7 +204,7 @@ impl OpenSubtitles {
                 let mut distances = vec![(1, distance1), (2, distance2), (3, distance3)];
                 distances.sort_by_key(|item| item.1);
 
-                if distances[0].0 > max_distance / 4 {
+                if distances[0].0 > max_distance / 2 {
                     anyhow::bail!("Couldn't find reliable subtitles");
                 }
 
