@@ -1,3 +1,4 @@
+use anyhow::Context;
 use lazy_regex::regex;
 use reqwest::StatusCode;
 use serde::Deserialize;
@@ -51,7 +52,6 @@ impl OpenSubtitles {
         &self,
         req_fn: impl Fn() -> reqwest::RequestBuilder,
     ) -> reqwest::Result<reqwest::Response> {
-        println!("Making OST request");
         let query_start = SystemTime::now();
         loop {
             let mut auth_token = self.auth_token.lock().await;
@@ -79,7 +79,7 @@ impl OpenSubtitles {
         }
     }
 
-    pub async fn find_subtitles(&self, tmdb_id: i32) -> reqwest::Result<Vec<SubtitleSummary>> {
+    pub async fn find_subtitles(&self, tmdb_id: i32) -> anyhow::Result<Vec<SubtitleSummary>> {
         let search_result: SearchResults = self
             .authenticated(|| {
                 self.agent
@@ -88,7 +88,8 @@ impl OpenSubtitles {
             })
             .await?
             .json()
-            .await?;
+            .await
+            .context("Couldn't search subtitles")?;
 
         let mut files: Vec<SubtitleSummary> = search_result
             .data
@@ -125,7 +126,7 @@ impl OpenSubtitles {
         return Ok(files);
     }
 
-    pub async fn download_subtitles(&self, file_id: u32) -> reqwest::Result<String> {
+    pub async fn download_subtitles(&self, file_id: u32) -> anyhow::Result<String> {
         let pointer: DownloadPointer = self
             .authenticated(|| {
                 self.agent
@@ -136,13 +137,15 @@ impl OpenSubtitles {
             })
             .await?
             .json()
-            .await?;
+            .await
+            .context("Couldn't locate download URL")?;
 
         return Ok(self
             .authenticated(|| self.agent.get(&pointer.link))
             .await?
             .text()
-            .await?);
+            .await
+            .context("Couldn't download subtitles")?);
     }
 
     /// Finds the best subtitles by grabbing up to 3 and comparing them. The one that
