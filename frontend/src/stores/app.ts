@@ -70,6 +70,15 @@ export const useAppStore = defineStore("app", () => {
 			{}
 		)
 	);
+	const tvEpisodesByTmdbId = computed(() => {
+		const episodes: Record<number, TvEpisodeMetadata> = {};
+		for (const episode of Object.values(tvEpisodesFlat.value)) {
+			if (episode.tmdb_id !== null) {
+				episodes[episode.tmdb_id] = episode;
+			}
+		}
+		return episodes;
+	});
 	async function getTvEpisodes(seasonId: number) {
 		const response = await fetch(
 			`${BASE_URL}/tagging/metadata/tv/seasons/${seasonId}/episodes`
@@ -82,6 +91,67 @@ export const useAppStore = defineStore("app", () => {
 			episodeData[episode.id] = episode;
 		}
 		tvEpisodes.value[seasonId] = episodeData;
+	}
+
+	async function getTvEpisodeInfo(episodeId: number, skipCache = false) {
+		if (episodeId in tvEpisodesByTmdbId.value) {
+			const episode = tvEpisodesByTmdbId.value[episodeId];
+			return {
+				show: tvShows.value[episode.tv_show_id],
+				season: tvSeasonsFlat.value[episode.tv_season_id],
+				episode,
+			};
+		} else {
+			// Make request to get show and season number and fetch
+			const response = await fetch(
+				`${BASE_URL}/tagging/metadata/tv/episodes/${episodeId}`
+			);
+			if (response.status !== 200)
+				throw new Error("Bad response from tv episode endpoint");
+			const data: TvEpisodeMetadata = await response.json();
+			await Promise.all([
+				getTvSeasons(data.tv_show_id),
+				getTvEpisodes(data.tv_season_id),
+			]);
+			const episode = tvEpisodesFlat.value[data.id];
+			return {
+				show: tvShows.value[episode.tv_show_id],
+				season: tvSeasonsFlat.value[episode.tv_season_id],
+				episode,
+			};
+		}
+	}
+
+	async function getTvEpisodeInfoByTmdb(
+		tmdbEpisodeId: number,
+		skipCache = false
+	) {
+		if (tmdbEpisodeId in tvEpisodesByTmdbId.value) {
+			const episode = tvEpisodesByTmdbId.value[tmdbEpisodeId];
+			return {
+				show: tvShows.value[episode.tv_show_id],
+				season: tvSeasonsFlat.value[episode.tv_season_id],
+				episode,
+			};
+		} else {
+			// Make request to get show and season number and fetch
+			const response = await fetch(
+				`${BASE_URL}/tagging/metadata/tmdb/tv/episodes/${tmdbEpisodeId}`
+			);
+			if (response.status !== 200)
+				throw new Error("Bad response from tv episode endpoint");
+			const data: TvEpisodeMetadata = await response.json();
+			await Promise.all([
+				getTvSeasons(data.tv_show_id),
+				getTvEpisodes(data.tv_season_id),
+			]);
+			const episode = tvEpisodesFlat.value[data.id];
+			return {
+				show: tvShows.value[episode.tv_show_id],
+				season: tvSeasonsFlat.value[episode.tv_season_id],
+				episode,
+			};
+		}
 	}
 
 	return {
@@ -97,5 +167,7 @@ export const useAppStore = defineStore("app", () => {
 		tvEpisodes,
 		tvEpisodesFlat,
 		getTvEpisodes,
+		getTvEpisodeInfo,
+		getTvEpisodeInfoByTmdb,
 	};
 });

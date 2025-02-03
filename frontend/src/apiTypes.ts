@@ -1,55 +1,50 @@
 export interface JobInfo {
-    id: number,
-    start_time: number,
-    disc_title: String | null,
-    suspected_contents: SuspectedContents | null,
-    video_files: VideoFilesItem[],
-    matches: MatchInfoItem[],
-    subtitle_maps: RipVideoBlobs[],
-    ost_subtitle_files: OstDownloadsItem[],
+	id: number;
+	start_time: number;
+	disc_title: String | null;
+	suspected_contents: SuspectedContents | null;
+	video_files: VideoFilesItem[];
+	matches: MatchInfoItem[];
+	subtitle_maps: RipVideoBlobs[];
+	ost_subtitle_files: OstDownloadsItem[];
 }
 
 export interface OstDownloadsItem {
-    id: number,
-    video_type: VideoType,
-    match_id: number,
-    filename: string,
-    blob_id: string,
+	id: number;
+	video_type: VideoType;
+	match_id: number;
+	filename: string;
+	blob_id: string;
 }
 
 export interface RipVideoBlobs {
-    id: number,
-    job_id: number,
-    video_blob: string,
-    subtitle_blob: string | null,
+	id: number;
+	job_id: number;
+	video_blob: string;
+	subtitle_blob: string | null;
 }
 
 export interface MatchInfoItem {
-    id: number,
-    video_file_id: number,
-    ost_download_id: number,
-    distance: number,
-    max_distance: number,
+	id: number;
+	video_file_id: number;
+	ost_download_id: number;
+	distance: number;
+	max_distance: number;
 }
 
 export interface VideoFilesItem {
-    id: number,
-    video_type: VideoType,
-    match_id: number | null,
-    blob_id: string,
-    resolution_width: number,
-    resolution_height: number,
-    length: number,
-    original_video_hash: string,
-    rip_job: number | null,
+	id: number;
+	video_type: VideoType;
+	match_id: number | null;
+	blob_id: string;
+	resolution_width: number;
+	resolution_height: number;
+	length: number;
+	original_video_hash: string;
+	rip_job: number | null;
 }
 
-export enum VideoType {
-    Untagged = 0,
-    Movie = 1,
-    SpecialFeature = 2,
-    TvEpisode = 3,
-}
+export type VideoType = "Untagged" | "Movie" | "SpecialFeature" | "TvEpisode";
 
 export interface MovieMetadata {
 	id: number;
@@ -91,10 +86,10 @@ export interface TvEpisodeMetadata {
 }
 
 export interface RipJobsItem {
-    id: number,
-    start_time: number,
-    disc_title: string | null,
-    suspected_contents: string | null,
+	id: number;
+	start_time: number;
+	disc_title: string | null;
+	suspected_contents: string | null;
 }
 
 export interface DriveState {
@@ -102,7 +97,12 @@ export interface DriveState {
 	status: DriveStatus;
 	disc_name: string | null;
 }
-export type DriveStatus = "Unknown" | "Empty" | "TrayOpen" | "NotReady" | "Loaded";
+export type DriveStatus =
+	| "Unknown"
+	| "Empty"
+	| "TrayOpen"
+	| "NotReady"
+	| "Loaded";
 export type ActiveDriveCommand =
 	| { type: "None" }
 	| { type: "Error"; message: string }
@@ -132,4 +132,10 @@ export interface RipInstruction {
 	disc_name: string | null;
 	suspected_contents: SuspectedContents | null;
 	autoeject: boolean;
+}
+
+export interface TagFile {
+	file: number;
+	video_type: VideoType;
+	match_id: number;
 }

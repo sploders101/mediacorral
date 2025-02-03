@@ -10,5 +10,6 @@ declare module 'vue' {
     DriveMonitor: typeof import('./components/DriveMonitor.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SuspicionDialog: typeof import('./components/SuspicionDialog.vue')['default']
   }
 }

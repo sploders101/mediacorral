@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import type { RipJobsItem } from '@/apiTypes';
-import { BASE_URL } from '@/scripts/config';
+import type { RipJobsItem } from "@/apiTypes";
+import { BASE_URL } from "@/scripts/config";
 
 const ripJobs = ref<RipJobsItem[] | null>(null);
 
@@ -29,7 +29,11 @@ watch(thing, () => alert(thing.value));
 		:headers="[
 			{ title: 'ID', value: 'id' },
 			{ title: 'Disc Name', value: 'disc_title' },
-			{ title: 'Started At', key: 'start_time', value: (item) => formatTime(item.start_time) },
+			{
+				title: 'Started At',
+				key: 'start_time',
+				value: (item) => formatTime(item.start_time),
+			},
 			{ title: 'Actions', key: 'actions', sortable: false },
 		]"
 		:items="ripJobs || []"
