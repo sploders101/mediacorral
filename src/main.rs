@@ -1,8 +1,9 @@
 use application::Application;
 use rocket::{
+    fs::FileServer,
     http::{ContentType, Status},
-    response::Responder,
-    Response,
+    response::{content::RawHtml, stream::ReaderStream, Responder},
+    Request, Response,
 };
 use routes::create_autoripper;
 use std::{io::Cursor, path::Path, sync::Arc};
@@ -103,6 +104,7 @@ async fn rocket() -> _ {
     rocket::build()
         .manage(application)
         .manage(AutoripEnabler(enable_autorip))
+        .mount("/", FileServer::from("./frontend/dist"))
         .mount("/api/ripping", routes::ripping_routes())
         .mount("/api/data_imports", routes::data_imports_routes())
         .mount("/api/tagging", routes::tagging_routes())
