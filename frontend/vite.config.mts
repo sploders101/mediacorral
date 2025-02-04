@@ -66,7 +66,7 @@ export default defineConfig({
 		port: 3000,
 		proxy: {
 			"/api": {
-				target: "http://ripping-station.shaunkeys.com:8000",
+				target: "http://ripping-station.local.shaunkeys.com:8000",
 				ws: true,
 			},
 		},
