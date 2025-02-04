@@ -148,46 +148,58 @@ watch(selectedSeasons, async () => {
 			<v-card>
 				<v-card-title> Add Suspicion </v-card-title>
 				<v-card-text>
-					<v-select
-						label="Movie or TV?"
-						:items="['Movie', 'TV']"
-						variant="outlined"
-						v-model="tagType"
-					/>
-					<v-combobox
-						v-if="tagType === 'Movie'"
-						label="Movie"
-						:items="moviesList"
-						item-title="label"
-						v-model="selectedMovie"
-					/>
-					<v-combobox
-						v-else-if="tagType === 'TV'"
-						label="TV Show"
-						:items="tvList"
-						:loading="loadingSeasons"
-						item-title="label"
-						v-model="selectedTv"
-					/>
-					<v-combobox
-						v-if="tagType === 'TV' && tvSeasons !== null"
-						label="Seasons"
-						multiple
-						chips
-						:items="tvSeasons"
-						item-title="label"
-						:loading="loadingEpisodes"
-						v-model="selectedSeasons"
-					/>
-					<v-combobox
-						v-if="tagType === 'TV' && tvEpisodes !== null"
-						label="Episodes"
-						multiple
-						chips
-						:items="tvEpisodes"
-						item-title="label"
-						v-model="selectedEpisodes"
-					/>
+					<v-container>
+						<v-row justify="space-evenly">
+							<v-col cols="12" sm="4">
+								<v-select
+									label="Movie or TV?"
+									:items="['Movie', 'TV']"
+									variant="outlined"
+									v-model="tagType"
+								/>
+							</v-col>
+							<v-col cols="12" sm="4" v-if="tagType === 'Movie'">
+								<v-combobox
+									label="Movie"
+									:items="moviesList"
+									item-title="label"
+									v-model="selectedMovie"
+								/>
+							</v-col>
+							<v-col cols="12" sm="4" v-else-if="tagType === 'TV'">
+								<v-combobox
+									label="TV Show"
+									:items="tvList"
+									:loading="loadingSeasons"
+									item-title="label"
+									v-model="selectedTv"
+								/>
+							</v-col>
+						</v-row>
+						<v-row justify="space-evenly">
+							<v-col cols="12" sm="4" v-if="tagType === 'TV' && tvSeasons !== null">
+								<v-combobox
+									label="Seasons"
+									multiple
+									chips
+									:items="tvSeasons"
+									item-title="label"
+									:loading="loadingEpisodes"
+									v-model="selectedSeasons"
+								/>
+							</v-col>
+							<v-col cols="12" sm="4" v-if="tagType === 'TV' && tvEpisodes !== null">
+								<v-combobox
+									label="Episodes"
+									multiple
+									chips
+									:items="tvEpisodes"
+									item-title="label"
+									v-model="selectedEpisodes"
+								/>
+							</v-col>
+						</v-row>
+					</v-container>
 				</v-card-text>
 				<v-card-actions>
 					<v-btn @click="suspectJob" :loading="suspecting"> Confirm </v-btn>

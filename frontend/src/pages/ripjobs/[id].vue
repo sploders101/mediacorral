@@ -7,6 +7,7 @@ import {
 	type TagFile,
 	type VideoFilesItem,
 } from "@/apiTypes";
+import ManualMatchDialog from "@/components/ManualMatchDialog.vue";
 import SuspicionDialog from "@/components/SuspicionDialog.vue";
 import { BASE_URL } from "@/scripts/config";
 import { useAppStore } from "@/stores/app";
@@ -31,6 +32,11 @@ async function getJobInfo(jobId: number) {
 				appStore.getTvEpisodeInfoByTmdb(tmdbId)
 			)
 		);
+		await Promise.all(data.video_files.map(async (item) => {
+			if (item.video_type === "TvEpisode" && item.match_id !== null) {
+				appStore.getTvEpisodeInfo(item.match_id);
+			}
+		}));
 	}
 }
 
@@ -58,12 +64,36 @@ const ostDownloads = computed(() => {
 
 interface VideoInfo {
 	video: VideoFilesItem;
+	subtitleBlob: string | null;
+	currentMatch: string | null;
 	// matches: MatchInfoItem[];
 	likelyMatch: {
 		name: string;
 		similarity: number;
 		tag: TagFile;
 	} | null;
+}
+
+function getMatchName(videoType: VideoType, matchId: number | null) {
+	if (matchId === null) return null;
+	if (videoType === "Untagged") return null;
+	if (videoType === "Movie") {
+		return "";
+	}
+	if (videoType === "SpecialFeature") {
+		return "";
+	}
+	if (videoType === "TvEpisode") {
+		if (matchId in appStore.tvEpisodesFlat) {
+			const episode = appStore.tvEpisodesFlat[matchId];
+			if (episode.tv_season_id in appStore.tvSeasonsFlat) {
+				const season = appStore.tvSeasonsFlat[episode.tv_season_id];
+				return `S${season.season_number}E${episode.episode_number} - ${episode.title}`;
+			}
+		}
+		return "Unknown";
+	}
+	return "Unrecognized Content";
 }
 
 const datatable = computed(() => {
@@ -80,6 +110,10 @@ const datatable = computed(() => {
 
 		const info: VideoInfo = {
 			video: file,
+			currentMatch: getMatchName(file.video_type, file.match_id),
+			subtitleBlob:
+				jobInfo.value.subtitle_maps.find((item) => item.id === file.id)
+					?.subtitle_blob || null,
 			likelyMatch: null,
 		};
 
@@ -96,8 +130,10 @@ const datatable = computed(() => {
 			} else if (ostFileInfo.video_type === "TvEpisode") {
 				if (ostFileInfo.match_id in appStore.tvEpisodesFlat) {
 					const episode = appStore.tvEpisodesFlat[ostFileInfo.match_id];
-					const season = appStore.tvSeasonsFlat[episode.tv_season_id];
-					name = `S${season.season_number}E${episode.episode_number} - ${episode.title}`;
+					if (episode.tv_season_id in appStore.tvSeasonsFlat) {
+						const season = appStore.tvSeasonsFlat[episode.tv_season_id];
+						name = `S${season.season_number}E${episode.episode_number} - ${episode.title}`;
+					}
 				}
 			}
 
@@ -192,7 +228,32 @@ async function deleteJob() {
 	router.back();
 }
 
+const assert = <T>(i: T) => i;
+
 const suspicionDialog = ref(false);
+const manualMatchDialog = ref(false);
+const manualMatchData = ref<VideoInfo | null>(null);
+function manualMatch(item: VideoInfo) {
+	manualMatchData.value = item;
+	manualMatchDialog.value = true;
+}
+async function unmatch(item: VideoInfo) {
+	let response = await fetch(`${BASE_URL}/tagging/tag_file`, {
+		method: "POST",
+		headers: {
+			"content-type": "application/json",
+		},
+		body: JSON.stringify(assert<TagFile>({
+			file: item.video.id,
+			video_type: "Untagged",
+			match_id: 0,
+		})),
+	});
+	if (response.status !== 200) {
+		throw new Error("Unable to tag file"); // TODO: Report to user
+	}
+	location.reload();
+}
 </script>
 
 <template>
@@ -206,6 +267,7 @@ const suspicionDialog = ref(false);
 					:loading="datatable === null"
 					:headers="[
 						{ title: 'Video ID', value: 'video.id' },
+						{ title: 'Current Match', value: 'currentMatch' },
 						{
 							title: 'Likely Match',
 							value: 'likelyMatch.name',
@@ -235,6 +297,8 @@ const suspicionDialog = ref(false);
 						>
 							Approve
 						</v-btn>
+						<v-btn v-if="item.currentMatch === null" flat small @click="manualMatch(item)"> Match </v-btn>
+						<v-btn v-if="item.currentMatch !== null" flat small @click="unmatch(item)"> Unmatch </v-btn>
 					</template>
 				</v-data-table-virtual>
 			</v-card-text>
@@ -251,4 +315,10 @@ const suspicionDialog = ref(false);
 		</v-card>
 	</v-container>
 	<SuspicionDialog :jobId="Number(route.params.id)" v-model="suspicionDialog" />
+	<ManualMatchDialog
+		v-if="manualMatchData !== null"
+		v-model="manualMatchDialog"
+		:videoId="manualMatchData.video.id"
+		:subtitleId="manualMatchData.subtitleBlob"
+	/>
 </template>
