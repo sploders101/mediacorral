@@ -85,6 +85,11 @@ impl Application {
         });
     }
 
+    /// Gets the path of a blob
+    pub fn get_blob_path(&self, blob_id: &str) -> PathBuf {
+        return self.blob_controller.get_file_path(blob_id);
+    }
+
     /// Register a drive to be controlled by Mediacorral
     pub async fn register_drive(&mut self, drive_path: &Path) -> anyhow::Result<()> {
         let path = canonicalize_drive_path(drive_path)?;

@@ -147,7 +147,7 @@ impl BlobStorageController {
         return Ok(());
     }
 
-    pub fn get_file_path(&self, id: &String) -> PathBuf {
+    pub fn get_file_path(&self, id: &str) -> PathBuf {
         return self.blob_dir.join(id);
     }
 

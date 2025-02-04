@@ -107,6 +107,7 @@ async fn rocket() -> _ {
         .manage(application)
         .manage(AutoripEnabler(enable_autorip))
         .mount("/", FileServer::from("./frontend/dist"))
+        .mount("/api/blobs", routes::blob_routes())
         .mount("/api/ripping", routes::ripping_routes())
         .mount("/api/data_imports", routes::data_imports_routes())
         .mount("/api/tagging", routes::tagging_routes())
