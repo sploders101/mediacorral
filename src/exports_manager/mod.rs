@@ -211,6 +211,11 @@ async fn add_tv_episode(
         result.tv_title, result.tv_release_year, result.tv_tmdb
     ));
     let season_folder = show_folder.join(&format!("Season {:02}", result.season_number));
+    match tokio::fs::create_dir_all(&season_folder).await {
+        Ok(()) => {}
+        Err(err) if err.kind() == ErrorKind::AlreadyExists => {}
+        Err(err) => Err(err).context("Couldn't create season directory")?,
+    }
     let episode_path = season_folder.join(&format!(
         "{} ({}) - S{:02}E{:02} - {} - {{tmdb-{}}}.mkv",
         make_pathsafe(&result.tv_title),
