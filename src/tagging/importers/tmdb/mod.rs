@@ -275,7 +275,7 @@ impl TmdbImporter {
                         tv_season_id: season_id,
                         episode_number: episode.episode_number,
                         thumbnail_blob: self.get_poster(episode.still_path).await.ok(),
-                        title: Some(episode.name),
+                        title: episode.name,
                         description: episode.overview,
                     },
                 )

@@ -47,7 +47,7 @@ CREATE TABLE `tv_episodes`(
 	`tv_season_id` INTEGER NOT NULL,
 	`episode_number` INTEGER NOT NULL,
 	`thumbnail_blob` INTEGER,
-	`title` TEXT,
+	`title` TEXT NOT NULL,
 	`description` TEXT
 );
 CREATE UNIQUE INDEX tv_episode_unique ON tv_episodes (tv_season_id, episode_number);

@@ -54,7 +54,7 @@ pub struct TvEpisodesItem {
     pub tv_season_id: i64,
     pub episode_number: u16,
     pub thumbnail_blob: Option<i64>,
-    pub title: Option<String>,
+    pub title: String,
     pub description: Option<String>,
 }
 
