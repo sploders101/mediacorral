@@ -18,6 +18,7 @@ mod blob_storage;
 mod config;
 mod db;
 mod drive_controller;
+mod exports_manager;
 mod makemkv;
 mod media_helpers;
 mod routes;
@@ -76,6 +77,7 @@ async fn rocket() -> _ {
     let data_dir = std::env::var("DATA_DIR").unwrap();
 
     let blob_dir = Path::new(&data_dir).join("storage");
+    let exports_dir = Path::new(&data_dir).join("exports");
     let sqlite_path = Path::new(&data_dir).join("database.sqlite");
 
     let db = Arc::new(
@@ -108,4 +110,5 @@ async fn rocket() -> _ {
         .mount("/api/ripping", routes::ripping_routes())
         .mount("/api/data_imports", routes::data_imports_routes())
         .mount("/api/tagging", routes::tagging_routes())
+        .mount("/api/exports", routes::exports_routes())
 }

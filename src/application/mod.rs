@@ -30,6 +30,7 @@ use crate::{
         tag_video_file,
     },
     drive_controller::DriveController,
+    exports_manager::ExportsManager,
     tagging::{
         importers::{
             opensubtitles::{strip_subtitles, OpenSubtitles},
@@ -44,6 +45,7 @@ pub mod types;
 pub struct Application {
     db: Arc<SqlitePool>,
     blob_controller: Arc<BlobStorageController>,
+    exports_manager: Mutex<ExportsManager>,
     tmdb_importer: TmdbImporter,
     opensubtitles: Arc<OpenSubtitles>,
     suspicion_analyzers: Arc<Mutex<HashMap<i64, JoinHandle<()>>>>,
@@ -51,7 +53,9 @@ pub struct Application {
 }
 impl Application {
     pub async fn new(db: Arc<SqlitePool>, path: impl Into<PathBuf>) -> anyhow::Result<Self> {
-        let blob_controller = Arc::new(BlobStorageController::new(Arc::clone(&db), path).await?);
+        let path: PathBuf = path.into();
+        let blob_controller =
+            Arc::new(BlobStorageController::new(Arc::clone(&db), path.clone()).await?);
         let tmdb_importer = TmdbImporter::new(
             Arc::clone(&db),
             String::clone(&TMDB_API_KEY),
@@ -62,9 +66,18 @@ impl Application {
             String::clone(&OST_USERNAME),
             String::clone(&OST_PASSWORD),
         ));
+        let exports_manager = Mutex::new(
+            ExportsManager::new(
+                Arc::clone(&db),
+                Arc::clone(&blob_controller),
+                path.join("exports"),
+            )
+            .await?,
+        );
         return Ok(Self {
             db,
             blob_controller,
+            exports_manager,
             tmdb_importer,
             opensubtitles,
             suspicion_analyzers: Arc::new(Mutex::new(HashMap::new())),
@@ -170,6 +183,7 @@ impl Application {
         match_id: i64,
     ) -> anyhow::Result<()> {
         tag_video_file(&self.db, video_id, video_type, match_id).await?;
+        self.splice_export_content(video_type, video_id).await?;
         return Ok(());
     }
 
@@ -275,6 +289,30 @@ impl Application {
         }
         delete_rip_job(&self.db, rip_job).await?;
 
+        return Ok(());
+    }
+
+    /// Rebuilds the requested exports directory, deleting and replacing all files
+    pub async fn rebuild_exports(&self, exports_dir: &str) -> anyhow::Result<()> {
+        self.exports_manager
+            .lock()
+            .await
+            .rebuild_dir(exports_dir)
+            .await?;
+        return Ok(());
+    }
+
+    /// Splice content into all configured exports directories
+    pub async fn splice_export_content(
+        &self,
+        video_type: VideoType,
+        video_id: i64,
+    ) -> anyhow::Result<()> {
+        self.exports_manager
+            .lock()
+            .await
+            .splice_content(video_type, video_id)
+            .await?;
         return Ok(());
     }
 }
