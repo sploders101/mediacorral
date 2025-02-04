@@ -11,7 +11,6 @@ declare module 'vue' {
     ManualMatchDialog: typeof import('./components/ManualMatchDialog.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    SubtitleReviewDialog: typeof import('./components/SubtitleReviewDialog.vue')['default']
     SuspicionDialog: typeof import('./components/SuspicionDialog.vue')['default']
   }
 }

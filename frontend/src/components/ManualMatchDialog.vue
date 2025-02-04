@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { TagFile } from "@/apiTypes";
+import { type TagFile } from "@/apiTypes";
 import { BASE_URL } from "@/scripts/config";
 import { useAppStore } from "@/stores/app";
 
