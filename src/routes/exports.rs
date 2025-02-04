@@ -1,15 +1,7 @@
+use rocket::{Route, State};
 use std::sync::Arc;
 
-use rocket::{serde::json::Json, Route, State};
-use serde::{Deserialize, Serialize};
-
-use crate::{
-    application::Application,
-    tagging::importers::tmdb::types::{
-        TmdbAnyTitle, TmdbMovieResult, TmdbQueryResults, TmdbTvResult,
-    },
-    AnyError, AnyhowError,
-};
+use crate::{application::Application, AnyhowError};
 
 #[post("/rebuild/<exports_dir>")]
 async fn post_rebuild_exports_dir(
