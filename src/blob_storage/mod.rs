@@ -160,7 +160,15 @@ impl BlobStorageController {
         id: &String,
         destination: impl AsRef<Path>,
     ) -> std::io::Result<()> {
-        return tokio::fs::hard_link(self.get_file_path(id), destination).await;
+        let source_path = self.get_file_path(id);
+        return match tokio::fs::hard_link(&source_path, &destination).await {
+            Ok(_) => Ok(()),
+            Err(err) if err.kind() == ErrorKind::AlreadyExists => {
+                tokio::fs::remove_file(&source_path).await?;
+                tokio::fs::hard_link(&source_path, &destination).await
+            }
+            Err(err) => Err(err),
+        };
     }
 
     /// Creates a symlink to a blob at `destination`
@@ -179,11 +187,16 @@ impl BlobStorageController {
         let dest_dir = destination.as_ref().parent().unwrap();
 
         // I already verify that both paths are absolute. This shouldn't fail.
-        let relative = pathdiff::diff_paths(source, dest_dir)
+        let relative = pathdiff::diff_paths(&source, &dest_dir)
             .expect("Error finding relative path in symbolic_link");
 
-        tokio::fs::symlink(relative, destination).await?;
-
-        return Ok(());
+        return match tokio::fs::symlink(&relative, &destination).await {
+            Ok(_) => Ok(()),
+            Err(err) if err.kind() == ErrorKind::AlreadyExists => {
+                tokio::fs::remove_file(&source).await?;
+                tokio::fs::symlink(&relative, &destination).await
+            }
+            Err(err) => Err(err),
+        };
     }
 }
