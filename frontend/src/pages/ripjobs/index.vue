@@ -11,7 +11,7 @@ async function getRipJobs() {
 }
 
 function formatTime(timestamp: number) {
-	return new Date(timestamp).toLocaleString();
+	return new Date(timestamp * 1000).toLocaleString();
 }
 
 onMounted(() => {
