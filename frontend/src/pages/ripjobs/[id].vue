@@ -183,6 +183,24 @@ async function approveMatch(item: VideoInfo) {
 	item.likelyMatch = null;
 }
 
+async function renameJob() {
+	if (!jobInfo.value) return;
+	const newName = prompt("What would you like to name the job?", jobInfo.value.disc_title || "");
+	if (newName === null) return;
+	const response = await fetch(
+		`${BASE_URL}/tagging/jobs/${route.params.id}/rename`,
+		{
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+			},
+			body: JSON.stringify(newName),
+		},
+	);
+	if (response.status !== 200) throw new Error("Unable to rename job");
+	jobInfo.value.disc_title = newName;
+}
+
 const pruning = ref(false);
 async function pruneJob() {
 	// TODO: Swap this out for something async
@@ -261,6 +279,7 @@ async function unmatch(item: VideoInfo) {
 		<v-card>
 			<v-card-title>
 				{{ jobInfo ? jobInfo.disc_title : "Loading..." }}
+				<v-btn v-if="jobInfo" density="compact" flat icon="mdi-rename" @click="renameJob"/>
 			</v-card-title>
 			<v-card-text>
 				<v-data-table-virtual

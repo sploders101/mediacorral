@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { DriveState, RipInstruction } from "@/apiTypes";
+import { type JobInfo, type DriveState, type RipInstruction } from "@/apiTypes";
 import { BASE_URL } from "@/scripts/config";
 
 const props = defineProps<{
@@ -19,7 +19,7 @@ const discTitle = computed(() => {
 		case "NotReady":
 			return "Loading...";
 		case "Loaded":
-			return driveStatus.value.disc_name || props.drive;
+			return jobInfo.value?.disc_title || driveStatus.value.disc_name || props.drive;
 	}
 });
 const currentStatus = computed(() => {
@@ -132,11 +132,61 @@ onBeforeUnmount(() => {
 		eventSource.close();
 	}
 });
+
+const jobInfo = ref<JobInfo | null>(null);
+watch(
+	() =>
+		driveStatus.value?.active_command.type === "Ripping" &&
+		driveStatus.value.active_command.job_id,
+	async (jobId) => {
+		if (jobId === false) {
+			jobInfo.value = null;
+		}
+		let result = await fetch(`${BASE_URL}/tagging/jobs/${jobId}`);
+		if (result.status !== 200) throw new Error("Failed to fetch job");
+		let response: JobInfo = await result.json();
+		jobInfo.value = response;
+	}
+);
+
+const allowRename = computed(
+	() => driveStatus.value?.active_command.type === "Ripping"
+);
+async function renameJob() {
+	if (driveStatus.value?.active_command.type !== "Ripping") return;
+	if (jobInfo.value === null) return;
+	const newName = prompt(
+		"What would you like to name the job?",
+		jobInfo.value?.disc_title || ""
+	);
+	if (newName === null) return;
+	const response = await fetch(
+		`${BASE_URL}/tagging/jobs/${driveStatus.value.active_command.job_id}/rename`,
+		{
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+			},
+			body: JSON.stringify(newName),
+		}
+	);
+	if (response.status !== 200) throw new Error("Unable to rename job");
+	jobInfo.value.disc_title = newName;
+}
 </script>
 
 <template>
 	<v-card>
-		<v-card-title> {{ discTitle }}</v-card-title>
+		<v-card-title>
+			{{ discTitle }}
+			<v-btn
+				v-if="allowRename"
+				density="compact"
+				flat
+				icon="mdi-rename"
+				@click="renameJob()"
+			/>
+		</v-card-title>
 		<v-card-subtitle>Status: {{ currentStatus }}</v-card-subtitle>
 		<v-card-text>
 			<template v-if="driveStatus?.active_command.type == 'Ripping'">

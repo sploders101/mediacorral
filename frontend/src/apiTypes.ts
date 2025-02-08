@@ -1,7 +1,7 @@
 export interface JobInfo {
 	id: number;
 	start_time: number;
-	disc_title: String | null;
+	disc_title: string | null;
 	suspected_contents: SuspectedContents | null;
 	video_files: VideoFilesItem[];
 	matches: MatchInfoItem[];
