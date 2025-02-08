@@ -272,6 +272,32 @@ async function unmatch(item: VideoInfo) {
 	}
 	location.reload();
 }
+
+function formatRuntime(info: VideoInfo): string {
+	const hours = Math.floor(info.video.length / 60 / 60);
+	const minutes = Math.floor(info.video.length / 60 % 60);
+	const seconds = info.video.length % 60;
+
+	let acc = [];
+	if (hours > 0) acc.push(`${hours}h`);
+	if (minutes > 0) acc.push(`${minutes}m`);
+	if (seconds > 0) acc.push(`${seconds}s`)
+
+	return acc.join("");
+}
+function formatResolution(info: VideoInfo): string {
+	let resolution = `${info.video.resolution_width}x${info.video.resolution_height}`;
+	switch (resolution) {
+		case "1920x1080":
+			return "1080p";
+		case "1280x720":
+			return "720p";
+		case "720x480":
+			return "480p";
+		default:
+			return resolution;
+	}
+}
 </script>
 
 <template>
@@ -286,6 +312,8 @@ async function unmatch(item: VideoInfo) {
 					:loading="datatable === null"
 					:headers="[
 						{ title: 'Video ID', value: 'video.id' },
+						{ title: 'Runtime', key: 'video.length', value: formatRuntime as any },
+						{ title: 'Resolution', key: 'video.resolution', value: formatResolution as any },
 						{ title: 'Current Match', value: 'currentMatch' },
 						{
 							title: 'Likely Match',
