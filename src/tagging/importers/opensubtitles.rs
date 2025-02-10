@@ -108,6 +108,8 @@ impl OpenSubtitles {
                             subtitle.attributes.uploader.name,
                             subtitle.attributes.uploader.rank,
                         ),
+                        download_count: subtitle.attributes.download_count,
+                        new_download_count: subtitle.attributes.new_download_count,
                         file_id: file.file_id,
                         uploader: subtitle.attributes.uploader.clone(),
                     })
@@ -115,9 +117,19 @@ impl OpenSubtitles {
             .collect();
 
         files.sort_by(|a, b| {
+            match &a.new_download_count.cmp(&b.new_download_count) {
+                Ordering::Less => return Ordering::Greater,
+                Ordering::Greater => return Ordering::Less,
+                Ordering::Equal => {}
+            }
+            match &a.download_count.cmp(&b.download_count) {
+                Ordering::Less => return Ordering::Greater,
+                Ordering::Greater => return Ordering::Less,
+                Ordering::Equal => {}
+            }
             match numeric_rank(&a.uploader.rank).cmp(&numeric_rank(&b.uploader.rank)) {
-                Ordering::Less => return Ordering::Less,
-                Ordering::Greater => return Ordering::Greater,
+                Ordering::Less => return Ordering::Greater,
+                Ordering::Greater => return Ordering::Less,
                 Ordering::Equal => return Ordering::Equal,
             }
             // May add more criteria later. Not sure yet.
@@ -281,8 +293,8 @@ struct SearchResult {
 struct STAttributes {
     // subtitle_id: String,
     language: String,
-    // download_count: u32,
-    // new_download_count: u32,
+    download_count: u32,
+    new_download_count: u32,
     // hearing_impaired: bool,
     // votes: u32,
     // ratings: f32,
@@ -312,6 +324,8 @@ struct STFile {
 pub struct SubtitleSummary {
     name: String,
     file_id: u32,
+    download_count: u32,
+    new_download_count: u32,
     uploader: OSTUploader,
 }
 
