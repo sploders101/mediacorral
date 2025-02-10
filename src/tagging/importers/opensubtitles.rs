@@ -117,6 +117,12 @@ impl OpenSubtitles {
             .collect();
 
         files.sort_by(|a, b| {
+            match (a.uploader.rank.as_str(), b.uploader.rank.as_str()) {
+                ("Admin Warning", "Admin Warning") => {}
+                (_, "Admin Warning") => return Ordering::Less,
+                ("Admin Warning", _) => return Ordering::Greater,
+                _ => {}
+            }
             match &a.new_download_count.cmp(&b.new_download_count) {
                 Ordering::Less => return Ordering::Greater,
                 Ordering::Greater => return Ordering::Less,
@@ -268,6 +274,7 @@ fn numeric_rank(rank: &str) -> usize {
         "Gold member" => 20,
         "Bronze Member" => 30,
         "anonymous" => 100,
+        "Admin Warning" => 110,
         _ => 90,
     };
 }
