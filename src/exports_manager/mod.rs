@@ -203,39 +203,50 @@ pub fn make_pathsafe(input: &str) -> String {
 async fn add_tv_episode(
     blob_controller: &BlobStorageController,
     exports_dir: &Path,
-    result: &TvEntry,
+    item: &TvEntry,
     settings: &ExportSettings,
 ) -> anyhow::Result<()> {
     let show_folder = exports_dir.join(&format!(
         "{} ({}) {{tmdb-{}}}",
-        result.tv_title, result.tv_release_year, result.tv_tmdb
+        item.tv_title, item.tv_release_year, item.tv_tmdb
     ));
-    let season_folder = show_folder.join(&format!("Season {:02}", result.season_number));
+    let season_folder = show_folder.join(&format!("Season {:02}", item.season_number));
     match tokio::fs::create_dir_all(&season_folder).await {
         Ok(()) => {}
         Err(err) if err.kind() == ErrorKind::AlreadyExists => {}
         Err(err) => Err(err).context("Couldn't create season directory")?,
     }
-    let episode_path = season_folder.join(&format!(
+    let episode_filename = format!(
         "{} ({}) - S{:02}E{:02} - {} - {{tmdb-{}}}.mkv",
-        make_pathsafe(&result.tv_title),
-        make_pathsafe(&result.tv_release_year),
-        result.season_number,
-        result.episode_number,
-        make_pathsafe(&result.episode_title),
-        result.episode_tmdb
-    ));
-    match settings.link_type {
+        make_pathsafe(&item.tv_title),
+        make_pathsafe(&item.tv_release_year),
+        item.season_number,
+        item.episode_number,
+        make_pathsafe(&item.episode_title),
+        item.episode_tmdb
+    );
+    let episode_path = season_folder.join(&episode_filename);
+    let result = match settings.link_type {
         LinkType::Symbolic => {
             blob_controller
-                .symbolic_link(&result.episode_blob, episode_path)
-                .await?
+                .symbolic_link(&item.episode_blob, episode_path)
+                .await
         }
         LinkType::Hard => {
             blob_controller
-                .hard_link(&result.episode_blob, episode_path)
-                .await?
+                .hard_link(&item.episode_blob, episode_path)
+                .await
         }
+    };
+    match result {
+        Ok(()) => {}
+        Err(err) if err.kind() == ErrorKind::NotFound => {
+            println!(
+                "Blob {} not found. Please re-rip {}.",
+                item.episode_blob, episode_filename
+            );
+        }
+        Err(err) => Err(err).context("An error occurred while creating the symlink")?,
     }
     return Ok(());
 }
