@@ -164,7 +164,7 @@ impl BlobStorageController {
         return match tokio::fs::hard_link(&source_path, &destination).await {
             Ok(_) => Ok(()),
             Err(err) if err.kind() == ErrorKind::AlreadyExists => {
-                tokio::fs::remove_file(&source_path).await?;
+                tokio::fs::remove_file(&destination).await?;
                 tokio::fs::hard_link(&source_path, &destination).await
             }
             Err(err) => Err(err),
