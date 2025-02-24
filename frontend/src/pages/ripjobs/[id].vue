@@ -32,12 +32,12 @@ async function getJobInfo(jobId: number) {
 				appStore.getTvEpisodeInfoByTmdb(tmdbId)
 			)
 		);
-		await Promise.all(data.video_files.map(async (item) => {
-			if (item.video_type === "TvEpisode" && item.match_id !== null) {
-				appStore.getTvEpisodeInfo(item.match_id);
-			}
-		}));
 	}
+	await Promise.all(data.video_files.map(async (item) => {
+		if (item.video_type === "TvEpisode" && item.match_id !== null) {
+			appStore.getTvEpisodeInfo(item.match_id);
+		}
+	}));
 }
 
 watch(
