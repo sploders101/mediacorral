@@ -1,6 +1,6 @@
 use csv::CsvRowIter;
 use messaging::MakemkvMessage;
-use std::{path::Path, process::Stdio};
+use std::{path::Path, process::{ExitStatus, Stdio}};
 use tokio::{
     io::{AsyncBufReadExt, BufReader, Lines},
     process::{Child, ChildStdout, Command},
@@ -50,5 +50,8 @@ impl Makemkv {
                 }
             }
         }
+    }
+    pub async fn finish(mut self) -> std::io::Result<ExitStatus> {
+        return self.command.wait().await;
     }
 }

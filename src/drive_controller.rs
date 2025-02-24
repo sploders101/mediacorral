@@ -340,6 +340,26 @@ async fn handle_events(
             }
         });
     }
-    sender.send_modify(|state| state.active_command = ActiveDriveCommand::None);
+    match rip_job.finish().await {
+        Ok(status) if status.success() => {
+            sender.send_modify(|state| state.active_command = ActiveDriveCommand::None)
+        }
+        Ok(status) => sender.send_modify(|state| {
+            state.active_command = ActiveDriveCommand::Error {
+                message: match state.active_command {
+                    ActiveDriveCommand::Ripping { ref logs, .. } => format!(
+                        "Exited with status code {status}. Logs:\n\n{}",
+                        logs.join("\n")
+                    ),
+                    _ => format!("An unknown error occurred."),
+                },
+            }
+        }),
+        Err(err) => sender.send_modify(|state| {
+            state.active_command = ActiveDriveCommand::Error {
+                message: format!("{err}"),
+            }
+        }),
+    }
     return Ok(());
 }
