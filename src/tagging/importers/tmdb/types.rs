@@ -101,7 +101,7 @@ pub struct TmdbTvCreator {
     pub credit_id: String,
     pub name: String,
     pub gender: u8,
-    pub profile_path: String,
+    pub profile_path: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -109,12 +109,12 @@ pub struct TmdbTvNetwork {
     pub id: i32,
     pub logo_path: Option<String>,
     pub name: String,
-    pub origin_country: String,
+    pub origin_country: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TmdbTvSeason {
-    pub air_date: String,
+    pub air_date: Option<String>,
     pub episode_count: u32,
     pub id: i32,
     pub name: String,
