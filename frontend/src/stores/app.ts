@@ -94,8 +94,8 @@ export const useAppStore = defineStore("app", () => {
 	}
 
 	async function getTvEpisodeInfo(episodeId: number, skipCache = false) {
-		if (episodeId in tvEpisodesByTmdbId.value) {
-			const episode = tvEpisodesByTmdbId.value[episodeId];
+		if (episodeId in tvEpisodesFlat.value) {
+			const episode = tvEpisodesFlat.value[episodeId];
 			return {
 				show: tvShows.value[episode.tv_show_id],
 				season: tvSeasonsFlat.value[episode.tv_season_id],

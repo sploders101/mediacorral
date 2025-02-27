@@ -24,14 +24,15 @@ async function getJobInfo(jobId: number) {
 	let data: JobInfo = await response.json();
 	jobInfo.value = data;
 
-	if (data.suspected_contents === null) return;
-	if (data.suspected_contents.type === "Movie") {
-	} else if (data.suspected_contents.type === "TvEpisodes") {
-		await Promise.all(
-			data.suspected_contents.episode_tmdb_ids.map((tmdbId) =>
-				appStore.getTvEpisodeInfoByTmdb(tmdbId)
-			)
-		);
+	if (data.suspected_contents !== null) {
+		if (data.suspected_contents.type === "Movie") {
+		} else if (data.suspected_contents.type === "TvEpisodes") {
+			await Promise.all(
+				data.suspected_contents.episode_tmdb_ids.map((tmdbId) =>
+					appStore.getTvEpisodeInfoByTmdb(tmdbId)
+				)
+			);
+		}
 	}
 	await Promise.all(data.video_files.map(async (item) => {
 		if (item.video_type === "TvEpisode" && item.match_id !== null) {
@@ -270,7 +271,11 @@ async function unmatch(item: VideoInfo) {
 	if (response.status !== 200) {
 		throw new Error("Unable to tag file"); // TODO: Report to user
 	}
-	location.reload();
+	try {
+		getJobInfo(Number(route.params.id));
+	} catch (err) {
+		console.error(err);
+	}
 }
 
 function formatRuntime(info: VideoInfo): string {
@@ -367,5 +372,6 @@ function formatResolution(info: VideoInfo): string {
 		v-model="manualMatchDialog"
 		:videoId="manualMatchData.video.id"
 		:subtitleId="manualMatchData.subtitleBlob"
+		@update="getJobInfo(Number(route.params.id))"
 	/>
 </template>

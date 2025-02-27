@@ -7,6 +7,9 @@ const props = defineProps<{
 	videoId: number;
 	subtitleId: string | null;
 }>();
+const emit = defineEmits<{
+	(e: "update"): void;
+}>();
 const open = defineModel<boolean>();
 const appStore = useAppStore();
 
@@ -174,7 +177,8 @@ async function tagEpisode() {
 	} finally {
 		taggingEpisode.value = false;
 	}
-	location.reload();
+	open.value = false;
+	emit("update");
 }
 </script>
 
@@ -247,7 +251,7 @@ async function tagEpisode() {
 				<v-expansion-panels v-if="subtitles !== null">
 					<v-expansion-panel title="Subtitles">
 						<v-expansion-panel-text>
-						<pre class="subtitle-viewer ma-3">{{ subtitles }}</pre>
+							<pre class="subtitle-viewer ma-3">{{ subtitles }}</pre>
 						</v-expansion-panel-text>
 					</v-expansion-panel>
 				</v-expansion-panels>
