@@ -1,0 +1,8 @@
+openjdk-17-jre
+libleptonica-dev
+libclang-dev
+mkvtoolnix
+libtesseract-dev
+tesseract-ocr-eng
+
+cargo install vobsubocr --locked
