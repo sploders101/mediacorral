@@ -32,7 +32,7 @@ impl OpenSubtitles {
         let response: LoginResponse = self
             .agent
             .post("https://api.opensubtitles.com/api/v1/login")
-            .header("User-Agent", "mediacorral")
+            .header("User-Agent", "Mediacorral v1.0.0")
             .header("Api-Key", &self.api_key)
             .json(&json!({
                 "username": &self.username,
@@ -57,7 +57,7 @@ impl OpenSubtitles {
             let mut auth_token = self.auth_token.lock().await;
             if let Some((ref token_time, ref mut token)) = *auth_token {
                 let response = req_fn()
-                    .header("User-Agent", "mediacorral")
+                    .header("User-Agent", "Mediacorral v1.0.0")
                     .header("Api-Key", &self.api_key)
                     .header("Authorization", String::from("Bearer ") + token)
                     .send()
