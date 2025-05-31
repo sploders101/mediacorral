@@ -1,0 +1,7 @@
+[workspace]
+resolver = "3"
+members = [ "mediacorral-proto",
+  "mediacorral-ripper",
+  "mediacorral-runner",
+  "mediacorral-server",
+]

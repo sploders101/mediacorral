@@ -1,0 +1,145 @@
+syntax = "proto3";
+package mediacorral.ripper.v1;
+
+import "google/protobuf/empty.proto";
+
+service DriveControllerService {
+  // Gets the number of drives registered with this controller.
+  // Drive IDs are a contiguous sequence starting from 0, going up to
+  // (but not including) the result of this function.
+  rpc GetDriveCount(GetDriveCountRequest) returns (GetDriveCountResponse);
+
+  // Get metadata about the drive
+  rpc GetDriveMeta(GetDriveMetaRequest) returns (GetDriveMetaResponse);
+
+  // Ejects the disc in the drive
+  rpc Eject (EjectRequest) returns (EjectResponse);
+
+  // Retracts the disc in the drive
+  rpc Retract (RetractRequest) returns (RetractResponse);
+
+  // Gets the current state of the drive
+  rpc GetDriveState (GetDriveStateRequest) returns (DriveState);
+
+  // Rips the media in the drive. Returns immediately. Status changes
+  // come through the WatchChanges stream.
+  rpc RipMedia (RipMediaRequest) returns (RipMediaResponse);
+
+  // Watch for status changes
+  rpc WatchChanges (WatchChangesRequest) returns (stream DriveState);
+}
+
+message EjectRequest {
+  uint32 drive_id = 1;
+}
+
+message RetractRequest {
+  uint32 drive_id = 1;
+}
+
+message GetDriveStateRequest {
+  uint32 drive_id = 1;
+}
+
+message GetDriveCountRequest {}
+
+message WatchChangesRequest {}
+
+message EjectResponse {}
+
+message RetractResponse {}
+
+message RipMediaResponse {}
+
+message GetDriveMetaRequest {
+  uint32 drive_id = 1;
+}
+
+message GetDriveCountResponse {
+  uint32 drive_count = 1;
+}
+
+// Metadata about the drive.
+message GetDriveMetaResponse {
+  // The ID of the drive
+  uint32 drive_id = 1;
+  // The human-readable name for the drive
+  string name = 2;
+}
+
+enum DriveStatusTag {
+  DRIVE_STATUS_TAG_UNSPECIFIED = 0;
+  DRIVE_STATUS_TAG_EMPTY = 1;
+  DRIVE_STATUS_TAG_TRAY_OPEN = 2;
+  DRIVE_STATUS_TAG_NOT_READY = 3;
+  DRIVE_STATUS_TAG_DISC_LOADED = 4;
+}
+
+message CommandError {
+  string message = 1;
+}
+
+// The current status of the rip job
+message RipStatus {
+  // The ID for this rip job (used in the database)
+  int64 job_id = 1;
+  // The "Current Item" progress title
+  string cprog_title = 2;
+  // The "Current Item" progress value
+  Progress cprog_value = 3;
+  // The "Total" progress title
+  string tprog_title = 4;
+  // The "Total" progress value
+  Progress tprog_value = 5;
+  // Instructs the client to append the logs to the existing
+  // string. Used only in event streams.
+  bool append_logs = 6;
+  // Text logs from the job
+  string logs = 7;
+}
+
+// Represents the current state of the drive
+message DriveState {
+  // The ID of the drive
+  uint32 drive_id = 1;
+  // Status enumeration
+  DriveStatusTag status = 2;
+  // The name of the disc in the drive (if any)
+  optional string disc_name = 3;
+  oneof active_command {
+    // An error from the last command
+    CommandError error = 4;
+    // The status of an ongoing rip job
+    RipStatus ripping = 5;
+  }
+}
+
+// A request to rip media
+message RipMediaRequest {
+  // The ID for the rip job (used in the database)
+  int64 job_id = 1;
+  // The ID of the drive to start a rip job for
+  uint32 drive_id = 2;
+}
+
+// Represents progress as a fraction
+message Progress {
+  uint64 value = 1;
+  uint64 max_value = 2;
+}
+
+// An update to the progress of a rip job
+message RipUpdate {
+  oneof rip_update {
+    // An error returned from the rip job
+    CommandError error = 1;
+    // The "Current Item" progress title
+    string cprog_title = 2;
+    // The "Current Item" progress value
+    Progress cprog_value = 3;
+    // The "Total" progress title
+    string tprog_title = 4;
+    // The "Total" progress value
+    Progress tprog_value = 5;
+  }
+}
