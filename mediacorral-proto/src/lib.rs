@@ -1,3 +1,3 @@
-pub mod ripper {
-    tonic::include_proto!("mediacorral_ripper");
+pub mod drive_controller {
+    tonic::include_proto!("mediacorral.drive_controller.v1");
 }

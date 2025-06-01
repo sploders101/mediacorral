@@ -1,7 +1,8 @@
 [workspace]
 resolver = "3"
-members = [ "mediacorral-proto",
-  "mediacorral-ripper",
+members = [
+  "mediacorral-drive-controller",
+  "mediacorral-proto",
   "mediacorral-runner",
   "mediacorral-server",
 ]

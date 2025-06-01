@@ -1,0 +1,6 @@
+address: 0.0.0.0:5502
+drives:
+- name: Top
+  path: /dev/sr1
+- name: Bottom
+  path: /dev/sr0
