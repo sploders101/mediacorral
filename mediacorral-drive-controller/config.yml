@@ -1,3 +1,4 @@
+rip_directory: /home/shaunkeys/rips
 address: 0.0.0.0:5502
 drives:
 - name: Top

@@ -21,7 +21,14 @@ service DriveControllerService {
 
   // Rips the media in the drive. Returns immediately. Status changes
   // come through the FollowRipJob stream.
-  rpc RipMedia (RipMediaRequest) returns (stream RipUpdate);
+  rpc RipMedia (RipMediaRequest) returns (RipMediaResponse);
+
+  // Requests the current status of a job
+  rpc GetJobStatus (GetJobStatusRequest) returns (RipStatus);
+
+  // Creates a stream of RipUpdate responses, useful for monitoring the
+  // real-time status of a job
+  rpc WatchRipJob (WatchRipJobRequest) returns (stream RipUpdate);
 }
 
 message EjectRequest {
@@ -34,6 +41,14 @@ message RetractRequest {
 
 message GetDriveStateRequest {
   uint32 drive_id = 1;
+}
+
+message GetJobStatusRequest {
+  int64 job_id = 1; 
+}
+
+message WatchRipJobRequest {
+  int64 job_id = 1;
 }
 
 message GetDriveCountRequest {}
@@ -69,28 +84,30 @@ enum DriveStatusTag {
 }
 
 message CommandError {
-  string message = 1;
+  uint64 code = 1;
+}
+
+enum JobStatus {
+  JOB_STATUS_UNSPECIFIED = 0;
+  JOB_STATUS_RUNNING = 1;
+  JOB_STATUS_COMPLETED = 2;
+  JOB_STATUS_ERROR = 3;
 }
 
 // The current status of the rip job
 message RipStatus {
   // The ID for this rip job (used in the database)
   int64 job_id = 1;
-  // Signals that the job has been completed (for update streams)
-  bool completed = 2;
+  // The status of the job (active/completed/error)
+  JobStatus status = 2;
   // The "Current Item" progress title
   string cprog_title = 3;
-  // The "Current Item" progress value
-  Progress cprog_value = 4;
   // The "Total" progress title
-  string tprog_title = 5;
+  string tprog_title = 4;
   // The "Total" progress value
-  Progress tprog_value = 6;
-  // Instructs the client to append the logs to the existing
-  // string. Used only in event streams.
-  bool append_logs = 7;
+  Progress progress = 5;
   // Text logs from the job
-  string logs = 8;
+  repeated string logs = 6;
 }
 
 // Represents the current state of the drive
@@ -101,12 +118,8 @@ message DriveState {
   DriveStatusTag status = 2;
   // The name of the disc in the drive (if any)
   optional string disc_name = 3;
-  oneof active_command {
-    // An error from the last command
-    CommandError error = 4;
-    // The status of an ongoing rip job
-    RipStatus ripping = 5;
-  }
+  // The status of an ongoing rip job
+  optional int64 active_rip_job = 5;
 }
 
 // A request to rip media
@@ -119,22 +132,23 @@ message RipMediaRequest {
 
 // Represents progress as a fraction
 message Progress {
-  uint64 value = 1;
-  uint64 max_value = 2;
+  uint64 cprog_value = 1;
+  uint64 tprog_value = 2;
+  uint64 max_value = 3;
 }
 
 // An update to the progress of a rip job
 message RipUpdate {
   oneof rip_update {
-    // An error returned from the rip job
-    CommandError error = 1;
+    // A status update
+    JobStatus status = 1;
     // The "Current Item" progress title
     string cprog_title = 2;
-    // The "Current Item" progress value
-    Progress cprog_value = 3;
     // The "Total" progress title
-    string tprog_title = 4;
-    // The "Total" progress value
-    Progress tprog_value = 5;
+    string tprog_title = 3;
+    // Progress values
+    Progress progress_values = 4;
+    // Log message
+    string log_message = 5;
   }
 }
