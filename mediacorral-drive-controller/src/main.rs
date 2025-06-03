@@ -7,7 +7,7 @@ use std::{
 
 use async_udev::get_disc_name;
 use clap::Parser;
-use futures::FutureExt;
+use futures::StreamExt;
 use makemkv::{
     Makemkv,
     messaging::{MakemkvMessage, ProgressBar},
@@ -15,8 +15,8 @@ use makemkv::{
 use mediacorral_proto::drive_controller::{
     DriveState, DriveStatusTag, EjectRequest, EjectResponse, GetDriveCountRequest,
     GetDriveCountResponse, GetDriveMetaRequest, GetDriveMetaResponse, GetDriveStateRequest,
-    GetJobStatusRequest, JobStatus, Progress, RetractRequest, RetractResponse, RipMediaRequest,
-    RipMediaResponse, RipStatus, RipUpdate, WatchRipJobRequest,
+    GetJobStatusRequest, JobStatus, Progress, ReapJobRequest, ReapJobResponse, RetractRequest,
+    RetractResponse, RipMediaRequest, RipMediaResponse, RipStatus, RipUpdate, WatchRipJobRequest,
     drive_controller_service_server::{DriveControllerService, DriveControllerServiceServer},
     rip_update,
 };
@@ -25,6 +25,7 @@ use tokio::{
     sync::{RwLock, watch},
     task::JoinHandle,
 };
+use tokio_stream::wrappers::WatchStream;
 use tonic::transport::Server;
 
 mod async_udev;
@@ -324,16 +325,28 @@ impl DriveControllerService for DriveController {
         return Ok(tonic::Response::new(WatchRipJobStream {
             starting_value: RipStatus::default(),
             log_offset: 0,
-            receiver,
+            receiver: WatchStream::new(receiver),
             buffer: VecDeque::new(),
         }));
+    }
+
+    async fn reap_job(
+        &self,
+        request: tonic::Request<ReapJobRequest>,
+    ) -> Result<tonic::Response<ReapJobResponse>, tonic::Status> {
+        let request = request.into_inner();
+
+        let mut jobs = self.rip_jobs.write().await;
+        jobs.remove(&request.job_id);
+
+        return Ok(tonic::Response::new(ReapJobResponse {}));
     }
 }
 
 pub struct WatchRipJobStream {
     starting_value: RipStatus,
     log_offset: usize,
-    receiver: watch::Receiver<RipStatus>,
+    receiver: WatchStream<RipStatus>,
     buffer: VecDeque<rip_update::RipUpdate>,
 }
 impl futures::Stream for WatchRipJobStream {
@@ -352,14 +365,16 @@ impl futures::Stream for WatchRipJobStream {
             }
 
             // ... then go grab a new result
-            let poll_result = std::pin::pin!(this.receiver.changed()).poll_unpin(cx);
+            // NOTE: This isn't the most efficient method, since WatchStream will clone the logs
+            // on every change, but I really just want something that works right now. Go for this
+            // when optimizing.
+            let poll_result = this.receiver.poll_next_unpin(cx);
             match poll_result {
                 std::task::Poll::Pending => return std::task::Poll::Pending,
-                std::task::Poll::Ready(Err(_)) => {
+                std::task::Poll::Ready(None) => {
                     return std::task::Poll::Ready(None);
                 }
-                std::task::Poll::Ready(Ok(())) => {
-                    let new_value = this.receiver.borrow_and_update();
+                std::task::Poll::Ready(Some(new_value)) => {
                     if new_value.status != this.starting_value.status {
                         this.starting_value.status = new_value.status;
                         this.buffer

@@ -29,6 +29,11 @@ service DriveControllerService {
   // Creates a stream of RipUpdate responses, useful for monitoring the
   // real-time status of a job
   rpc WatchRipJob (WatchRipJobRequest) returns (stream RipUpdate);
+
+  // Reap the job, deleting it from the in-memory cache.
+  // This is meant to be called by the server after uploading relevant
+  // details to the database.
+  rpc ReapJob (ReapJobRequest) returns (ReapJobResponse);
 }
 
 message EjectRequest {
@@ -74,6 +79,12 @@ message GetDriveMetaResponse {
   // The human-readable name for the drive
   string name = 2;
 }
+
+message ReapJobRequest {
+  int64 job_id = 1;
+}
+
+message ReapJobResponse {}
 
 enum DriveStatusTag {
   DRIVE_STATUS_TAG_UNSPECIFIED = 0;
