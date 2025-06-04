@@ -82,7 +82,7 @@ pub struct RipJob {
 }
 
 pub struct DriveController {
-    rip_directory: PathBuf,
+    shared_directory: PathBuf,
     drives: Arc<Vec<Drive>>,
     rip_jobs: RwLock<HashMap<i64, RipJob>>,
 }
@@ -221,7 +221,7 @@ impl DriveControllerService for DriveController {
             todo!();
         }
 
-        let rip_dir = RipDir::new(&self.rip_directory, request.job_id)
+        let rip_dir = RipDir::new(&self.shared_directory, request.job_id)
             .await
             .map_err(|err| match err.kind() {
                 std::io::ErrorKind::AlreadyExists => {
@@ -420,7 +420,7 @@ pub struct RipDir {
 impl RipDir {
     /// Create a new rip directory for a specific job
     pub async fn new(rip_directory: &Path, job_id: i64) -> std::io::Result<Self> {
-        let rip_dir = rip_directory.join(job_id.to_string());
+        let rip_dir = rip_directory.join("rips").join(job_id.to_string());
         tokio::fs::create_dir(&rip_dir).await?;
 
         return Ok(Self { dir: rip_dir });
@@ -447,7 +447,7 @@ pub struct Args {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct DriveControllerConfig {
-    rip_directory: PathBuf,
+    shared_directory: PathBuf,
     address: String,
     drives: Vec<DriveInfo>,
 }
@@ -485,7 +485,7 @@ fn main() {
         .block_on(async move {
             Server::builder()
                 .add_service(DriveControllerServiceServer::new(DriveController {
-                    rip_directory: config.rip_directory,
+                    shared_directory: config.shared_directory,
                     drives: Arc::new(drives),
                     rip_jobs: RwLock::new(HashMap::new()),
                 }))
