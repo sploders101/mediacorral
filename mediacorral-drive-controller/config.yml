@@ -1,5 +1,5 @@
 shared_directory: /home/shaunkeys/mediacorral_testing
-address: 0.0.0.0:5502
+serve_address: 0.0.0.0:5502
 drives:
 - name: Top
   path: /dev/sr1

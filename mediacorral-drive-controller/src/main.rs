@@ -447,7 +447,7 @@ pub struct Args {
 #[derive(Deserialize, Debug, Clone)]
 pub struct DriveControllerConfig {
     shared_directory: PathBuf,
-    address: String,
+    serve_address: String,
     drives: Vec<DriveInfo>,
 }
 
@@ -491,7 +491,7 @@ fn main() {
                     drives: Arc::new(drives),
                     rip_jobs: RwLock::new(HashMap::new()),
                 }))
-                .serve(config.address.parse().expect("Invalid address"))
+                .serve(config.serve_address.parse().expect("Invalid address"))
                 .await
                 .unwrap();
         });
