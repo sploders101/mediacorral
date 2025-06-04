@@ -425,7 +425,9 @@ impl RipDir {
         return Ok(Self { dir: rip_dir });
     }
     /// Drops the directory without deleting its contents
-    pub fn complete(self) {}
+    pub fn complete(self) {
+        std::mem::forget(self);
+    }
 }
 impl Drop for RipDir {
     fn drop(&mut self) {
