@@ -252,8 +252,6 @@ impl DriveControllerService for DriveController {
         });
         let task_handle = tokio::task::spawn(async move {
             // TODO: Remove unwrap
-            // Move rip dir so it isn't immediately dropped.
-            let _rip_dir = rip_dir;
             while let Some(event) = makemkv.next_event().await.unwrap() {
                 match event {
                     MakemkvMessage::ProgressTitle { bar, name, .. } => {
@@ -279,6 +277,7 @@ impl DriveControllerService for DriveController {
                     _ => continue,
                 }
             }
+            rip_dir.complete();
         });
 
         jobs.insert(
@@ -476,6 +475,9 @@ fn main() {
             name: drive.name,
         });
     }
+
+    let rip_dir = config.shared_directory.join("rips");
+    let _ = std::fs::create_dir(&rip_dir);
 
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
