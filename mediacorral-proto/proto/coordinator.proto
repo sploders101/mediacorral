@@ -1,0 +1,21 @@
+syntax = "proto3";
+package mediacorral.coordinator.v1;
+
+service CoordinatorNotificationService {
+  // Notifies the coordinator of a disc insert
+  rpc DiscInserted (DiscInsertedRequest) returns (DiscInsertedResponse);
+
+  // Notifies the coordinator of a finished rip job
+  rpc RipFinished (RipFinishedRequest) returns (RipFinishedResponse);
+}
+
+message DiscInsertedRequest {
+  uint32 drive_id = 1;
+  optional string name = 2;
+}
+message DiscInsertedResponse {}
+
+message RipFinishedRequest {
+  int64 job_id = 1;
+}
+message RipFinishedResponse {}

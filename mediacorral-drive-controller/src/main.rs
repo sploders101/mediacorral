@@ -2,23 +2,32 @@ use std::{
     collections::{HashMap, VecDeque},
     path::{Path, PathBuf},
     pin::Pin,
+    str::FromStr,
     sync::Arc,
+    time::Duration,
 };
 
-use async_udev::get_disc_name;
+use async_udev::{disc_insert_events, get_disc_name};
 use clap::Parser;
 use futures::StreamExt;
 use makemkv::{
     Makemkv,
     messaging::{MakemkvMessage, ProgressBar},
 };
-use mediacorral_proto::drive_controller::{
-    DriveState, DriveStatusTag, EjectRequest, EjectResponse, GetDriveCountRequest,
-    GetDriveCountResponse, GetDriveMetaRequest, GetDriveMetaResponse, GetDriveStateRequest,
-    GetJobStatusRequest, JobStatus, Progress, ReapJobRequest, ReapJobResponse, RetractRequest,
-    RetractResponse, RipMediaRequest, RipMediaResponse, RipStatus, RipUpdate, WatchRipJobRequest,
-    drive_controller_service_server::{DriveControllerService, DriveControllerServiceServer},
-    rip_update,
+use mediacorral_proto::{
+    coordinator::{
+        DiscInsertedRequest, RipFinishedRequest,
+        coordinator_notification_service_client::CoordinatorNotificationServiceClient,
+    },
+    drive_controller::{
+        DriveState, DriveStatusTag, EjectRequest, EjectResponse, GetDriveCountRequest,
+        GetDriveCountResponse, GetDriveMetaRequest, GetDriveMetaResponse, GetDriveStateRequest,
+        GetJobStatusRequest, JobStatus, Progress, ReapJobRequest, ReapJobResponse, RetractRequest,
+        RetractResponse, RipMediaRequest, RipMediaResponse, RipStatus, RipUpdate,
+        WatchRipJobRequest,
+        drive_controller_service_server::{DriveControllerService, DriveControllerServiceServer},
+        rip_update,
+    },
 };
 use serde::Deserialize;
 use tokio::{
@@ -26,7 +35,7 @@ use tokio::{
     task::JoinHandle,
 };
 use tokio_stream::wrappers::WatchStream;
-use tonic::transport::Server;
+use tonic::transport::{Endpoint, Server};
 
 mod async_udev;
 mod makemkv;
@@ -82,6 +91,7 @@ pub struct RipJob {
 }
 
 pub struct DriveController {
+    coordinator_notifs: CoordinatorNotificationServiceClient<tonic::transport::Channel>,
     shared_directory: PathBuf,
     drives: Arc<Vec<Drive>>,
     rip_jobs: RwLock<HashMap<i64, RipJob>>,
@@ -217,8 +227,21 @@ impl DriveControllerService for DriveController {
         };
 
         let mut jobs = self.rip_jobs.write().await;
+        // Check for jobs with the same ID
         if jobs.contains_key(&request.job_id) {
-            todo!();
+            return Err(tonic::Status::already_exists(
+                "The requested job ID already exists.",
+            ));
+        }
+        // Check for jobs already running on the drive
+        for job in jobs.values() {
+            if job.drive_id == request.drive_id as _
+                && job.job_status.borrow().status == JobStatus::Running.into()
+            {
+                return Err(tonic::Status::resource_exhausted(
+                    "The requested drive is already undergoing a rip job.",
+                ));
+            }
         }
 
         let rip_dir = RipDir::new(&self.shared_directory, request.job_id)
@@ -250,9 +273,10 @@ impl DriveControllerService for DriveController {
             }),
             logs: Vec::new(),
         });
+        let mut notif_client = self.coordinator_notifs.clone();
         let task_handle = tokio::task::spawn(async move {
             // TODO: Remove unwrap
-            while let Some(event) = makemkv.next_event().await.unwrap() {
+            while let Ok(Some(event)) = makemkv.next_event().await {
                 match event {
                     MakemkvMessage::ProgressTitle { bar, name, .. } => {
                         sender.send_modify(|rip_status| match bar {
@@ -277,7 +301,26 @@ impl DriveControllerService for DriveController {
                     _ => continue,
                 }
             }
+            match makemkv.finish().await {
+                Ok(exit_status) if exit_status.success() => {
+                    sender.send_modify(|rip_status| rip_status.set_status(JobStatus::Completed));
+                }
+                _ => {
+                    sender.send_modify(|rip_status| rip_status.set_status(JobStatus::Error));
+                }
+            }
             rip_dir.complete();
+            for _ in 0..15 {
+                if let Ok(_) = notif_client
+                    .rip_finished(RipFinishedRequest {
+                        job_id: request.job_id,
+                    })
+                    .await
+                {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
         });
 
         jobs.insert(
@@ -450,6 +493,7 @@ pub struct Args {
 pub struct DriveControllerConfig {
     shared_directory: PathBuf,
     serve_address: String,
+    coordinator_address: String,
     drives: Vec<DriveInfo>,
 }
 
@@ -487,10 +531,43 @@ fn main() {
         .build()
         .expect("Couldn't build tokio runtime")
         .block_on(async move {
+            let coordinator_endpoint = Endpoint::from_str(&config.coordinator_address)
+                .expect("Invalid coordinator address")
+                .connect_lazy();
+            let coordinator_client =
+                CoordinatorNotificationServiceClient::new(coordinator_endpoint);
+
+            let drives = Arc::new(drives);
+
+            // Watch for disc insert events
+            {
+                let drives = Arc::clone(&drives);
+                let mut coordinator_client = coordinator_client.clone();
+                tokio::task::spawn(async move {
+                    let mut stream = disc_insert_events();
+                    while let Some(event) = stream.next().await {
+                        for (i, drive) in drives.iter().enumerate() {
+                            if event.device != drive.path {
+                                continue;
+                            }
+                            println!("Disc {} inserted into drive {}", event.disc_name, i);
+                            let _ = coordinator_client
+                                .disc_inserted(DiscInsertedRequest {
+                                    drive_id: i as _,
+                                    name: Some(drive.name.clone()),
+                                })
+                                .await;
+                            break;
+                        }
+                    }
+                });
+            }
+
             Server::builder()
                 .add_service(DriveControllerServiceServer::new(DriveController {
+                    coordinator_notifs: coordinator_client,
                     shared_directory: config.shared_directory,
-                    drives: Arc::new(drives),
+                    drives,
                     rip_jobs: RwLock::new(HashMap::new()),
                 }))
                 .serve(config.serve_address.parse().expect("Invalid address"))

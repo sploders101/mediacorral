@@ -27,7 +27,7 @@ pub struct DiscInsert {
     pub disc_name: String,
 }
 
-pub fn disc_insert_events() -> impl Stream<Item = DiscInsert> {
+pub fn disc_insert_events() -> impl Stream<Item = DiscInsert> + Unpin {
     let (sender, mut receiver) = tokio::sync::mpsc::channel(10);
     // Using unwraps here because it won't escape the thread. Maybe I'll improve this later.
     std::thread::spawn(move || {
@@ -68,9 +68,9 @@ pub fn disc_insert_events() -> impl Stream<Item = DiscInsert> {
         }
     });
 
-    return stream! {
+    return Box::pin(stream! {
         while let Some(insert) = receiver.recv().await {
             yield insert;
         }
-    };
+    });
 }

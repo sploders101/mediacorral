@@ -3,6 +3,5 @@ resolver = "3"
 members = [
   "mediacorral-drive-controller",
   "mediacorral-proto",
-  "mediacorral-runner",
-  "mediacorral-server",
+  "mediacorral-coordinator",
 ]
