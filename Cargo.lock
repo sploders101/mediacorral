@@ -1394,17 +1394,22 @@ name = "mediacorral-server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "clap",
  "lazy-regex",
  "levenshtein",
+ "mediacorral-proto",
  "pathdiff",
  "rayon",
  "reqwest",
  "serde",
  "serde_json",
  "serde_with",
+ "serde_yaml",
  "sqlx",
  "thiserror 2.0.12",
  "tokio",
+ "tonic",
+ "tonic-web",
  "uuid",
 ]
 
@@ -2785,6 +2790,24 @@ dependencies = [
  "prost-types",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "tonic-web"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "774cad0f35370f81b6c59e3a1f5d0c3188bdb4a2a1b8b7f0921c860bfbd3aec6"
+dependencies = [
+ "base64",
+ "bytes",
+ "http",
+ "http-body",
+ "pin-project",
+ "tokio-stream",
+ "tonic",
+ "tower-layer",
+ "tower-service",
+ "tracing",
 ]
 
 [[package]]
