@@ -19,3 +19,47 @@ message RipFinishedRequest {
   int64 job_id = 1;
 }
 message RipFinishedResponse {}
+
+
+service CoordinatorJobService {
+  // Requests a job from the queue
+  rpc RequestJob (JobRequest) returns (JobResponse);
+
+  // Sends the response from a ComputeDistance job
+  rpc JobReplyComputeDistance(JobReplyComputeDistanceRequest) returns (JobReplyResponse);
+
+  // Signals completion of an OcrSubtitles job (srt files in rip directory)
+  rpc JobReplyOcrSubtitles(JobReplyOcrSubtitlesRequest) returns (JobReplyResponse);
+}
+
+message JobRequest {
+  uint32 open_threads = 1;
+}
+
+message JobResponse {
+  message ComputeDistance {
+    // Blob ID for side A of the distance computation
+    string blob_a = 1;
+    // Blob ID for side B of the distance computation
+    string blob_b = 2;
+  }
+  message OcrSubtitles {
+    int64 rip_job = 1;
+  }
+  uint64 id = 1;
+  oneof job {
+    ComputeDistance compute_distance = 2;
+    OcrSubtitles extract_subtitles = 3;
+  }
+}
+
+message JobReplyComputeDistanceRequest {
+  uint64 id = 1;
+  uint64 distance = 2;
+}
+
+message JobReplyOcrSubtitlesRequest {
+  uint64 id = 1;
+}
+
+message JobReplyResponse {}

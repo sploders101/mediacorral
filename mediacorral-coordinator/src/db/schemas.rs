@@ -71,6 +71,8 @@ pub struct RipJobsItem {
     pub start_time: i64,
     pub disc_title: Option<String>,
     pub suspected_contents: Option<String>,
+    pub rip_finished: bool,
+    pub imported: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, sqlx::Type)]
