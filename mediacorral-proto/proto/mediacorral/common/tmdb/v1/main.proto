@@ -1,0 +1,132 @@
+syntax = "proto3";
+package mediacorral.common.tmdb.v1;
+
+message TmdbAnyTitle {
+  int32 id = 1;
+  optional string title = 2;
+  optional string backdrop_path = 3;
+  optional string poster_path = 4;
+  optional string overview = 5;
+}
+
+message TmdbMovieResult {
+  int32 id = 1;
+  optional string title = 2;
+  optional string release_date = 3;
+  optional string original_language = 4;
+  optional string poster_path = 5;
+  optional string overview = 6;
+}
+
+message TmdbTvResult {
+  int32 id = 1;
+  optional string name = 2;
+  repeated string origin_country = 3;
+  optional string original_language = 4;
+  optional string overview = 5;
+  optional string poster_path = 6;
+  optional string first_air_date = 7;
+}
+
+message TmdbGenre {
+  int32 id = 1;
+  string name = 2;
+}
+
+message TmdbProductionCompany {
+  int32 id = 1;
+  optional string logo_path = 2;
+  string name = 3;
+  optional string origin_country = 4;
+}
+
+message TmdbProductionCountry {
+  string iso_3166_1 = 1;
+  string name = 2;
+}
+
+message TmdbSpokenLanguage {
+  string iso_639_1 = 1;
+  string english_name = 2;
+  string name = 3;
+}
+
+message TmdbMovieDetails {
+  int32 id = 1;
+  uint32 imdb_id = 2;
+  optional string title = 3;
+  repeated TmdbGenre genres = 4;
+  optional string poster_path = 5;
+  optional string release_date = 6;
+  optional string overview = 7;
+  uint32 runtime = 8;
+}
+
+message TmdbTvCreator {
+  int32 id = 1;
+  string credit_id = 2;
+  string name = 3;
+  optional string profile_path = 4;
+}
+
+message TmdbTvNetwork {
+  int32 id = 1;
+  optional string logo_path = 2;
+  string name = 3;
+  optional string origin_country = 4;
+}
+
+message TmdbTvSeason {
+  int32 id = 1;
+  uint32 season_number = 2;
+  string name = 3;
+  optional string air_date = 4;
+  optional string poster_path = 5;
+  uint32 episode_count = 6;
+  optional string overview = 7;
+}
+
+message TmdbTvSeriesDetails {
+  int32 id = 1;
+  string name = 2;
+  optional string poster_path = 3;
+  optional string type = 4;
+  optional string status = 5;
+  optional string first_air_date = 6;
+  uint32 number_of_episodes = 7;
+  uint32 number_of_seasons = 8;
+  repeated TmdbTvCreator created_by = 9;
+  repeated TmdbGenre genres = 10;
+  bool in_production = 11;
+  repeated string languages = 12;
+  repeated TmdbTvNetwork networks = 13;
+  repeated string origin_country = 14;
+  optional string original_language = 15;
+  optional string overview = 16;
+  repeated TmdbProductionCompany production_companies = 17;
+  repeated TmdbProductionCountry production_countries = 18;
+  repeated TmdbSpokenLanguage spoken_languages = 19;
+  repeated TmdbTvSeason seasons = 20;
+}
+
+message TmdbTvSeasonDetails {
+  optional string air_date = 1;
+  repeated TmdbTvEpisodeDetails episodes = 2;
+  string name = 3;
+  optional string overview = 4;
+  int32 id = 5;
+  optional string poster_path = 6;
+  uint32 season_number = 7;
+}
+
+message TmdbTvEpisodeDetails {
+  optional string air_date = 1;
+  uint32 episode_number = 2;
+  int32 id = 3;
+  string name = 4;
+  optional string overview = 5;
+  optional uint32 runtime = 6;
+  uint32 season_number = 7;
+  int32 show_id = 8;
+  optional string still_path = 9;
+}

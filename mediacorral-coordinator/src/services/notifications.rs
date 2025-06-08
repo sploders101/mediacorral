@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use mediacorral_proto::coordinator::{
+use mediacorral_proto::mediacorral::coordinator::v1::{
     DiscInsertedRequest, DiscInsertedResponse, RipFinishedRequest, RipFinishedResponse,
     coordinator_notification_service_server::CoordinatorNotificationService,
 };

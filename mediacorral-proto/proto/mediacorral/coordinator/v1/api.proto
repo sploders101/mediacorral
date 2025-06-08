@@ -1,0 +1,31 @@
+syntax = "proto3";
+package mediacorral.coordinator.v1;
+
+import "mediacorral/common/tmdb/v1/main.proto";
+
+service CoordinatorApiService {
+  // Gets textual subtitles
+  rpc GetSubtitles (GetSubtitlesRequest) returns (GetSubtitlesResponse);
+
+  // Searches TheMovieDatabase for a given query
+  rpc SearchTmdbMulti (SearchTmdbMultiRequest) returns (SearchTmdbMultiResponse);
+}
+
+message GetSubtitlesRequest {
+  string blob_id = 1;
+}
+message GetSubtitlesResponse {
+  string subtitles = 1;
+}
+
+message SearchTmdbMultiRequest {
+  string query = 1;
+  optional string language = 2;
+  optional uint32 page = 3;
+}
+message SearchTmdbMultiResponse {
+  uint32 page = 1;
+  uint32 total_pages = 2;
+  uint32 total_results = 3;
+  repeated mediacorral.common.tmdb.v1.TmdbAnyTitle results = 4;
+}

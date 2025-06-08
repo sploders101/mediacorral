@@ -14,12 +14,12 @@ use makemkv::{
     Makemkv,
     messaging::{MakemkvMessage, ProgressBar},
 };
-use mediacorral_proto::{
-    coordinator::{
+use mediacorral_proto::mediacorral::{
+    coordinator::v1::{
         DiscInsertedRequest, RipFinishedRequest,
         coordinator_notification_service_client::CoordinatorNotificationServiceClient,
     },
-    drive_controller::{
+    drive_controller::v1::{
         DriveState, DriveStatusTag, EjectRequest, EjectResponse, GetDriveCountRequest,
         GetDriveCountResponse, GetDriveMetaRequest, GetDriveMetaResponse, GetDriveStateRequest,
         GetJobStatusRequest, JobStatus, Progress, ReapJobRequest, ReapJobResponse, RetractRequest,

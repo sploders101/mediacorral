@@ -1,4 +1,12 @@
 pub fn main() {
-    tonic_build::compile_protos("proto/drive_controller.proto").expect("Couldn't compile protos.");
-    tonic_build::compile_protos("proto/coordinator/main.proto").expect("Couldn't compile protos.");
+    tonic_build::configure()
+        .compile_protos(
+            &[
+                "proto/mediacorral/common/tmdb/v1/main.proto",
+                "proto/mediacorral/drive_controller/v1/main.proto",
+                "proto/mediacorral/coordinator/v1/main.proto",
+            ],
+            &["proto/"],
+        )
+        .unwrap();
 }

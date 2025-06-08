@@ -3,7 +3,7 @@ package mediacorral.coordinator.v1;
 
 service CoordinatorJobService {
   // Requests a job from the queue
-  rpc RequestJob (JobRequest) returns (JobResponse);
+  rpc RequestJob (RequestJobRequest) returns (RequestJobResponse);
 
   // Sends the response from a ComputeDistance job
   rpc JobReplyComputeDistance(JobReplyComputeDistanceRequest) returns (JobReplyResponse);
@@ -12,11 +12,11 @@ service CoordinatorJobService {
   rpc JobReplyOcrSubtitles(JobReplyOcrSubtitlesRequest) returns (JobReplyResponse);
 }
 
-message JobRequest {
+message RequestJobRequest {
   uint32 open_threads = 1;
 }
 
-message JobResponse {
+message RequestJobResponse {
   message ComputeDistance {
     // Blob ID for side A of the distance computation
     string blob_a = 1;

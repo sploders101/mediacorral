@@ -2,7 +2,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use application::Application;
 use clap::Parser;
-use mediacorral_proto::coordinator::{
+use mediacorral_proto::mediacorral::coordinator::v1::{
     coordinator_api_service_server::CoordinatorApiServiceServer,
     coordinator_job_service_server::CoordinatorJobServiceServer,
     coordinator_notification_service_server::CoordinatorNotificationServiceServer,

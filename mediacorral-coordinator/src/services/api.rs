@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use mediacorral_proto::coordinator::coordinator_api_service_server::CoordinatorApiService;
+use mediacorral_proto::mediacorral::coordinator::v1::coordinator_api_service_server::CoordinatorApiService;
 
 use crate::application::Application;
 
