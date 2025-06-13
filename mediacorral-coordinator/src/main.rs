@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use application::Application;
 use clap::Parser;
@@ -26,8 +26,33 @@ pub struct Args {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct CoordinatorConfig {
-    shared_directory: PathBuf,
+    data_directory: PathBuf,
+    tmdb_api_key: String,
     serve_address: String,
+    exports_dirs: HashMap<String, export_settings::ExportSettings>,
+    enable_autorip: bool,
+}
+
+pub mod export_settings {
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub enum MediaType {
+        Movies,
+        TvShows,
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub enum LinkType {
+        Symbolic,
+        Hard,
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct ExportSettings {
+        pub media_type: MediaType,
+        pub link_type: LinkType,
+    }
 }
 
 #[tokio::main]
@@ -38,7 +63,16 @@ async fn main() {
     let config: CoordinatorConfig =
         serde_yaml::from_reader(config_file).expect("Couldn't read config");
 
-    let application = Arc::new(Application::new());
+    let address = config
+        .serve_address
+        .parse()
+        .expect("Invalid serve address.");
+
+    let application = Arc::new(
+        Application::new(config)
+            .await
+            .expect("Couldn't start application"),
+    );
 
     Server::builder()
         .accept_http1(true)
@@ -52,12 +86,7 @@ async fn main() {
         .add_service(CoordinatorApiServiceServer::new(ApiService::new(
             application,
         )))
-        .serve(
-            config
-                .serve_address
-                .parse()
-                .expect("Invalid serve address."),
-        )
+        .serve(address)
         .await
         .unwrap();
 }

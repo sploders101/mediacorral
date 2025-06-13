@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 /// Search result container
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TmdbQueryResults<T> {
-    pub page: usize,
-    pub total_pages: usize,
-    pub total_results: usize,
+    pub page: u32,
+    pub total_pages: u32,
+    pub total_results: u32,
     pub results: Vec<T>,
 }
 

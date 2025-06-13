@@ -1,0 +1,19 @@
+syntax = "proto3";
+package mediacorral.coordinator.v1;
+
+message ExportSettings {
+  MediaType media_type = 1;
+  LinkType link_type = 2;
+}
+
+enum MediaType {
+  MEDIA_TYPE_UNSPECIFIED = 0;
+  MEDIA_TYPE_MOVIES = 1;
+  MEDIA_TYPE_TV = 2;
+}
+
+enum LinkType {
+  LINK_TYPE_UNSPECIFIED = 0;
+  LINK_TYPE_SYMBOLIC = 1;
+  LINK_TYPE_HARD = 2;
+}

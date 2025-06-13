@@ -37,15 +37,10 @@ pub type TmdbResult<T> = Result<T, TmdbError>;
 
 pub struct TmdbImporter {
     db: Arc<SqlitePool>,
-    blob_storage: Arc<BlobStorageController>,
     agent: reqwest::Client,
 }
 impl TmdbImporter {
-    pub fn new(
-        db: Arc<SqlitePool>,
-        api_key: String,
-        blob_storage: Arc<BlobStorageController>,
-    ) -> anyhow::Result<Self> {
+    pub fn new(db: Arc<SqlitePool>, api_key: String) -> anyhow::Result<Self> {
         let agent = reqwest::Client::builder()
             .user_agent(USER_AGENT)
             .default_headers(HeaderMap::from_iter(
@@ -57,11 +52,7 @@ impl TmdbImporter {
             ))
             .build()?;
 
-        return Ok(Self {
-            db,
-            agent,
-            blob_storage,
-        });
+        return Ok(Self { db, agent });
     }
 
     pub async fn query_any(
@@ -135,7 +126,11 @@ impl TmdbImporter {
         return Ok(response.json().await?);
     }
 
-    async fn get_poster(&self, poster_path: Option<String>) -> anyhow::Result<i64> {
+    async fn get_poster(
+        &self,
+        poster_path: Option<String>,
+        blob_storage: &BlobStorageController,
+    ) -> anyhow::Result<i64> {
         let poster_path = match poster_path {
             Some(path) => path,
             None => anyhow::bail!("Missing poster"),
@@ -150,8 +145,7 @@ impl TmdbImporter {
             .get("content-type")
             .and_then(|value| value.to_str().ok())
             .context("Unknown image format")?;
-        let (id, mut file) = self
-            .blob_storage
+        let (id, mut file) = blob_storage
             .add_image(Some(poster_path), String::from(mime_type))
             .await?;
         while let Some(chunk) = response.chunk().await? {
@@ -162,7 +156,11 @@ impl TmdbImporter {
     }
 
     /// Imports movie metadata for the given ID into the local database.
-    pub async fn import_movie(&self, movie_id: i32) -> anyhow::Result<()> {
+    pub async fn import_movie(
+        &self,
+        movie_id: i32,
+        blob_storage: Option<&BlobStorageController>,
+    ) -> anyhow::Result<()> {
         let response: TmdbMovieDetails = self
             .agent
             .get(format!("https://api.themoviedb.org/3/movie/{movie_id}"))
@@ -172,7 +170,13 @@ impl TmdbImporter {
             .json()
             .await?;
 
-        let poster_blob = self.get_poster(response.poster_path).await.ok();
+        let poster_blob = match blob_storage {
+            Some(blob_storage) => self
+                .get_poster(response.poster_path, blob_storage)
+                .await
+                .ok(),
+            None => None,
+        };
 
         if let Some(title) = response.title.or(response.name) {
             db::insert_tmdb_movie(
@@ -199,7 +203,11 @@ impl TmdbImporter {
     /// Imports TV metadata for the given ID into the local database.
     ///
     /// This function recurses into shows and episodes to get all data for the entire show.
-    pub async fn import_tv(&self, tv_id: i32) -> anyhow::Result<()> {
+    pub async fn import_tv(
+        &self,
+        tv_id: i32,
+        blob_storage: Option<&BlobStorageController>,
+    ) -> anyhow::Result<()> {
         let response: TmdbTvSeriesDetails = self
             .agent
             .get(format!("https://api.themoviedb.org/3/tv/{tv_id}"))
@@ -209,7 +217,14 @@ impl TmdbImporter {
             .json()
             .await
             .context("Failed to parse series information")?;
-        let poster_blob = self.get_poster(response.poster_path).await.ok();
+
+        let poster_blob = match blob_storage {
+            Some(blob_storage) => self
+                .get_poster(response.poster_path, blob_storage)
+                .await
+                .ok(),
+            None => None,
+        };
 
         // Loop over seasons and postpone database interaction until we have all the information
         // in case there's rate-limiting, since I'm not confident in the upsert functionality yet.
@@ -251,6 +266,13 @@ impl TmdbImporter {
         .await?;
 
         for season_details in season_details_list {
+            let poster_blob = match blob_storage {
+                Some(blob_storage) => self
+                    .get_poster(season_details.poster_path, blob_storage)
+                    .await
+                    .ok(),
+                None => None,
+            };
             let season_id = db::upsert_tv_season(
                 &self.db,
                 &db::schemas::TvSeasonsItem {
@@ -258,7 +280,7 @@ impl TmdbImporter {
                     tmdb_id: Some(season_details.id),
                     tv_show_id: series_id,
                     season_number: season_details.season_number,
-                    poster_blob: self.get_poster(season_details.poster_path).await.ok(),
+                    poster_blob,
                     title: season_details.name,
                     description: season_details.overview,
                 },
@@ -266,6 +288,12 @@ impl TmdbImporter {
             .await?;
 
             for episode in season_details.episodes {
+                let thumbnail_blob = match blob_storage {
+                    Some(blob_storage) => {
+                        self.get_poster(episode.still_path, blob_storage).await.ok()
+                    }
+                    None => None,
+                };
                 let _episode_id = db::upsert_tv_episode(
                     &self.db,
                     &db::schemas::TvEpisodesItem {
@@ -274,7 +302,7 @@ impl TmdbImporter {
                         tv_show_id: series_id,
                         tv_season_id: season_id,
                         episode_number: episode.episode_number,
-                        thumbnail_blob: self.get_poster(episode.still_path).await.ok(),
+                        thumbnail_blob,
                         title: episode.name,
                         description: episode.overview,
                     },

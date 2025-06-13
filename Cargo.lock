@@ -1395,6 +1395,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "futures",
  "lazy-regex",
  "levenshtein",
  "mediacorral-proto",
@@ -1408,6 +1409,7 @@ dependencies = [
  "sqlx",
  "thiserror 2.0.12",
  "tokio",
+ "tokio-stream",
  "tonic",
  "tonic-web",
  "uuid",

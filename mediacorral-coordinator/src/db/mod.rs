@@ -508,7 +508,9 @@ pub async fn insert_rip_jobs(db: &Db, rip_job: &RipJobsItem) -> Result<i64, sqlx
                 id,
                 start_time,
                 disc_title,
-                suspected_contents
+                suspected_contents,
+                rip_finished,
+                imported
             ) VALUES (?, ?, ?, ?)
             ON CONFLICT (id) DO UPDATE SET
                 start_time = ?,
@@ -558,7 +560,9 @@ pub async fn get_rip_job(db: &Db, rip_job: i64) -> Result<RipJobsItem, sqlx::Err
                 id,
                 start_time,
                 disc_title,
-                suspected_contents
+                suspected_contents,
+                rip_finished,
+                imported
             FROM rip_jobs
             WHERE
                 id = ?
@@ -982,7 +986,9 @@ pub async fn get_rip_jobs_with_untagged_videos(
                 rip_jobs.id,
                 rip_jobs.start_time,
                 rip_jobs.disc_title,
-                rip_jobs.suspected_contents
+                rip_jobs.suspected_contents,
+                rip_jobs.rip_finished,
+                rip_jobs.imported
             FROM rip_jobs
             INNER JOIN video_files ON
                 rip_jobs.id = video_files.rip_job

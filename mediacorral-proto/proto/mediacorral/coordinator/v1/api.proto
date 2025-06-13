@@ -2,6 +2,7 @@ syntax = "proto3";
 package mediacorral.coordinator.v1;
 
 import "mediacorral/common/tmdb/v1/main.proto";
+import "mediacorral/drive_controller/v1/main.proto";
 
 service CoordinatorApiService {
   // Gets textual subtitles
@@ -9,6 +10,73 @@ service CoordinatorApiService {
 
   // Searches TheMovieDatabase for a given query
   rpc SearchTmdbMulti (SearchTmdbMultiRequest) returns (SearchTmdbMultiResponse);
+
+  // Searches TheMovieDatabase for a TV show
+  rpc SearchTmdbTv (SearchTmdbTvRequest) returns (SearchTmdbTvResponse);
+
+  // Searches TheMovieDatabase for a Movie
+  rpc SearchTmdbMovie (SearchTmdbMovieRequest) returns (SearchTmdbMovieResponse);
+
+  // Imports a TV show from TheMovieDatabase
+  rpc ImportTmdbTv (ImportTmdbTvRequest) returns (ImportTmdbTvResponse);
+
+  // Imports a Movie from TheMovieDatabase
+  rpc ImportTmdbMovie (ImportTmdbMovieRequest) returns (ImportTmdbMovieResponse);
+
+  // Rebuild exports directory
+  rpc RebuildExportsDir (RebuildExportsDirRequest) returns (RebuildExportsDirResponse);
+
+  // Gets/sets the status of the auto-ripper
+  rpc AutoripStatus (AutoripStatusRequest) returns (AutoripStatusResponse);
+
+  // Lists the currently-registered drives
+  rpc ListDrives (ListDrivesRequest) returns (ListDrivesResponse);
+
+  // Starts a rip job
+  rpc StartRipJob (StartRipJobRequest) returns (StartRipJobResponse);
+
+  // Gets the current status of a rip job
+  rpc GetRipJobStatus (GetRipJobStatusRequest) returns (GetRipJobStatusResponse);
+
+  // Streams status updates from a rip job.
+  // Initial state is always `RipStatus::default()`.
+  rpc StreamRipJobUpdates (StreamRipJobUpdatesRequest) returns (stream mediacorral.drive_controller.v1.RipUpdate);
+
+  // Ejects a disc
+  rpc Eject (EjectRequest) returns (EjectResponse);
+
+  // Retracts a disc
+  rpc Retract (RetractRequest) returns (RetractResponse);
+
+  // Lists the movies in the database
+  rpc ListMovies (ListMoviesRequest) returns (ListMoviesResponse);
+
+  // Gets a movie from the database by its TMDB ID
+  rpc GetMovieByTmdbId (GetMovieByTmdbIdRequest) returns (GetMovieByTmdbIdResponse);
+
+  // Lists the TV shows in the database
+  rpc ListTvShows (ListTvShowsRequest) returns (ListTvShowsResponse);
+
+  // Lists the seasons for a given TV show
+  rpc ListTvSeasons (ListTvSeasonsRequest) returns (ListTvSeasonsResponse);
+
+  // Lists the episodes for a given season
+  rpc ListTvEpisodes (ListTvEpisodesRequest) returns (ListTvEpisodesResponse);
+
+  // Gets a particular TV episode
+  rpc GetTvEpisode (GetTvEpisodeRequest) returns (GetTvEpisodeResponse);
+
+  // Gets a particular TV episode by TMDB id
+  rpc GetTvEpisodeByTmdbId (GetTvEpisodeByTmdbIdRequest) returns (GetTvEpisodeByTmdbIdResponse);
+
+  // Tags a video file with metadata
+  rpc TagFile (TagFileRequest) returns (TagFileResponse);
+
+  // Gets a list of jobs containing untagged files
+  rpc GetUntaggedJobs (GetUntaggedJobsRequest) returns (GetUntaggedJobsResponse);
+
+  // Gets all info needed to catalog a job
+  rpc GetJobCatalogueInfo (GetJobCatalogueInfoRequest) returns (GetJobCatalogueInfoResponse);
 }
 
 message GetSubtitlesRequest {
@@ -28,4 +96,273 @@ message SearchTmdbMultiResponse {
   uint32 total_pages = 2;
   uint32 total_results = 3;
   repeated mediacorral.common.tmdb.v1.TmdbAnyTitle results = 4;
+}
+
+message SearchTmdbTvRequest {
+  string query = 1;
+  optional string first_air_date_year = 2;
+  optional string language = 3;
+  optional string year = 4;
+  uint32 page = 5;
+}
+message SearchTmdbTvResponse {
+  uint32 page = 1;
+  uint32 total_pages = 2;
+  uint32 total_results = 3;
+  repeated mediacorral.common.tmdb.v1.TmdbTvResult results = 4;
+}
+
+message SearchTmdbMovieRequest {
+  string query = 1;
+  optional string primary_release_year = 2;
+  optional string language = 3;
+  optional string year = 4;
+  optional string region = 5;
+  optional uint32 page = 6;
+}
+message SearchTmdbMovieResponse {
+  uint32 page = 1;
+  uint32 total_pages = 2;
+  uint32 total_results = 3;
+  repeated mediacorral.common.tmdb.v1.TmdbMovieResult results = 4;
+}
+
+message ImportTmdbTvRequest {
+  int32 tmdb_id = 1;
+}
+message ImportTmdbTvResponse {}
+
+message ImportTmdbMovieRequest {
+  int32 tmdb_id = 1;
+}
+message ImportTmdbMovieResponse {}
+
+message RebuildExportsDirRequest {
+  string exports_dir = 1;
+}
+message RebuildExportsDirResponse {}
+
+enum AutoripStatus {
+  AUTORIP_STATUS_UNSPECIFIED = 0;
+  AUTORIP_STATUS_ENABLED = 1;
+  AUTORIP_STATUS_DISABLED = 2;
+}
+
+message AutoripStatusRequest {
+  // If specified, enables or disables the autoripper.
+  // If unspecified, queries the current status
+  AutoripStatus status = 1;
+}
+message AutoripStatusResponse {
+  AutoripStatus status = 1;
+}
+
+message ListDrivesRequest {}
+message ListDrivesResponse {
+  repeated DiscDrive drives = 1;
+}
+message DiscDrive {
+  uint32 controller = 1;
+  uint32 drive_id = 2;
+}
+
+message StartRipJobRequest {
+  DiscDrive drive = 1;
+  optional string disc_name = 2;
+  optional SuspectedContents suspected_contents = 3;
+  bool autoeject = 4;
+}
+message StartRipJobResponse {
+  int64 job_id = 1;
+}
+message SuspectedContents {
+  message Movie {
+    int32 tmdb_id = 1;
+  }
+  message TvEpisodes {
+    repeated int32 episode_tmdb_ids = 1;
+  }
+  oneof suspected_contents {
+    Movie movie = 1;
+    TvEpisodes tv_episodes = 2;
+  }
+}
+
+message GetRipJobStatusRequest {
+  int64 job_id = 1;
+}
+message GetRipJobStatusResponse {
+  mediacorral.drive_controller.v1.RipStatus status = 1;
+}
+
+message StreamRipJobUpdatesRequest {
+  int64 job_id = 1;
+}
+
+message EjectRequest {
+  DiscDrive drive = 1;
+}
+message EjectResponse {}
+
+message RetractRequest {
+  DiscDrive drive = 1;
+}
+message RetractResponse {}
+
+message ListMoviesRequest {}
+message ListMoviesResponse {
+  repeated Movie movies = 1;
+}
+message Movie {
+  int64 id = 1;
+  optional int32 tmdb_id = 2;
+  optional int64 poster_blob = 3;
+  string title = 4;
+  optional string release_year = 5;
+  optional string description = 6;
+}
+
+message GetMovieByTmdbIdRequest {
+  optional int32 tmdb_id = 1;
+}
+message GetMovieByTmdbIdResponse {
+  optional Movie movie = 1;
+}
+
+message ListTvShowsRequest {}
+message ListTvShowsResponse {
+  repeated TvShow tv_shows = 1;
+}
+message TvShow {
+  int64 id = 1;
+  optional int32 tmdb_id = 2;
+  optional int64 poster_blob = 3;
+  string title = 4;
+  optional string original_release_year = 5;
+  optional string description = 6;
+}
+
+message ListTvSeasonsRequest {
+  int64 series_id = 1;
+}
+message ListTvSeasonsResponse {
+  int64 series_id = 1;
+  repeated TvSeason tv_seasons = 2;
+}
+message TvSeason {
+  int64 id = 1;
+  optional int32 tmdb_id = 2;
+  int64 tv_show_id = 3;
+  uint32 season_number = 4;
+  optional int64 poster_blob = 5;
+  string title = 6;
+  optional string description = 7;
+}
+
+message ListTvEpisodesRequest {
+  int64 tv_season_id = 1;
+}
+message ListTvEpisodesResponse {
+  int64 series_id = 1;
+  int64 tv_season_id = 2;
+  repeated TvEpisode tv_episodes = 3;
+}
+message TvEpisode {
+  int64 id = 1;
+  optional int32 tmdb_id = 2;
+  int64 tv_show_id = 3;
+  int64 tv_season_id = 4;
+  uint32 episode_number = 5;
+  optional int64 thumbnail_blob = 6;
+  string title = 7;
+  optional string description = 8;
+}
+
+message GetTvEpisodeRequest {
+  int64 episode_id = 1;
+}
+message GetTvEpisodeResponse {
+  TvEpisode episode = 1;
+}
+
+message GetTvEpisodeByTmdbIdRequest {
+  int32 tmdb_id = 1;
+}
+message GetTvEpisodeByTmdbIdResponse {
+  TvEpisode episode = 1;
+}
+
+message TagFileRequest {
+  int64 file = 1;
+  VideoType video_type = 2;
+  int64 match_id = 3;
+}
+message TagFileResponse {}
+enum VideoType {
+  VIDEO_TYPE_UNSPECIFIED = 0;
+  VIDEO_TYPE_MOVIE = 1;
+  VIDEO_TYPE_SPECIAL_FEATURE = 2;
+  VIDEO_TYPE_TV_EPISODE = 3;
+}
+
+message GetUntaggedJobsRequest {
+  uint64 skip = 1;
+  uint64 limit = 2;
+}
+message GetUntaggedJobsResponse {
+  repeated RipJob rip_job = 1;
+}
+message RipJob {
+  int64 id = 1;
+  int64 start_time = 2;
+  optional string disc_title = 3;
+  optional string suspected_contents = 4;
+  bool rip_finished = 5;
+  bool imported = 6;
+}
+
+message GetJobCatalogueInfoRequest {
+  int64 job_id = 1;
+}
+message GetJobCatalogueInfoResponse {
+  int64 id = 1;
+  int64 start_time = 2;
+  optional string disc_title = 3;
+  optional SuspectedContents suspected_contents = 4;
+  repeated VideoFile video_files = 5;
+  repeated MatchInfoItem matches = 6;
+  repeated RipVideoBlobs subtitle_maps = 7;
+  repeated OstDownloadsItem ost_subtitle_files = 8;
+}
+message VideoFile {
+  int64 id = 1;
+  VideoType video_type = 2;
+  //  Match ID: Identifies the specific movie, special feature, etc this video contains.
+  optional int64 match_id = 3;
+  string blob_id = 4;
+  uint32 resolution_width = 5;
+  uint32 resolution_height = 6;
+  uint32 length = 7;
+  bytes original_video_hash = 8;
+  int64 rip_job = 9;
+}
+message MatchInfoItem {
+  int64 id = 1;
+  int64 video_file_id = 2;
+  int64 ost_download_id = 3;
+  uint32 distance = 4;
+  uint32 max_distance = 5;
+}
+message RipVideoBlobs {
+  int64 id = 1;
+  int64 job_id = 2;
+  string video_blob = 3;
+  optional string subtitle_blob = 4;
+}
+message OstDownloadsItem {
+  int64 id = 1;
+  VideoType video_type = 2;
+  int64 match_id = 3;
+  string filename = 4;
+  string blob_id = 5;
 }

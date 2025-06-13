@@ -1,6 +1,0 @@
-syntax = "proto3";
-package mediacorral.coordinator.v1;
-
-import "mediacorral/coordinator/v1/api.proto";
-import "mediacorral/coordinator/v1/jobs.proto";
-import "mediacorral/coordinator/v1/notifications.proto";
