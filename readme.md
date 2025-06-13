@@ -1,5 +1,7 @@
 # Mediacorral
 
+NOTICE: Work is currently happening on the `rework` branch. The iteration you see here was sort of my prototyping-but-I-really-need-something-that-works-now stage. As such, it is fully-functional, but is lacking in its design & adaptability. The new version switches to a small-scale microservices architecture built on gRPC, which will allow me to iterate faster (due to auto-generated grpc-web bindings), and scale out to my whole Kubernetes cluster for things like bulk analysis. It also contains many small quality-of-life enhancements like database-backed analysis job tracking.
+
 This is Mediacorral, the third and hopefully final in my line of media cataloging tools. This will be a one-stop-shop for managing my media collection, supporting automated ripping, identification, cataloging, and disaster recovery.
 
 ## Preamble
