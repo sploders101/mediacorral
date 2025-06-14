@@ -164,6 +164,7 @@ message ListDrivesResponse {
 message DiscDrive {
   uint32 controller = 1;
   uint32 drive_id = 2;
+  string name = 3;
 }
 
 message StartRipJobRequest {

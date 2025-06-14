@@ -70,7 +70,7 @@ pub struct RipJobsItem {
     pub id: Option<i64>,
     pub start_time: i64,
     pub disc_title: Option<String>,
-    pub suspected_contents: Option<String>,
+    pub suspected_contents: Option<Vec<u8>>,
     pub rip_finished: bool,
     pub imported: bool,
 }

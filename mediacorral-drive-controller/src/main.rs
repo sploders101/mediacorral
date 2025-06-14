@@ -550,11 +550,10 @@ fn main() {
                             if event.device != drive.path {
                                 continue;
                             }
-                            println!("Disc {} inserted into drive {}", event.disc_name, i);
                             let _ = coordinator_client
                                 .disc_inserted(DiscInsertedRequest {
                                     drive_id: i as _,
-                                    name: Some(drive.name.clone()),
+                                    name: Some(event.disc_name),
                                 })
                                 .await;
                             break;

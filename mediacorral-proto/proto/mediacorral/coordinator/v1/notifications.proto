@@ -10,7 +10,9 @@ service CoordinatorNotificationService {
 }
 
 message DiscInsertedRequest {
+  // The ID of the drive the disc was inserted to
   uint32 drive_id = 1;
+  // The name of the disc
   optional string name = 2;
 }
 message DiscInsertedResponse {}

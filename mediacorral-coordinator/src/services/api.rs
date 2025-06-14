@@ -1,15 +1,23 @@
 use std::fs::File;
 use std::io::{ErrorKind, Read};
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::application::Application;
+use crate::db::insert_rip_jobs;
+use crate::db::schemas::RipJobsItem;
 use crate::managers::exports::ExportsDirError;
 use crate::managers::tmdb::TmdbError;
-use mediacorral_proto::mediacorral::coordinator::v1::AutoripStatus;
+use mediacorral_proto::mediacorral::coordinator::v1::{AutoripStatus, DiscDrive};
+use mediacorral_proto::mediacorral::drive_controller::v1::{
+    DriveStatusTag, EjectRequest, GetDriveCountRequest, GetDriveMetaRequest, GetDriveStateRequest,
+    GetJobStatusRequest, RetractRequest, RipMediaRequest, WatchRipJobRequest,
+};
 use mediacorral_proto::mediacorral::{
     coordinator::v1::{self as proto, coordinator_api_service_server::CoordinatorApiService},
     drive_controller::v1::RipUpdate,
 };
+use tokio::time::Instant;
 use tokio_stream::wrappers::ReceiverStream;
 
 trait ToTonic {
@@ -52,6 +60,12 @@ impl<T> ToTonic for Result<T, ExportsDirError> {
             ExportsDirError::Io(err) => tonic::Status::internal(format!("{err}")),
             ExportsDirError::Db(err) => tonic::Status::internal(format!("{err}")),
         });
+    }
+}
+impl<T> ToTonic for Option<T> {
+    type T = T;
+    fn bubble(self) -> Result<Self::T, tonic::Status> {
+        return self.ok_or_else(|| tonic::Status::not_found("The requested asset was not found"));
     }
 }
 
@@ -249,9 +263,34 @@ impl CoordinatorApiService for ApiService {
     /// Lists the currently-registered drives
     async fn list_drives(
         &self,
-        request: tonic::Request<proto::ListDrivesRequest>,
+        _request: tonic::Request<proto::ListDrivesRequest>,
     ) -> std::result::Result<tonic::Response<proto::ListDrivesResponse>, tonic::Status> {
-        todo!();
+        let mut drives = Vec::<DiscDrive>::new();
+        for (controller_id, mut controller) in self
+            .application
+            .drive_controllers
+            .iter()
+            .cloned()
+            .enumerate()
+        {
+            let drive_count = controller
+                .get_drive_count(GetDriveCountRequest {})
+                .await?
+                .into_inner()
+                .drive_count;
+            for drive_id in 0..drive_count {
+                let meta = controller
+                    .get_drive_meta(GetDriveMetaRequest { drive_id })
+                    .await?
+                    .into_inner();
+                drives.push(DiscDrive {
+                    controller: controller_id as _,
+                    drive_id,
+                    name: meta.name,
+                });
+            }
+        }
+        return Ok(tonic::Response::new(proto::ListDrivesResponse { drives }));
     }
 
     /// Starts a rip job
@@ -259,7 +298,87 @@ impl CoordinatorApiService for ApiService {
         &self,
         request: tonic::Request<proto::StartRipJobRequest>,
     ) -> std::result::Result<tonic::Response<proto::StartRipJobResponse>, tonic::Status> {
-        todo!();
+        let request = request.into_inner();
+        let drive = request
+            .drive
+            .ok_or_else(|| tonic::Status::invalid_argument("Missing drive info"))?;
+
+        let mut controller = self
+            .application
+            .drive_controllers
+            .get(drive.controller as usize)
+            .bubble()?
+            .clone();
+
+        let drive_state = controller
+            .get_drive_state(GetDriveStateRequest {
+                drive_id: drive.drive_id,
+            })
+            .await?
+            .into_inner();
+
+        match DriveStatusTag::try_from(drive_state.status).unwrap_or_default() {
+            DriveStatusTag::Unspecified => {
+                return Err(tonic::Status::failed_precondition(
+                    "The drive is in an unrecognized state. Please ensure the coordinator is up to date",
+                ));
+            }
+            DriveStatusTag::Empty => {
+                return Err(tonic::Status::failed_precondition(
+                    "There is no disc in the drive. Please insert a disc and try again.",
+                ));
+            }
+            DriveStatusTag::TrayOpen => {
+                return Err(tonic::Status::failed_precondition(
+                    "The drive tray is open. Please close the tray and try again.",
+                ));
+            }
+            DriveStatusTag::NotReady => {
+                return Err(tonic::Status::unavailable(
+                    "The disc is being loaded. Please try again shortly.",
+                ));
+            }
+            DriveStatusTag::DiscLoaded => {}
+        }
+        if drive_state.active_rip_job.is_some() {
+            return Err(tonic::Status::failed_precondition(
+                "The drive is already performing a rip job. Cannot start another.",
+            ));
+        }
+
+        let job_id = insert_rip_jobs(
+            &self.application.db,
+            &RipJobsItem {
+                id: None,
+                start_time: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map_err(|_| tonic::Status::internal("System clock is incorrect"))?
+                    .as_secs() as i64,
+                disc_title: drive_state.disc_name,
+                suspected_contents: request
+                    .suspected_contents
+                    .and_then(|item| item.suspected_contents)
+                    .map(|item| {
+                        let mut buf: Vec<u8> = Vec::new();
+                        item.encode(&mut buf);
+                        buf
+                    }),
+                rip_finished: false,
+                imported: false,
+            },
+        )
+        .await
+        .unwrap();
+
+        controller
+            .rip_media(RipMediaRequest {
+                job_id,
+                drive_id: drive.drive_id,
+            })
+            .await?
+            .into_inner();
+
+        return Ok(tonic::Response::new(proto::StartRipJobResponse { job_id }));
     }
 
     /// Gets the current status of a rip job
@@ -267,11 +386,26 @@ impl CoordinatorApiService for ApiService {
         &self,
         request: tonic::Request<proto::GetRipJobStatusRequest>,
     ) -> std::result::Result<tonic::Response<proto::GetRipJobStatusResponse>, tonic::Status> {
-        todo!();
+        let request = request.into_inner();
+
+        for mut controller in self.application.drive_controllers.iter().cloned() {
+            if let Ok(status) = controller
+                .get_job_status(GetJobStatusRequest {
+                    job_id: request.job_id,
+                })
+                .await
+            {
+                return Ok(tonic::Response::new(proto::GetRipJobStatusResponse {
+                    status: Some(status.into_inner()),
+                }));
+            }
+        }
+
+        return Err(tonic::Status::not_found("The requested job was not found."));
     }
 
     /// Server streaming response type for the StreamRipJobUpdates method.
-    type StreamRipJobUpdatesStream = ReceiverStream<Result<RipUpdate, tonic::Status>>;
+    type StreamRipJobUpdatesStream = tonic::Streaming<RipUpdate>;
 
     /// Streams status updates from a rip job.
     /// Initial state is always `RipStatus::default()`.
@@ -279,7 +413,22 @@ impl CoordinatorApiService for ApiService {
         &self,
         request: tonic::Request<proto::StreamRipJobUpdatesRequest>,
     ) -> std::result::Result<tonic::Response<Self::StreamRipJobUpdatesStream>, tonic::Status> {
-        todo!();
+        let request = request.into_inner();
+
+        for mut controller in self.application.drive_controllers.iter().cloned() {
+            if let Ok(status) = controller
+                .watch_rip_job(WatchRipJobRequest {
+                    job_id: request.job_id,
+                })
+                .await
+            {
+                return Ok(tonic::Response::new(status.into_inner()));
+            }
+        }
+
+        return Err(tonic::Status::not_found(
+            "The requested rip job was not found",
+        ));
     }
 
     /// Ejects a disc
@@ -287,7 +436,22 @@ impl CoordinatorApiService for ApiService {
         &self,
         request: tonic::Request<proto::EjectRequest>,
     ) -> std::result::Result<tonic::Response<proto::EjectResponse>, tonic::Status> {
-        todo!();
+        let request = request.into_inner();
+        let drive = request
+            .drive
+            .ok_or_else(|| tonic::Status::invalid_argument("Missing drive ID"))?;
+        let mut controller = self
+            .application
+            .drive_controllers
+            .get(drive.controller as usize)
+            .bubble()?
+            .clone();
+        controller
+            .eject(EjectRequest {
+                drive_id: drive.drive_id,
+            })
+            .await?;
+        return Ok(tonic::Response::new(proto::EjectResponse {}));
     }
 
     /// Retracts a disc
@@ -295,7 +459,22 @@ impl CoordinatorApiService for ApiService {
         &self,
         request: tonic::Request<proto::RetractRequest>,
     ) -> std::result::Result<tonic::Response<proto::RetractResponse>, tonic::Status> {
-        todo!();
+        let request = request.into_inner();
+        let drive = request
+            .drive
+            .ok_or_else(|| tonic::Status::invalid_argument("Missing drive ID"))?;
+        let mut controller = self
+            .application
+            .drive_controllers
+            .get(drive.controller as usize)
+            .bubble()?
+            .clone();
+        controller
+            .retract(RetractRequest {
+                drive_id: drive.drive_id,
+            })
+            .await?;
+        return Ok(tonic::Response::new(proto::RetractResponse {}));
     }
 
     /// Lists the movies in the database

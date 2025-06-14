@@ -1,13 +1,16 @@
+use anyhow::Context;
+use futures::lock::Mutex;
+use mediacorral_proto::mediacorral::drive_controller::v1::drive_controller_service_client::DriveControllerServiceClient;
+use sqlx::SqlitePool;
 use std::{
     path::Path,
+    str::FromStr,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
     },
 };
-
-use anyhow::Context;
-use futures::lock::Mutex;
+use tonic::transport::{Channel, Endpoint};
 
 use crate::{
     CoordinatorConfig,
@@ -19,10 +22,12 @@ use crate::{
 };
 
 pub struct Application {
+    pub db: Arc<SqlitePool>,
     autorip_enabled: AtomicBool,
     pub blob_storage: BlobStorageController,
     pub tmdb_importer: TmdbImporter,
     pub exports_manager: Mutex<ExportsManager>,
+    pub drive_controllers: Vec<DriveControllerServiceClient<Channel>>,
 }
 impl Application {
     pub async fn new(config: CoordinatorConfig) -> anyhow::Result<Self> {
@@ -49,11 +54,21 @@ impl Application {
                 .context("Failed to initialize exports manager")?,
         );
 
+        let mut drive_controllers = Vec::new();
+        for controller in config.drive_controllers.iter() {
+            let drive_controller_endpoint = Endpoint::from_str(controller)
+                .expect("Invalid drive controller address")
+                .connect_lazy();
+            drive_controllers.push(DriveControllerServiceClient::new(drive_controller_endpoint));
+        }
+
         return Ok(Self {
+            db,
             autorip_enabled: AtomicBool::new(config.enable_autorip),
             blob_storage,
             tmdb_importer,
             exports_manager,
+            drive_controllers,
         });
     }
 
