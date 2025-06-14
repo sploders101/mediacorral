@@ -1,4 +1,10 @@
-use std::{path::Path, sync::{atomic::{AtomicBool, Ordering}, Arc}};
+use std::{
+    path::Path,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+};
 
 use anyhow::Context;
 use futures::lock::Mutex;
@@ -44,7 +50,7 @@ impl Application {
         );
 
         return Ok(Self {
-            autorip_enabled: config.enable_autorip,
+            autorip_enabled: AtomicBool::new(config.enable_autorip),
             blob_storage,
             tmdb_importer,
             exports_manager,

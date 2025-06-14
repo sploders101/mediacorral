@@ -57,12 +57,10 @@ impl<'a> Iterator for CsvRowIter<'a> {
 
 #[cfg(test)]
 mod tests {
-    use futures::stream;
-
     use super::*;
 
-    #[tokio::test]
-    async fn test_csv_parser() {
+    #[test]
+    fn test_csv_parser() {
         let row: Vec<String> = CsvRowIter::new("\"cell1\",cell2,,cell4,\"cell\"\"5").collect();
         assert_eq!(row, vec!["cell1", "cell2", "", "cell4", "cell\"5"]);
     }

@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use std::fs::File;
 use std::io::{ErrorKind, Read};
 use std::sync::Arc;
