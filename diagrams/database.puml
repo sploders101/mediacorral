@@ -1,0 +1,118 @@
+@startuml
+
+map movies {
+	id => INTEGER NOT NULL
+	tmdb_id => INTEGER UNIQUE
+	poster_blob => INTEGER
+	title => TEXT NOT NULL
+	release_year => TEXT
+	description => TEXT
+}
+
+map movies_special_features {
+	id => INTEGER NOT NULL
+	movie_id => INTEGER NOT NULL
+	thumbnail_blob => INTEGER
+	title => TEXT NOT NULL
+	description => TEXT
+}
+
+map tv_shows {
+	id => INTEGER NOT NULL
+	tmdb_id => INTEGER UNIQUE
+	poster_blob => INTEGER
+	title => TEXT NOT NULL
+	original_release_year => TEXT
+	description => TEXT
+}
+
+map tv_seasons {
+	id => INTEGER NOT NULL
+	tmdb_id => INTEGER UNIQUE
+	tv_show_id => INTEGER NOT NULL
+	season_number => INTEGER NOT NULL
+	poster_blob => INTEGER
+	title => TEXT NOT NULL
+	description => TEXT
+}
+
+map tv_episodes {
+	id => INTEGER NOT NULL
+	tmdb_id => INTEGER UNIQUE
+	tv_show_id => INTEGER NOT NULL
+	tv_season_id => INTEGER NOT NULL
+	episode_number => INTEGER NOT NULL
+	thumbnail_blob => INTEGER
+	title => TEXT NOT NULL
+	description => TEXT
+}
+
+map rip_jobs {
+	id => INTEGER NOT NULL
+	start_time => INTEGER NOT NULL
+	disc_title => TEXT
+	suspected_contents => BINARY
+	rip_finished => BOOLEAN
+	imported => BOOLEAN
+}
+
+map video_files {
+	id => INTEGER NOT NULL
+	video_type => VideoType NOT NULL
+	match_id => INTEGER
+	blob_id => TEXT NOT NULL
+	resolution_width => INTEGER NOT NULL
+	resolution_height => INTEGER NOT NULL
+	length => INTEGER NOT NULL
+	original_video_hash => BINARY NOT NULL
+	rip_job => INTEGER
+}
+
+map subtitle_files {
+	id => INTEGER NOT NULL
+	blob_id => TEXT
+	video_file => INTEGER NOT NULL
+}
+
+map ost_downloads {
+	id => INTEGER NOT NULL
+	video_type => INTEGER NOT NULL
+	match_id => INTEGER NOT NULL
+	filename => STRING NOT NULL
+	blob_id => TEXT NOT NULL
+}
+
+map match_info {
+	rip_job => INTEGER NOT NULL
+	pb_data => BINARY NOT NULL
+}
+
+map image_files {
+	id => INTEGER NOT NULL
+	blob_id => TEXT NOT NULL
+	mime_type => TEXT NOT NULL
+	name => TEXT
+	rip_job => INTEGER
+}
+
+movies::poster_blob --> image_files::id
+movies_special_features::movie_id --> movies::id
+movies_special_features::thumbnail_blob --> image_files::id
+tv_shows::poster_blob --> image_files::id
+tv_seasons::tv_show_id --> tv_shows::id
+tv_seasons::poster_blob --> image_files::id
+tv_episodes::tv_show_id --> tv_shows::id
+tv_episodes::tv_season_id --> tv_seasons::id
+tv_episodes::thumbnail_blob --> image_files::id
+video_files::match_id ..> movies::id
+video_files::match_id ..> movies_special_features::id
+video_files::match_id ..> tv_episodes::id
+video_files::rip_job --> rip_jobs::id
+subtitle_files::video_file --> video_files::id
+ost_downloads::match_id ..> movies::id
+ost_downloads::match_id ..> movies_special_features::id
+ost_downloads::match_id ..> tv_episodes::id
+match_info::rip_job --> rip_jobs::id
+image_files::rip_job --> rip_jobs::id
+
+@enduml
