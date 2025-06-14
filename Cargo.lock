@@ -1372,6 +1372,7 @@ dependencies = [
  "levenshtein",
  "mediacorral-proto",
  "pathdiff",
+ "prost",
  "rayon",
  "reqwest",
  "serde",

@@ -1,13 +1,7 @@
+use mediacorral_proto::mediacorral::coordinator::v1 as proto;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use sqlx::prelude::FromRow;
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-#[serde(tag = "type")]
-pub enum SuspectedContents {
-    Movie { tmdb_id: i32 },
-    TvEpisodes { episode_tmdb_ids: Vec<i32> },
-}
 
 // Movie Metadata
 
@@ -19,6 +13,18 @@ pub struct MoviesItem {
     pub title: String,
     pub release_year: Option<String>,
     pub description: Option<String>,
+}
+impl Into<proto::Movie> for MoviesItem {
+    fn into(self) -> proto::Movie {
+        return proto::Movie {
+            id: self.id.unwrap_or_default(),
+            tmdb_id: self.tmdb_id,
+            poster_blob: self.poster_blob,
+            title: self.title,
+            release_year: self.release_year,
+            description: self.description,
+        };
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
@@ -41,6 +47,18 @@ pub struct TvShowsItem {
     pub original_release_year: Option<String>,
     pub description: Option<String>,
 }
+impl Into<proto::TvShow> for TvShowsItem {
+    fn into(self) -> proto::TvShow {
+        return proto::TvShow {
+            id: self.id.unwrap_or_default(),
+            tmdb_id: self.tmdb_id,
+            poster_blob: self.poster_blob,
+            title: self.title,
+            original_release_year: self.original_release_year,
+            description: self.description,
+        };
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct TvSeasonsItem {
@@ -51,6 +69,19 @@ pub struct TvSeasonsItem {
     pub poster_blob: Option<i64>,
     pub title: String,
     pub description: Option<String>,
+}
+impl Into<proto::TvSeason> for TvSeasonsItem {
+    fn into(self) -> proto::TvSeason {
+        return proto::TvSeason {
+            id: self.id.unwrap_or_default(),
+            tmdb_id: self.tmdb_id,
+            tv_show_id: self.tv_show_id,
+            season_number: self.season_number,
+            poster_blob: self.poster_blob,
+            title: self.title,
+            description: self.description,
+        };
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
@@ -64,6 +95,20 @@ pub struct TvEpisodesItem {
     pub title: String,
     pub description: Option<String>,
 }
+impl Into<proto::TvEpisode> for TvEpisodesItem {
+    fn into(self) -> proto::TvEpisode {
+        return proto::TvEpisode {
+            id: self.id.unwrap_or_default(),
+            tmdb_id: self.tmdb_id,
+            tv_show_id: self.tv_show_id,
+            tv_season_id: self.tv_season_id,
+            episode_number: self.episode_number,
+            thumbnail_blob: self.thumbnail_blob,
+            title: self.title,
+            description: self.description,
+        };
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct RipJobsItem {
@@ -74,6 +119,18 @@ pub struct RipJobsItem {
     pub rip_finished: bool,
     pub imported: bool,
 }
+impl Into<proto::RipJob> for RipJobsItem {
+    fn into(self) -> proto::RipJob {
+        return proto::RipJob {
+            id: self.id.unwrap_or_default(),
+            start_time: self.start_time,
+            disc_title: self.disc_title,
+            suspected_contents: self.suspected_contents,
+            rip_finished: self.rip_finished,
+            imported: self.imported,
+        };
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, sqlx::Type)]
 #[repr(i32)]
@@ -82,6 +139,26 @@ pub enum VideoType {
     Movie = 1,
     SpecialFeature = 2,
     TvEpisode = 3,
+}
+impl Into<proto::VideoType> for VideoType {
+    fn into(self) -> proto::VideoType {
+        match self {
+            Self::Untagged => proto::VideoType::Unspecified,
+            Self::Movie => proto::VideoType::Movie,
+            Self::SpecialFeature => proto::VideoType::SpecialFeature,
+            Self::TvEpisode => proto::VideoType::TvEpisode,
+        }
+    }
+}
+impl From<proto::VideoType> for VideoType {
+    fn from(value: proto::VideoType) -> Self {
+        match value {
+            proto::VideoType::Unspecified => Self::Untagged,
+            proto::VideoType::Movie => Self::Movie,
+            proto::VideoType::SpecialFeature => Self::SpecialFeature,
+            proto::VideoType::TvEpisode => Self::TvEpisode,
+        }
+    }
 }
 
 #[serde_as]
@@ -104,6 +181,21 @@ pub struct VideoFilesItem {
     pub original_video_hash: Vec<u8>,
     pub rip_job: Option<i64>,
 }
+impl Into<proto::VideoFile> for VideoFilesItem {
+    fn into(self) -> proto::VideoFile {
+        return proto::VideoFile {
+            id: self.id.unwrap_or_default(),
+            video_type: Into::<proto::VideoType>::into(self.video_type).into(),
+            match_id: self.match_id,
+            blob_id: self.blob_id,
+            resolution_width: self.resolution_width,
+            resolution_height: self.resolution_height,
+            length: self.length,
+            original_video_hash: self.original_video_hash,
+            rip_job: self.rip_job,
+        };
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct SubtitleFilesItem {
@@ -120,6 +212,17 @@ pub struct OstDownloadsItem {
     pub filename: String,
     pub blob_id: String,
 }
+impl Into<proto::OstDownloadsItem> for OstDownloadsItem {
+    fn into(self) -> proto::OstDownloadsItem {
+        return proto::OstDownloadsItem {
+            id: self.id.unwrap_or_default(),
+            video_type: Into::<proto::VideoType>::into(self.video_type) as _,
+            match_id: self.match_id,
+            filename: self.filename,
+            blob_id: self.blob_id,
+        };
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct MatchInfoItem {
@@ -128,6 +231,17 @@ pub struct MatchInfoItem {
     pub ost_download_id: i64,
     pub distance: u32,
     pub max_distance: u32,
+}
+impl Into<proto::MatchInfoItem> for MatchInfoItem {
+    fn into(self) -> proto::MatchInfoItem {
+        return proto::MatchInfoItem {
+            id: self.id.unwrap_or_default(),
+            video_file_id: self.video_file_id,
+            ost_download_id: self.ost_download_id,
+            distance: self.distance,
+            max_distance: self.max_distance,
+        };
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]

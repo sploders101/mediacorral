@@ -4,21 +4,18 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::application::Application;
-use crate::db::insert_rip_jobs;
-use crate::db::schemas::RipJobsItem;
+use crate::db;
 use crate::managers::exports::ExportsDirError;
 use crate::managers::tmdb::TmdbError;
-use mediacorral_proto::mediacorral::coordinator::v1::{AutoripStatus, DiscDrive};
-use mediacorral_proto::mediacorral::drive_controller::v1::{
-    DriveStatusTag, EjectRequest, GetDriveCountRequest, GetDriveMetaRequest, GetDriveStateRequest,
-    GetJobStatusRequest, RetractRequest, RipMediaRequest, WatchRipJobRequest,
-};
 use mediacorral_proto::mediacorral::{
     coordinator::v1::{self as proto, coordinator_api_service_server::CoordinatorApiService},
-    drive_controller::v1::RipUpdate,
+    drive_controller::v1::{
+        DriveStatusTag, EjectRequest, GetDriveCountRequest, GetDriveMetaRequest,
+        GetDriveStateRequest, GetJobStatusRequest, RetractRequest, RipMediaRequest, RipUpdate,
+        WatchRipJobRequest,
+    },
 };
-use tokio::time::Instant;
-use tokio_stream::wrappers::ReceiverStream;
+use prost::Message;
 
 trait ToTonic {
     type T;
@@ -66,6 +63,21 @@ impl<T> ToTonic for Option<T> {
     type T = T;
     fn bubble(self) -> Result<Self::T, tonic::Status> {
         return self.ok_or_else(|| tonic::Status::not_found("The requested asset was not found"));
+    }
+}
+impl<T> ToTonic for Result<T, sqlx::Error> {
+    type T = T;
+    fn bubble(self) -> Result<Self::T, tonic::Status> {
+        return self.map_err(|err| match err {
+            sqlx::Error::InvalidArgument(err) => tonic::Status::invalid_argument(err),
+            sqlx::Error::Io(err) => tonic::Status::internal(format!("I/O error:\n{err}")),
+            sqlx::Error::RowNotFound => {
+                tonic::Status::not_found("The requested asset was not found in the database")
+            }
+            err => {
+                tonic::Status::internal(format!("An unknown database error has occurred:\n{err}"))
+            }
+        });
     }
 }
 
@@ -240,12 +252,12 @@ impl CoordinatorApiService for ApiService {
     ) -> std::result::Result<tonic::Response<proto::AutoripStatusResponse>, tonic::Status> {
         let request = request.into_inner();
 
-        let status = match AutoripStatus::try_from(request.status) {
-            Ok(AutoripStatus::Enabled) => {
+        let status = match proto::AutoripStatus::try_from(request.status) {
+            Ok(proto::AutoripStatus::Enabled) => {
                 self.application.set_autorip(true);
                 true
             }
-            Ok(AutoripStatus::Disabled) => {
+            Ok(proto::AutoripStatus::Disabled) => {
                 self.application.set_autorip(false);
                 false
             }
@@ -254,8 +266,8 @@ impl CoordinatorApiService for ApiService {
 
         return Ok(tonic::Response::new(proto::AutoripStatusResponse {
             status: match status {
-                true => AutoripStatus::Enabled as _,
-                false => AutoripStatus::Disabled as _,
+                true => proto::AutoripStatus::Enabled as _,
+                false => proto::AutoripStatus::Disabled as _,
             },
         }));
     }
@@ -265,7 +277,7 @@ impl CoordinatorApiService for ApiService {
         &self,
         _request: tonic::Request<proto::ListDrivesRequest>,
     ) -> std::result::Result<tonic::Response<proto::ListDrivesResponse>, tonic::Status> {
-        let mut drives = Vec::<DiscDrive>::new();
+        let mut drives = Vec::<proto::DiscDrive>::new();
         for (controller_id, mut controller) in self
             .application
             .drive_controllers
@@ -283,7 +295,7 @@ impl CoordinatorApiService for ApiService {
                     .get_drive_meta(GetDriveMetaRequest { drive_id })
                     .await?
                     .into_inner();
-                drives.push(DiscDrive {
+                drives.push(proto::DiscDrive {
                     controller: controller_id as _,
                     drive_id,
                     name: meta.name,
@@ -317,7 +329,7 @@ impl CoordinatorApiService for ApiService {
             .await?
             .into_inner();
 
-        match DriveStatusTag::try_from(drive_state.status).unwrap_or_default() {
+        match drive_state.status() {
             DriveStatusTag::Unspecified => {
                 return Err(tonic::Status::failed_precondition(
                     "The drive is in an unrecognized state. Please ensure the coordinator is up to date",
@@ -346,23 +358,16 @@ impl CoordinatorApiService for ApiService {
             ));
         }
 
-        let job_id = insert_rip_jobs(
+        let job_id = db::insert_rip_jobs(
             &self.application.db,
-            &RipJobsItem {
+            &db::schemas::RipJobsItem {
                 id: None,
                 start_time: SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .map_err(|_| tonic::Status::internal("System clock is incorrect"))?
                     .as_secs() as i64,
                 disc_title: drive_state.disc_name,
-                suspected_contents: request
-                    .suspected_contents
-                    .and_then(|item| item.suspected_contents)
-                    .map(|item| {
-                        let mut buf: Vec<u8> = Vec::new();
-                        item.encode(&mut buf);
-                        buf
-                    }),
+                suspected_contents: request.suspected_contents.map(|item| item.encode_to_vec()),
                 rip_finished: false,
                 imported: false,
             },
@@ -482,7 +487,12 @@ impl CoordinatorApiService for ApiService {
         &self,
         request: tonic::Request<proto::ListMoviesRequest>,
     ) -> std::result::Result<tonic::Response<proto::ListMoviesResponse>, tonic::Status> {
-        todo!();
+        let _request = request.into_inner();
+
+        let movies = db::get_movies(&self.application.db).await.bubble()?;
+        return Ok(tonic::Response::new(proto::ListMoviesResponse {
+            movies: movies.into_iter().map(Into::into).collect(),
+        }));
     }
 
     /// Gets a movie from the database by its TMDB ID
@@ -490,7 +500,14 @@ impl CoordinatorApiService for ApiService {
         &self,
         request: tonic::Request<proto::GetMovieByTmdbIdRequest>,
     ) -> std::result::Result<tonic::Response<proto::GetMovieByTmdbIdResponse>, tonic::Status> {
-        todo!();
+        let request = request.into_inner();
+
+        let movie = db::get_movie_by_tmdb_id(&self.application.db, request.tmdb_id)
+            .await
+            .bubble()?;
+        return Ok(tonic::Response::new(proto::GetMovieByTmdbIdResponse {
+            movie: Some(movie.into()),
+        }));
     }
 
     /// Lists the TV shows in the database
@@ -498,7 +515,12 @@ impl CoordinatorApiService for ApiService {
         &self,
         request: tonic::Request<proto::ListTvShowsRequest>,
     ) -> std::result::Result<tonic::Response<proto::ListTvShowsResponse>, tonic::Status> {
-        todo!();
+        let _request = request.into_inner();
+
+        let movies = db::get_tv_shows(&self.application.db).await.bubble()?;
+        return Ok(tonic::Response::new(proto::ListTvShowsResponse {
+            tv_shows: movies.into_iter().map(Into::into).collect(),
+        }));
     }
 
     /// Lists the seasons for a given TV show
@@ -506,7 +528,15 @@ impl CoordinatorApiService for ApiService {
         &self,
         request: tonic::Request<proto::ListTvSeasonsRequest>,
     ) -> std::result::Result<tonic::Response<proto::ListTvSeasonsResponse>, tonic::Status> {
-        todo!();
+        let request = request.into_inner();
+
+        let seasons = db::get_tv_seasons(&self.application.db, request.series_id)
+            .await
+            .bubble()?;
+        return Ok(tonic::Response::new(proto::ListTvSeasonsResponse {
+            series_id: request.series_id,
+            tv_seasons: seasons.into_iter().map(Into::into).collect(),
+        }));
     }
 
     /// Lists the episodes for a given season
@@ -514,7 +544,15 @@ impl CoordinatorApiService for ApiService {
         &self,
         request: tonic::Request<proto::ListTvEpisodesRequest>,
     ) -> std::result::Result<tonic::Response<proto::ListTvEpisodesResponse>, tonic::Status> {
-        todo!();
+        let request = request.into_inner();
+
+        let episodes = db::get_tv_episodes(&self.application.db, request.tv_season_id)
+            .await
+            .bubble()?;
+        return Ok(tonic::Response::new(proto::ListTvEpisodesResponse {
+            tv_season_id: request.tv_season_id,
+            tv_episodes: episodes.into_iter().map(Into::into).collect(),
+        }));
     }
 
     /// Gets a particular TV episode
@@ -522,7 +560,14 @@ impl CoordinatorApiService for ApiService {
         &self,
         request: tonic::Request<proto::GetTvEpisodeRequest>,
     ) -> std::result::Result<tonic::Response<proto::GetTvEpisodeResponse>, tonic::Status> {
-        todo!();
+        let request = request.into_inner();
+
+        let episode = db::get_tv_episode_by_id(&self.application.db, request.episode_id)
+            .await
+            .bubble()?;
+        return Ok(tonic::Response::new(proto::GetTvEpisodeResponse {
+            episode: Some(episode.into()),
+        }));
     }
 
     /// Gets a particular TV episode by TMDB id
@@ -531,7 +576,14 @@ impl CoordinatorApiService for ApiService {
         request: tonic::Request<proto::GetTvEpisodeByTmdbIdRequest>,
     ) -> std::result::Result<tonic::Response<proto::GetTvEpisodeByTmdbIdResponse>, tonic::Status>
     {
-        todo!();
+        let request = request.into_inner();
+
+        let episode = db::get_tv_episode_by_tmdb_id(&self.application.db, request.tmdb_id)
+            .await
+            .bubble()?;
+        return Ok(tonic::Response::new(proto::GetTvEpisodeByTmdbIdResponse {
+            episode: Some(episode.into()),
+        }));
     }
 
     /// Tags a video file with metadata
@@ -539,7 +591,18 @@ impl CoordinatorApiService for ApiService {
         &self,
         request: tonic::Request<proto::TagFileRequest>,
     ) -> std::result::Result<tonic::Response<proto::TagFileResponse>, tonic::Status> {
-        todo!();
+        let request = request.into_inner();
+
+        db::tag_video_file(
+            &self.application.db,
+            request.file,
+            request.video_type().into(),
+            request.match_id,
+        )
+        .await
+        .bubble()?;
+
+        return Ok(tonic::Response::new(proto::TagFileResponse {}));
     }
 
     /// Gets a list of jobs containing untagged files
@@ -547,7 +610,18 @@ impl CoordinatorApiService for ApiService {
         &self,
         request: tonic::Request<proto::GetUntaggedJobsRequest>,
     ) -> std::result::Result<tonic::Response<proto::GetUntaggedJobsResponse>, tonic::Status> {
-        todo!();
+        let request = request.into_inner();
+
+        let rip_jobs = db::get_rip_jobs_with_untagged_videos(
+            &self.application.db,
+            request.skip,
+            request.limit,
+        )
+        .await
+        .bubble()?;
+        return Ok(tonic::Response::new(proto::GetUntaggedJobsResponse {
+            rip_jobs: rip_jobs.into_iter().map(Into::into).collect(),
+        }));
     }
 
     /// Gets all info needed to catalog a job
@@ -556,6 +630,36 @@ impl CoordinatorApiService for ApiService {
         request: tonic::Request<proto::GetJobCatalogueInfoRequest>,
     ) -> std::result::Result<tonic::Response<proto::GetJobCatalogueInfoResponse>, tonic::Status>
     {
-        todo!();
+        let request = request.into_inner();
+
+        let job_info = db::get_rip_job(&self.application.db, request.job_id)
+            .await
+            .bubble()?;
+        let video_files = db::get_videos_from_rip(&self.application.db, request.job_id)
+            .await
+            .bubble()?;
+        let matches = db::get_matches_from_rip(&self.application.db, request.job_id)
+            .await
+            .bubble()?;
+        let subtitle_maps = db::get_rip_video_blobs(&self.application.db, request.job_id)
+            .await
+            .bubble()?;
+        let ost_subtitle_files =
+            db::get_ost_subtitles_from_rip(&self.application.db, request.job_id)
+                .await
+                .bubble()?;
+
+        return Ok(tonic::Response::new(proto::GetJobCatalogueInfoResponse {
+            id: job_info.id.unwrap_or_default(),
+            start_time: job_info.start_time,
+            disc_title: job_info.disc_title,
+            suspected_contents: job_info.suspected_contents.and_then(|contents| {
+                proto::SuspectedContents::decode(std::io::Cursor::new(contents)).ok()
+            }),
+            video_files: video_files.into_iter().map(Into::into).collect(),
+            matches: matches.into_iter().map(Into::into).collect(),
+            subtitle_maps: subtitle_maps.into_iter().map(Into::into).collect(),
+            ost_subtitle_files: ost_subtitle_files.into_iter().map(Into::into).collect(),
+        }));
     }
 }

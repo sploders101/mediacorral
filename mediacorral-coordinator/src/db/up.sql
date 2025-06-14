@@ -81,10 +81,12 @@ CREATE TABLE `video_files`(
 	`rip_job` INTEGER
 );
 
--- Contains subtitle files extracted from the mkv used for comparison
+-- Contains subtitle files extracted from the mkv used for comparison.
+-- Subtitle entries may be added here with a NULL blob_id to mark that no subtitles were
+-- found in the video file. This is used for job tracking.
 CREATE TABLE `subtitle_files`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-	`blob_id` TEXT NOT NULL,
+	`blob_id` TEXT,
 	`video_file` INTEGER NOT NULL
 );
 

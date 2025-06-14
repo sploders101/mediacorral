@@ -1,3 +1,5 @@
+use mediacorral_proto::mediacorral::coordinator::v1 as proto;
+use prost::Message;
 use schemas::*;
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, prelude::FromRow, sqlite::SqliteRow};
@@ -535,7 +537,7 @@ pub async fn insert_rip_jobs(db: &Db, rip_job: &RipJobsItem) -> Result<i64, sqlx
 pub async fn add_suspicion(
     db: &Db,
     rip_job: i64,
-    suspicion: Option<&SuspectedContents>,
+    suspicion: Option<&proto::SuspectedContents>,
 ) -> Result<(), sqlx::Error> {
     sqlx::query(
         "
@@ -546,7 +548,7 @@ pub async fn add_suspicion(
                 id = ?
         ",
     )
-    .bind(suspicion.map(|suspicion| serde_json::to_string(&suspicion).unwrap()))
+    .bind(suspicion.map(|suspicion| suspicion.encode_to_vec()))
     .bind(rip_job)
     .execute(db)
     .await?;
@@ -647,7 +649,7 @@ pub async fn tag_video_file(
     video_type: VideoType,
     match_id: i64,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query(
+    let result = sqlx::query(
         "
             UPDATE video_files
             SET
@@ -662,6 +664,10 @@ pub async fn tag_video_file(
     .bind(id)
     .execute(db)
     .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
 
     return Ok(());
 }
@@ -883,6 +889,16 @@ pub struct RipVideoBlobs {
     pub job_id: i64,
     pub video_blob: String,
     pub subtitle_blob: Option<String>,
+}
+impl Into<proto::RipVideoBlobs> for RipVideoBlobs {
+    fn into(self) -> proto::RipVideoBlobs {
+        return proto::RipVideoBlobs {
+            id: self.id,
+            job_id: self.job_id,
+            video_blob: self.video_blob,
+            subtitle_blob: self.subtitle_blob,
+        };
+    }
 }
 
 /// Fetches all of the blobs associated with videos from a rip job
