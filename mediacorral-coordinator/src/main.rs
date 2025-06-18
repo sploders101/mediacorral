@@ -4,11 +4,10 @@ use application::Application;
 use clap::Parser;
 use mediacorral_proto::mediacorral::coordinator::v1::{
     coordinator_api_service_server::CoordinatorApiServiceServer,
-    coordinator_job_service_server::CoordinatorJobServiceServer,
     coordinator_notification_service_server::CoordinatorNotificationServiceServer,
 };
 use serde::Deserialize;
-use services::{api::ApiService, jobs::JobService, notifications::NotificationService};
+use services::{api::ApiService, notifications::NotificationService};
 use tonic::transport::Server;
 use tonic_web::GrpcWebLayer;
 
@@ -78,9 +77,6 @@ async fn main() {
     Server::builder()
         .accept_http1(true)
         .layer(GrpcWebLayer::new())
-        .add_service(CoordinatorJobServiceServer::new(JobService::new(
-            Arc::clone(&application),
-        )))
         .add_service(CoordinatorNotificationServiceServer::new(
             NotificationService::new(Arc::clone(&application)),
         ))
