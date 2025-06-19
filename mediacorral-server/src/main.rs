@@ -16,6 +16,7 @@ mod blob_storage;
 mod db;
 mod managers;
 mod services;
+mod workers;
 
 #[derive(Parser, Debug, Clone)]
 pub struct Args {
