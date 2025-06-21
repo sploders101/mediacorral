@@ -2,9 +2,20 @@
 //!
 //! https://sam.zoy.org/writings/dvd/subtitles/
 
-use image::{Rgb, Rgba, RgbaImage};
+use std::{
+    collections::HashMap,
+    sync::{
+        Arc, Mutex,
+        mpsc::{self, Receiver, Sender, SyncSender},
+    },
+};
 
+use image::{GrayImage, Rgb, Rgba, RgbaImage};
+
+use leptess::Variable;
 use thiserror::Error;
+
+use super::{ExtractDetailsError, ocr::Partess, process_image};
 
 #[derive(Error, Debug, Clone)]
 pub enum VobsubError {
@@ -16,6 +27,112 @@ pub enum VobsubError {
     InvalidControl,
     #[error("Invalid VobSub frame data.")]
     InvalidFrame,
+}
+
+pub struct PartessCache {
+    cache: Arc<Mutex<HashMap<String, Partess>>>,
+}
+impl PartessCache {
+    pub fn new() -> Self {
+        return Self {
+            cache: Arc::new(Mutex::new(HashMap::new())),
+        };
+    }
+}
+impl Clone for PartessCache {
+    fn clone(&self) -> Self {
+        return Self {
+            cache: Arc::clone(&self.cache),
+        };
+    }
+}
+
+pub struct VobsubProcessor {
+    partess: Partess,
+    idx_data: Arc<IdxData>,
+    submit_send_stream: SyncSender<(u64, Vec<u8>)>,
+    submit_recv_stream: Arc<Mutex<Receiver<(u64, Vec<u8>)>>>,
+    return_send_stream: Sender<Result<(u64, String), ExtractDetailsError>>,
+    return_recv_stream: Receiver<Result<(u64, String), ExtractDetailsError>>,
+}
+impl VobsubProcessor {
+    pub fn new(
+        partess_cache: &PartessCache,
+        language: &str,
+        codec_data: &[u8],
+    ) -> Result<Self, ExtractDetailsError> {
+        let (submit_send_stream, submit_recv_stream) = mpsc::sync_channel(1);
+        let (return_send_stream, return_recv_stream) = mpsc::channel();
+
+        let mut cache = partess_cache.cache.lock().unwrap();
+        let partess = match cache.get(language) {
+            Some(partess) => partess.clone(),
+            None => {
+                let partess = Partess::new(
+                    String::from(language),
+                    vec![
+                        (Variable::ClassifyEnableLearning, String::from("1")),
+                        (Variable::TesseditPagesegMode, String::from("6")),
+                        (Variable::TesseditDoInvert, String::from("0")),
+                        (Variable::TesseditCharBlacklist, String::from("|\\/`_~{}")),
+                    ],
+                );
+                cache.insert(String::from(language), partess.clone());
+                partess
+            }
+        };
+        drop(cache);
+        return Ok(Self {
+            partess,
+            idx_data: Arc::new(parse_idx(codec_data)?),
+            submit_send_stream,
+            submit_recv_stream: Arc::new(Mutex::new(submit_recv_stream)),
+            return_send_stream,
+            return_recv_stream,
+        });
+    }
+    pub fn push_frame(&self, timestamp: u64, data: Vec<u8>) {
+        let partess = self.partess.clone();
+        let idx_data = Arc::clone(&self.idx_data);
+        let sender = self.return_send_stream.clone();
+        let receiver = Arc::clone(&self.submit_recv_stream);
+        self.submit_send_stream.send((timestamp, data)).unwrap();
+        rayon::spawn(move || {
+            // This has a somewhat convoluted way of implementing backpressure.
+            // We use a sync_channel to load up the stream, then spawn threads
+            // via rayon to consume it. If we load too much into the stream, the
+            // caller will be forced to wait until rayon schedules our threads to
+            // consume the data. This is important for images, as they can consume
+            // a lot of memory if we load them too fast.
+            let (timestamp, data) = receiver.lock().unwrap().try_recv().unwrap();
+            macro_rules! try_send {
+                ($val:expr) => {
+                    match $val {
+                        Ok(val) => val,
+                        Err(err) => {
+                            let _ = sender.send(Err(ExtractDetailsError::from(err)));
+                            return;
+                        }
+                    }
+                };
+            }
+            let frame = try_send!(parse_frame(&idx_data, &data));
+            let image: GrayImage = process_image(frame);
+            let mut partess = try_send!(partess.get());
+            let sub = try_send!(partess.ocr_image(image));
+            let _ = sender.send(Ok((timestamp, sub)));
+        });
+    }
+    pub fn collect(self) -> Result<Vec<String>, ExtractDetailsError> {
+        drop(self.return_send_stream);
+        let mut subs = Vec::new();
+        while let Ok(result) = self.return_recv_stream.recv() {
+            let result = result?;
+            subs.push(result);
+        }
+        subs.sort_by_key(|(timestamp, _sub)| *timestamp);
+        return Ok(subs.into_iter().map(|(_timestamp, sub)| sub).collect());
+    }
 }
 
 pub struct IdxData {

@@ -1,1 +1,1 @@
-mod subtitles;
+pub mod subtitles;

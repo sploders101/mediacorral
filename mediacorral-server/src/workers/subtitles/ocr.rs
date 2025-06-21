@@ -83,3 +83,8 @@ impl Partess {
         });
     }
 }
+impl Clone for Partess {
+    fn clone(&self) -> Self {
+        return Self(Arc::clone(&self.0));
+    }
+}

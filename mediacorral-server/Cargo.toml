@@ -3,6 +3,10 @@ name = "mediacorral-coordinator"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "metaextract"
+path = "src/metaextract.rs"
+
 [dependencies]
 anyhow = "1.0.98"
 clap = { version = "4.5.39", features = ["derive"] }
@@ -13,6 +17,7 @@ lazy-regex = "3.4.1"
 leptess = "0.14.0"
 levenshtein = "1.0.5"
 matroska-demuxer = "0.7.0"
+md5 = "0.7.0"
 mediacorral-proto = { version = "0.1.0", path = "../mediacorral-proto" }
 pathdiff = "0.2.3"
 prost = "0.13.5"

@@ -1,45 +1,39 @@
 use std::io::{Read, Seek};
 
 use image::{GrayImage, Pixel, RgbaImage};
-use leptess::Variable;
-use matroska_demuxer::{Frame, MatroskaFile, TrackType};
-use ocr::{Partess, PartessError};
+use matroska_demuxer::{Frame, MatroskaFile, TrackEntry, TrackType};
+use ocr::PartessError;
 use tokio::sync::watch;
 use utils::crop_image;
-use vobsub::VobsubError;
+use vobsub::{PartessCache, VobsubError, VobsubProcessor};
 
-mod ocr;
-mod utils;
-mod vobsub;
+pub mod ocr;
+pub mod utils;
+pub mod vobsub;
 
 #[derive(thiserror::Error, Debug)]
-pub enum ExtractSubtitlesError {
+pub enum ExtractDetailsError {
     #[error("An I/O error occurred:\n{0}")]
     Io(#[from] std::io::Error),
+    #[error("The content is missing a video track")]
+    MissingVideoTrack,
     #[error("The subrip subtitles are not valid UTF-8")]
     SubripInvalidUtf8,
     #[error("An error occurred while reading VobSub subtitles:\n{0}")]
     VobsubError(#[from] VobsubError),
     #[error("An error occurred while demuxing:\n{0}")]
     DemuxError(#[from] matroska_demuxer::DemuxError),
-    #[error("No suitable subtitle tracks found.")]
-    NoSuitableSubtitles,
     #[error("An error occurred while running OCR:\n{0}")]
     PartessError(#[from] PartessError),
 }
 
-pub async fn extract_subtitles<T>(
-    mkv_file: T,
-    progress: Option<watch::Sender<f64>>,
-) -> Result<String, ExtractSubtitlesError>
-where
-    T: Read + Seek,
-{
-    // TODO: Add progress reporting
-    let mut mkv_file = MatroskaFile::open(mkv_file)?;
+pub struct MediaDetails {
+    pub video_hash: Vec<u8>,
+    pub subtitles: Option<String>,
+}
 
-    let candidates: Vec<_> = mkv_file
-        .tracks()
+fn get_subtitle_track(tracks: &[TrackEntry]) -> Result<Option<&TrackEntry>, ExtractDetailsError> {
+    let candidates: Vec<_> = tracks
         .into_iter()
         .filter(|track| track.track_type() == TrackType::Subtitle)
         .filter(|track| track.flag_enabled())
@@ -51,9 +45,9 @@ where
                 .unwrap_or(false)
         })
         .collect();
-    let track = match candidates.len() {
-        0 => return Err(ExtractSubtitlesError::NoSuitableSubtitles),
-        1 => candidates.into_iter().next().unwrap(),
+    return Ok(match candidates.len() {
+        0 => None,
+        1 => Some(candidates.into_iter().next().unwrap()),
         _ => {
             // Found multiple valid candidates. See if we can narrow down any further by
             // filtering on default tracks. If not, just take the first candidate we found.
@@ -62,63 +56,110 @@ where
                 .cloned()
                 .find(|track| track.flag_default())
             {
-                Some(track) => track,
-                None => candidates.into_iter().next().unwrap(),
+                Some(track) => Some(track),
+                None => Some(candidates.into_iter().next().unwrap()),
             }
         }
+    });
+}
+
+enum StContext {
+    Subrip(Vec<String>),
+    Vobsub(VobsubProcessor),
+}
+impl StContext {
+    fn process_frame(&mut self, frame: &mut Frame) -> Result<(), ExtractDetailsError> {
+        match self {
+            Self::Subrip(subs) => subs.push(
+                String::from_utf8(std::mem::take(&mut frame.data))
+                    .map_err(|_| ExtractDetailsError::SubripInvalidUtf8)?,
+            ),
+            Self::Vobsub(vobs) => vobs.push_frame(frame.timestamp, std::mem::take(&mut frame.data)),
+        }
+        return Ok(());
+    }
+
+    fn collect(self) -> Result<Vec<String>, ExtractDetailsError> {
+        match self {
+            Self::Subrip(subs) => Ok(subs),
+            StContext::Vobsub(vobs) => vobs.collect(),
+        }
+    }
+}
+
+pub fn extract_details<T>(
+    mkv_file: T,
+    mut progress: Option<watch::Sender<f64>>,
+    partess_cache: &PartessCache,
+) -> Result<MediaDetails, ExtractDetailsError>
+where
+    T: Read + Seek,
+{
+    let mut mkv_file = MatroskaFile::open(mkv_file)?;
+
+    let vid_track = mkv_file
+        .tracks()
+        .into_iter()
+        .find(|track| track.track_type() == TrackType::Video)
+        .ok_or(ExtractDetailsError::MissingVideoTrack)?;
+    let vid_track_number = vid_track.track_number().get();
+    let mut vid_hasher = md5::Context::new();
+
+    let st_track = get_subtitle_track(mkv_file.tracks())?;
+    // let st_track = Option::<&TrackEntry>::None;
+    let st_track_number = st_track.map(|track| track.track_number().get());
+    let mut st_ctx = match st_track {
+        Some(ref st_track) => Some(match st_track.codec_id() {
+            "S_SUBRIP" => StContext::Subrip(Vec::new()),
+            "S_VOBSUB" => StContext::Vobsub(VobsubProcessor::new(
+                partess_cache,
+                "eng",
+                st_track.codec_private().unwrap_or(&[]),
+            )?),
+            // Other codecs should be filtered out above
+            _ => unreachable!(),
+        }),
+        None => None,
     };
 
-    // mkv_file.info.duration
+    let duration = mkv_file.info().duration().unwrap_or(f64::INFINITY);
+    if let Some(ref mut progress) = progress {
+        let _ = progress.send(0.0);
+    }
 
-    let track_number = track.track_number().get();
-    let subs = match track.codec_id() {
-        "S_SUBRIP" => {
-            let mut subs: Vec<String> = Vec::new();
-            let mut frame = Frame::default();
-            while mkv_file.next_frame(&mut frame)? {
-                if frame.track != track_number {
-                    continue;
-                }
-
-                let data = String::from_utf8(std::mem::take(&mut frame.data))
-                    .map_err(|_| ExtractSubtitlesError::SubripInvalidUtf8)?;
-                subs.push(data);
+    let mut frame = Frame::default();
+    while mkv_file.next_frame(&mut frame)? {
+        if frame.track == vid_track_number {
+            // Process video
+            vid_hasher.consume(&frame.data);
+        } else if Some(frame.track) == st_track_number {
+            // Process subtitles
+            if let Some(ref mut st_ctx) = st_ctx {
+                st_ctx.process_frame(&mut frame)?;
             }
-            subs
         }
-        "S_VOBSUB" => {
-            let partess = Partess::new(
-                String::from("eng"),
-                vec![
-                    (Variable::ClassifyEnableLearning, String::from("1")),
-                    (Variable::TesseditPagesegMode, String::from("6")),
-                    (Variable::TesseditDoInvert, String::from("0")),
-                    (Variable::TesseditCharBlacklist, String::from("|\\/`_~{}")),
-                ],
-            );
-            let codec_private = track
-                .codec_private()
-                .ok_or(ExtractSubtitlesError::VobsubError(VobsubError::InvalidIdx))?;
-            let idx_data = vobsub::parse_idx(codec_private)?;
-            let mut subs: Vec<String> = Vec::new();
-            let mut frame = Frame::default();
-            while mkv_file.next_frame(&mut frame)? {
-                if frame.track != track_number {
-                    continue;
+
+        // Update progress
+        if let Some(ref mut progress) = progress.as_mut() {
+            let progress_value = (frame.timestamp as f64 / duration * 100.0).round();
+            let _ = progress.send_if_modified(|old_val| {
+                if *old_val != progress_value {
+                    *old_val = progress_value;
+                    true
+                } else {
+                    false
                 }
-
-                let image: GrayImage = process_image(vobsub::parse_frame(&idx_data, &frame.data)?);
-                let sub = partess.get()?.ocr_image(image)?;
-                subs.push(sub);
-            }
-
-            subs
+            });
         }
-        // Other codecs should be filtered out above
-        _ => unreachable!(),
-    };
+    }
 
-    return Ok(subs.join("\n"));
+    return Ok(MediaDetails {
+        video_hash: vid_hasher.compute().to_vec(),
+        subtitles: match st_ctx {
+            Some(st_ctx) => Some(st_ctx.collect()?.join("\n")),
+            None => None,
+        },
+    });
 }
 
 pub fn process_image(image: RgbaImage) -> GrayImage {
