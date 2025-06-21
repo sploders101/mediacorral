@@ -101,8 +101,11 @@ CREATE TABLE `ost_downloads`(
 
 -- Contains information about the comparisons made between video files
 CREATE TABLE `match_info`(
-	`rip_job` INTEGER NOT NULL PRIMARY KEY,
-	`pb_data` BINARY NOT NULL
+	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	`video_file_id` INTEGER NOT NULL,
+	`ost_download_id` INTEGER NOT NULL,
+	`distance` INTEGER NOT NULL,
+	`max_distance` INTEGER NOT NULL
 );
 
 CREATE TABLE `image_files`(
