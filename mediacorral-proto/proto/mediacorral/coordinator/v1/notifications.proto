@@ -10,14 +10,17 @@ service CoordinatorNotificationService {
 }
 
 message DiscInsertedRequest {
+  // The ID of the controller that owns the disc drive
+  string controller_id = 1;
   // The ID of the drive the disc was inserted to
-  uint32 drive_id = 1;
+  uint32 drive_id = 2;
   // The name of the disc
-  optional string name = 2;
+  optional string name = 3;
 }
 message DiscInsertedResponse {}
 
 message RipFinishedRequest {
-  int64 job_id = 1;
+  string controller_id = 1;
+  int64 job_id = 2;
 }
 message RipFinishedResponse {}

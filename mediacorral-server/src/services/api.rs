@@ -1,18 +1,16 @@
 use std::fs::File;
 use std::io::{ErrorKind, Read};
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::application::Application;
+use crate::application::{Application, ApplicationError};
 use crate::db;
 use crate::managers::exports::ExportsDirError;
 use crate::managers::tmdb::TmdbError;
 use mediacorral_proto::mediacorral::{
     coordinator::v1::{self as proto, coordinator_api_service_server::CoordinatorApiService},
     drive_controller::v1::{
-        DriveStatusTag, EjectRequest, GetDriveCountRequest, GetDriveMetaRequest,
-        GetDriveStateRequest, GetJobStatusRequest, RetractRequest, RipMediaRequest, RipUpdate,
-        WatchRipJobRequest,
+        EjectRequest, GetDriveCountRequest, GetDriveMetaRequest, GetJobStatusRequest,
+        RetractRequest, RipUpdate, WatchRipJobRequest,
     },
 };
 use prost::Message;
@@ -57,6 +55,19 @@ impl<T> ToTonic for Result<T, ExportsDirError> {
             ExportsDirError::Io(err) => tonic::Status::internal(format!("{err}")),
             ExportsDirError::Db(err) => tonic::Status::internal(format!("{err}")),
         });
+    }
+}
+impl<T> ToTonic for Result<T, ApplicationError> {
+    type T = T;
+    fn bubble(self) -> Result<Self::T, tonic::Status> {
+        self.map_err(|err| match err {
+            ApplicationError::ControllerMissing => tonic::Status::not_found(err.to_string()),
+            ApplicationError::TemporaryFailure => tonic::Status::unavailable(err.to_string()),
+            ApplicationError::FailedPrecondition(err_str) => {
+                tonic::Status::failed_precondition(err_str)
+            }
+            ApplicationError::TonicError(err) => err,
+        })
     }
 }
 impl<T> ToTonic for Option<T> {
@@ -282,8 +293,7 @@ impl CoordinatorApiService for ApiService {
             .application
             .drive_controllers
             .iter()
-            .cloned()
-            .enumerate()
+            .map(|(id, controller)| (id.clone(), controller.clone()))
         {
             let drive_count = controller
                 .get_drive_count(GetDriveCountRequest {})
@@ -296,7 +306,7 @@ impl CoordinatorApiService for ApiService {
                     .await?
                     .into_inner();
                 drives.push(proto::DiscDrive {
-                    controller: controller_id as _,
+                    controller: controller_id.clone(),
                     drive_id,
                     name: meta.name,
                 });
@@ -314,75 +324,15 @@ impl CoordinatorApiService for ApiService {
         let drive = request
             .drive
             .ok_or_else(|| tonic::Status::invalid_argument("Missing drive info"))?;
-
-        let mut controller = self
+        let job_id = self
             .application
-            .drive_controllers
-            .get(drive.controller as usize)
-            .bubble()?
-            .clone();
-
-        let drive_state = controller
-            .get_drive_state(GetDriveStateRequest {
-                drive_id: drive.drive_id,
-            })
-            .await?
-            .into_inner();
-
-        match drive_state.status() {
-            DriveStatusTag::Unspecified => {
-                return Err(tonic::Status::failed_precondition(
-                    "The drive is in an unrecognized state. Please ensure the coordinator is up to date",
-                ));
-            }
-            DriveStatusTag::Empty => {
-                return Err(tonic::Status::failed_precondition(
-                    "There is no disc in the drive. Please insert a disc and try again.",
-                ));
-            }
-            DriveStatusTag::TrayOpen => {
-                return Err(tonic::Status::failed_precondition(
-                    "The drive tray is open. Please close the tray and try again.",
-                ));
-            }
-            DriveStatusTag::NotReady => {
-                return Err(tonic::Status::unavailable(
-                    "The disc is being loaded. Please try again shortly.",
-                ));
-            }
-            DriveStatusTag::DiscLoaded => {}
-        }
-        if drive_state.active_rip_job.is_some() {
-            return Err(tonic::Status::failed_precondition(
-                "The drive is already performing a rip job. Cannot start another.",
-            ));
-        }
-
-        let job_id = db::insert_rip_jobs(
-            &self.application.db,
-            &db::schemas::RipJobsItem {
-                id: None,
-                start_time: SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .map_err(|_| tonic::Status::internal("System clock is incorrect"))?
-                    .as_secs() as i64,
-                disc_title: drive_state.disc_name,
-                suspected_contents: request.suspected_contents.map(|item| item.encode_to_vec()),
-                rip_finished: false,
-                imported: false,
-            },
-        )
-        .await
-        .unwrap();
-
-        controller
-            .rip_media(RipMediaRequest {
-                job_id,
-                drive_id: drive.drive_id,
-            })
-            .await?
-            .into_inner();
-
+            .rip_media(
+                &drive.controller,
+                drive.drive_id,
+                request.suspected_contents,
+            )
+            .await
+            .bubble()?;
         return Ok(tonic::Response::new(proto::StartRipJobResponse { job_id }));
     }
 
@@ -393,7 +343,12 @@ impl CoordinatorApiService for ApiService {
     ) -> std::result::Result<tonic::Response<proto::GetRipJobStatusResponse>, tonic::Status> {
         let request = request.into_inner();
 
-        for mut controller in self.application.drive_controllers.iter().cloned() {
+        for mut controller in self
+            .application
+            .drive_controllers
+            .iter()
+            .map(|(_id, controller)| controller.clone())
+        {
             if let Ok(status) = controller
                 .get_job_status(GetJobStatusRequest {
                     job_id: request.job_id,
@@ -420,7 +375,12 @@ impl CoordinatorApiService for ApiService {
     ) -> std::result::Result<tonic::Response<Self::StreamRipJobUpdatesStream>, tonic::Status> {
         let request = request.into_inner();
 
-        for mut controller in self.application.drive_controllers.iter().cloned() {
+        for mut controller in self
+            .application
+            .drive_controllers
+            .iter()
+            .map(|(_id, controller)| controller.clone())
+        {
             if let Ok(status) = controller
                 .watch_rip_job(WatchRipJobRequest {
                     job_id: request.job_id,
@@ -448,7 +408,7 @@ impl CoordinatorApiService for ApiService {
         let mut controller = self
             .application
             .drive_controllers
-            .get(drive.controller as usize)
+            .get(&drive.controller)
             .bubble()?
             .clone();
         controller
@@ -471,7 +431,7 @@ impl CoordinatorApiService for ApiService {
         let mut controller = self
             .application
             .drive_controllers
-            .get(drive.controller as usize)
+            .get(&drive.controller)
             .bubble()?
             .clone();
         controller

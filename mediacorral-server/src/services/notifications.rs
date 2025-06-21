@@ -21,7 +21,13 @@ impl CoordinatorNotificationService for NotificationService {
         &self,
         request: tonic::Request<DiscInsertedRequest>,
     ) -> Result<tonic::Response<DiscInsertedResponse>, tonic::Status> {
-        todo!();
+        let request = request.into_inner();
+        if self.application.get_autorip() {
+            let _ = self.application
+                .rip_media(&request.controller_id, request.drive_id, None)
+                .await;
+        }
+        return Ok(tonic::Response::new(DiscInsertedResponse {}));
     }
     async fn rip_finished(
         &self,

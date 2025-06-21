@@ -91,6 +91,7 @@ pub struct RipJob {
 }
 
 pub struct DriveController {
+    id: String,
     coordinator_notifs: CoordinatorNotificationServiceClient<tonic::transport::Channel>,
     shared_directory: PathBuf,
     drives: Arc<Vec<Drive>>,
@@ -274,6 +275,7 @@ impl DriveControllerService for DriveController {
             logs: Vec::new(),
         });
         let mut notif_client = self.coordinator_notifs.clone();
+        let controller_id = self.id.clone();
         let task_handle = tokio::task::spawn(async move {
             // TODO: Remove unwrap
             while let Ok(Some(event)) = makemkv.next_event().await {
@@ -313,6 +315,7 @@ impl DriveControllerService for DriveController {
             for _ in 0..15 {
                 if let Ok(_) = notif_client
                     .rip_finished(RipFinishedRequest {
+                        controller_id: controller_id.clone(),
                         job_id: request.job_id,
                     })
                     .await
@@ -494,6 +497,7 @@ pub struct DriveControllerConfig {
     shared_directory: PathBuf,
     serve_address: String,
     coordinator_address: String,
+    controller_id: String,
     drives: Vec<DriveInfo>,
 }
 
@@ -543,6 +547,7 @@ fn main() {
             {
                 let drives = Arc::clone(&drives);
                 let mut coordinator_client = coordinator_client.clone();
+                let controller_id = config.controller_id.clone();
                 tokio::task::spawn(async move {
                     let mut stream = disc_insert_events();
                     while let Some(event) = stream.next().await {
@@ -552,6 +557,7 @@ fn main() {
                             }
                             let _ = coordinator_client
                                 .disc_inserted(DiscInsertedRequest {
+                                    controller_id: controller_id.clone(),
                                     drive_id: i as _,
                                     name: Some(event.disc_name),
                                 })
@@ -564,6 +570,7 @@ fn main() {
 
             Server::builder()
                 .add_service(DriveControllerServiceServer::new(DriveController {
+                    id: config.controller_id.clone(),
                     coordinator_notifs: coordinator_client,
                     shared_directory: config.shared_directory,
                     drives,

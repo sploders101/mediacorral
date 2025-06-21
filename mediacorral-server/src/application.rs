@@ -1,20 +1,31 @@
 use anyhow::Context;
 use futures::lock::Mutex;
-use mediacorral_proto::mediacorral::drive_controller::v1::drive_controller_service_client::DriveControllerServiceClient;
+use mediacorral_proto::mediacorral::{
+    coordinator::v1::SuspectedContents,
+    drive_controller::v1::{
+        DriveStatusTag, GetDriveStateRequest, RipMediaRequest,
+        drive_controller_service_client::DriveControllerServiceClient,
+    },
+};
+use prost::Message;
 use sqlx::SqlitePool;
 use std::{
+    collections::HashMap,
     path::Path,
     str::FromStr,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
     },
+    time::{SystemTime, UNIX_EPOCH},
 };
+use thiserror::Error;
 use tonic::transport::{Channel, Endpoint};
 
 use crate::{
     CoordinatorConfig,
     blob_storage::BlobStorageController,
+    db,
     managers::{
         exports::{ExportsDirError, ExportsManager},
         tmdb::TmdbImporter,
@@ -27,7 +38,7 @@ pub struct Application {
     pub blob_storage: BlobStorageController,
     pub tmdb_importer: TmdbImporter,
     pub exports_manager: Mutex<ExportsManager>,
-    pub drive_controllers: Vec<DriveControllerServiceClient<Channel>>,
+    pub drive_controllers: HashMap<String, DriveControllerServiceClient<Channel>>,
 }
 impl Application {
     pub async fn new(config: CoordinatorConfig) -> anyhow::Result<Self> {
@@ -54,12 +65,15 @@ impl Application {
                 .context("Failed to initialize exports manager")?,
         );
 
-        let mut drive_controllers = Vec::new();
-        for controller in config.drive_controllers.iter() {
-            let drive_controller_endpoint = Endpoint::from_str(controller)
+        let mut drive_controllers = HashMap::new();
+        for (id, controller) in config.drive_controllers.into_iter() {
+            let drive_controller_endpoint = Endpoint::from_str(&controller)
                 .expect("Invalid drive controller address")
                 .connect_lazy();
-            drive_controllers.push(DriveControllerServiceClient::new(drive_controller_endpoint));
+            drive_controllers.insert(
+                id,
+                DriveControllerServiceClient::new(drive_controller_endpoint),
+            );
         }
 
         return Ok(Self {
@@ -101,4 +115,84 @@ impl Application {
     pub fn set_autorip(&self, value: bool) {
         self.autorip_enabled.store(value, Ordering::Relaxed);
     }
+    pub async fn rip_media(
+        &self,
+        drive_controller: &str,
+        drive_id: u32,
+        suspected_contents: Option<SuspectedContents>,
+    ) -> Result<i64, ApplicationError> {
+        let mut controller = self
+            .drive_controllers
+            .get(drive_controller)
+            .ok_or(ApplicationError::ControllerMissing)?
+            .clone();
+
+        let drive_state = controller
+            .get_drive_state(GetDriveStateRequest { drive_id })
+            .await?
+            .into_inner();
+
+        match drive_state.status() {
+            DriveStatusTag::Unspecified => {
+                return Err(ApplicationError::FailedPrecondition(String::from(
+                    "The drive is in an unrecognized state. Please ensure the coordinator is up to date",
+                )));
+            }
+            DriveStatusTag::Empty => {
+                return Err(ApplicationError::FailedPrecondition(String::from(
+                    "There is no disc in the drive. Please insert a disc and try again.",
+                )));
+            }
+            DriveStatusTag::TrayOpen => {
+                return Err(ApplicationError::FailedPrecondition(String::from(
+                    "The drive tray is open. Please close the tray and try again.",
+                )));
+            }
+            DriveStatusTag::NotReady => {
+                return Err(ApplicationError::TemporaryFailure);
+            }
+            DriveStatusTag::DiscLoaded => {}
+        }
+        if drive_state.active_rip_job.is_some() {
+            return Err(ApplicationError::FailedPrecondition(String::from(
+                "The drive is already performing a rip job. Cannot start another.",
+            )));
+        }
+
+        let job_id = db::insert_rip_jobs(
+            &self.db,
+            &db::schemas::RipJobsItem {
+                id: None,
+                start_time: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map_err(|_| tonic::Status::internal("System clock is incorrect"))?
+                    .as_secs() as i64,
+                disc_title: drive_state.disc_name,
+                suspected_contents: suspected_contents.map(|item| item.encode_to_vec()),
+                rip_finished: false,
+                imported: false,
+            },
+        )
+        .await
+        .unwrap();
+
+        controller
+            .rip_media(RipMediaRequest { job_id, drive_id })
+            .await?
+            .into_inner();
+
+        return Ok(job_id);
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum ApplicationError {
+    #[error("The requested drive controller was not found.")]
+    ControllerMissing,
+    #[error("The requested resource is currently busy. Please try again.")]
+    TemporaryFailure,
+    #[error("Precondition failed:\n{0}")]
+    FailedPrecondition(String),
+    #[error("An unknown error occurred upstream: {0}")]
+    TonicError(#[from] tonic::Status),
 }

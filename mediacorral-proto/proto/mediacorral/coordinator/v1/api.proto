@@ -162,7 +162,7 @@ message ListDrivesResponse {
   repeated DiscDrive drives = 1;
 }
 message DiscDrive {
-  uint32 controller = 1;
+  string controller = 1;
   uint32 drive_id = 2;
   string name = 3;
 }

@@ -31,7 +31,7 @@ pub struct CoordinatorConfig {
     serve_address: String,
     exports_dirs: HashMap<String, export_settings::ExportSettings>,
     enable_autorip: bool,
-    drive_controllers: Vec<String>,
+    drive_controllers: HashMap<String, String>,
 }
 
 pub mod export_settings {
