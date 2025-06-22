@@ -340,10 +340,10 @@ message VideoFile {
   //  Match ID: Identifies the specific movie, special feature, etc this video contains.
   optional int64 match_id = 3;
   string blob_id = 4;
-  uint32 resolution_width = 5;
-  uint32 resolution_height = 6;
-  uint32 length = 7;
-  bytes original_video_hash = 8;
+  optional uint32 resolution_width = 5;
+  optional uint32 resolution_height = 6;
+  optional uint32 length = 7;
+  optional bytes original_video_hash = 8;
   optional int64 rip_job = 9;
 }
 message MatchInfoItem {

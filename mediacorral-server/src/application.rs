@@ -1,5 +1,5 @@
 use anyhow::Context;
-use futures::lock::Mutex;
+use futures::{Stream, StreamExt, TryStreamExt};
 use mediacorral_proto::mediacorral::{
     coordinator::v1::SuspectedContents,
     drive_controller::v1::{
@@ -11,7 +11,8 @@ use prost::Message;
 use sqlx::SqlitePool;
 use std::{
     collections::HashMap,
-    path::Path,
+    ffi::OsStr,
+    path::{Path, PathBuf},
     str::FromStr,
     sync::{
         Arc,
@@ -20,6 +21,8 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 use thiserror::Error;
+use tokio::sync::Mutex;
+use tokio_stream::wrappers::ReadDirStream;
 use tonic::transport::{Channel, Endpoint};
 
 use crate::{
@@ -30,10 +33,13 @@ use crate::{
         exports::{ExportsDirError, ExportsManager},
         tmdb::TmdbImporter,
     },
+    workers::subtitles::vobsub::PartessCache,
 };
 
 pub struct Application {
     pub db: Arc<SqlitePool>,
+    rip_dir: PathBuf,
+    partess_cache: PartessCache,
     autorip_enabled: AtomicBool,
     pub blob_storage: BlobStorageController,
     pub tmdb_importer: TmdbImporter,
@@ -42,6 +48,7 @@ pub struct Application {
 }
 impl Application {
     pub async fn new(config: CoordinatorConfig) -> anyhow::Result<Self> {
+        let rip_dir = Path::new(&config.data_directory).join("rips");
         let blob_dir = Path::new(&config.data_directory).join("storage");
         let exports_dir = Path::new(&config.data_directory).join("exports");
         let sqlite_path = Path::new(&config.data_directory).join("database.sqlite");
@@ -78,6 +85,8 @@ impl Application {
 
         return Ok(Self {
             db,
+            rip_dir,
+            partess_cache: PartessCache::new(),
             autorip_enabled: AtomicBool::new(config.enable_autorip),
             blob_storage,
             tmdb_importer,
@@ -183,6 +192,58 @@ impl Application {
 
         return Ok(job_id);
     }
+
+    pub async fn import_job(&self, job_id: i64) -> Result<(), ApplicationError> {
+        // 1. Mark rip job as finished
+        db::mark_rip_job_finished(&self.db, job_id, true).await?;
+        let mut dir_walker = self.walk_rip_dir(job_id).await?;
+
+        // 2. Import video files
+        while let Some(file_path) = dir_walker.try_next().await? {
+            if let Err(err) = self
+                .blob_storage
+                .add_video_file(&self.partess_cache, &file_path, Some(job_id))
+                .await
+            {
+                println!(
+                    "An error occurred importing job {}, file {}:\n{}",
+                    job_id,
+                    file_path.to_string_lossy(),
+                    err,
+                );
+            }
+        }
+
+        // 3. Mark rip job as imported
+        db::mark_rip_job_imported(&self.db, job_id, true).await?;
+
+        return Ok(());
+    }
+
+    async fn walk_rip_dir(
+        &self,
+        job_id: i64,
+    ) -> std::io::Result<impl Stream<Item = std::io::Result<PathBuf>> + Send + Unpin> {
+        let rip_dir = Arc::new(self.rip_dir.join(job_id.to_string()));
+        let walker = tokio::fs::read_dir(&*rip_dir).await?;
+        let walker = ReadDirStream::new(walker);
+        return Ok(Box::pin(walker.filter_map(move |item| {
+            let rip_dir = Arc::clone(&rip_dir);
+            async move {
+                match item {
+                    Ok(item) => {
+                        let file_path = rip_dir.join(item.file_name());
+                        if file_path.extension() == Some(OsStr::new("mkv")) {
+                            Some(Ok(file_path))
+                        } else {
+                            None
+                        }
+                    }
+                    Err(err) => Some(Err(err)),
+                }
+            }
+        })));
+    }
 }
 
 #[derive(Error, Debug)]
@@ -195,4 +256,8 @@ pub enum ApplicationError {
     FailedPrecondition(String),
     #[error("An unknown error occurred upstream: {0}")]
     TonicError(#[from] tonic::Status),
+    #[error("There was an error querying the database:\n{0}")]
+    DbError(#[from] sqlx::Error),
+    #[error("An I/O eeor occurred:\n{0}")]
+    Io(#[from] std::io::Error),
 }

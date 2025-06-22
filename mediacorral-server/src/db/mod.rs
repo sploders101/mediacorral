@@ -593,8 +593,53 @@ pub async fn rename_rip_job(db: &Db, rip_job: i64, new_name: &str) -> Result<(),
     return Ok(());
 }
 
+pub async fn mark_rip_job_finished(
+    db: &Db,
+    rip_job: i64,
+    finished: bool,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "
+            UPDATE rip_jobs
+            SET
+                rip_finished = ?
+            WHERE
+                id = ?
+        ",
+    )
+    .bind(finished)
+    .bind(rip_job)
+    .execute(db)
+    .await?;
+    return Ok(());
+}
+
+pub async fn mark_rip_job_imported(
+    db: &Db,
+    rip_job: i64,
+    imported: bool,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "
+            UPDATE rip_jobs
+            SET
+                imported = ?
+            WHERE
+                id = ?
+        ",
+    )
+    .bind(imported)
+    .bind(rip_job)
+    .execute(db)
+    .await?;
+    return Ok(());
+}
+
 pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i64, sqlx::Error> {
-    let mkv_hash = video_file.original_video_hash.as_slice();
+    let mkv_hash = video_file
+        .original_video_hash
+        .as_ref()
+        .map(|i| i.as_slice());
     let result = sqlx::query(
         "
             INSERT INTO video_files (
@@ -641,6 +686,37 @@ pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i
     .await?;
 
     return Ok(result.get(0));
+}
+
+pub async fn add_video_metadata(
+    db: &Db,
+    id: i64,
+    resolution_width: u32,
+    resolution_height: u32,
+    length: u32,
+    original_video_hash: &[u8],
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "
+            UPDATE video_files
+            SET
+                resolution_width = ?
+                resolution_height = ?
+                length = ?
+                original_video_hash = ?
+            WHERE
+                id = ?
+        ",
+    )
+    .bind(resolution_width)
+    .bind(resolution_height)
+    .bind(length)
+    .bind(original_video_hash)
+    .bind(id)
+    .execute(db)
+    .await?;
+
+    return Ok(());
 }
 
 pub async fn tag_video_file(

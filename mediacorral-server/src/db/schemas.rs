@@ -162,7 +162,7 @@ impl From<proto::VideoType> for VideoType {
 }
 
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
+#[derive(Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct VideoFilesItem {
     pub id: Option<i64>,
     ///  Video type:
@@ -174,11 +174,10 @@ pub struct VideoFilesItem {
     ///  Match ID: Identifies the specific movie, special feature, etc this video contains.
     pub match_id: Option<i64>,
     pub blob_id: String,
-    pub resolution_width: u32,
-    pub resolution_height: u32,
-    pub length: u32,
-    #[serde_as(as = "serde_with::hex::Hex")]
-    pub original_video_hash: Vec<u8>,
+    pub resolution_width: Option<u32>,
+    pub resolution_height: Option<u32>,
+    pub length: Option<u32>,
+    pub original_video_hash: Option<Vec<u8>>,
     pub rip_job: Option<i64>,
 }
 impl Into<proto::VideoFile> for VideoFilesItem {

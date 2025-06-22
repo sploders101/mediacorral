@@ -17,6 +17,8 @@ pub enum ExtractDetailsError {
     Io(#[from] std::io::Error),
     #[error("The content is missing a video track")]
     MissingVideoTrack,
+    #[error("Missing required properties on file")]
+    MissingRequiredProps,
     #[error("The subrip subtitles are not valid UTF-8")]
     SubripInvalidUtf8,
     #[error("An error occurred while reading VobSub subtitles:\n{0}")]
@@ -28,6 +30,9 @@ pub enum ExtractDetailsError {
 }
 
 pub struct MediaDetails {
+    pub resolution_width: u32,
+    pub resolution_height: u32,
+    pub duration: u32,
     pub video_hash: Vec<u8>,
     pub subtitles: Option<String>,
 }
@@ -102,6 +107,7 @@ where
         .into_iter()
         .find(|track| track.track_type() == TrackType::Video)
         .ok_or(ExtractDetailsError::MissingVideoTrack)?;
+    let vid_track_info = vid_track.video().unwrap();
     let vid_track_number = vid_track.track_number().get();
     let mut vid_hasher = md5::Context::new();
 
@@ -122,13 +128,26 @@ where
         None => None,
     };
 
-    let duration = mkv_file.info().duration().unwrap_or(f64::INFINITY);
+    let resolution_width: u32 = vid_track_info
+        .display_width()
+        .ok_or(ExtractDetailsError::MissingRequiredProps)?
+        .get() as _;
+    let resolution_height: u32 = vid_track_info
+        .display_height()
+        .ok_or(ExtractDetailsError::MissingRequiredProps)?
+        .get() as _;
+
+    let info = mkv_file.info();
+    let duration = info.duration();
+    let progress_duration = duration.unwrap_or(f64::INFINITY);
     if let Some(ref mut progress) = progress {
         let _ = progress.send(0.0);
     }
 
+    let mut duration_tracker: u32 = 0;
     let mut frame = Frame::default();
     while mkv_file.next_frame(&mut frame)? {
+        duration_tracker = duration_tracker.max(frame.timestamp as _);
         if frame.track == vid_track_number {
             // Process video
             vid_hasher.consume(&frame.data);
@@ -141,7 +160,7 @@ where
 
         // Update progress
         if let Some(ref mut progress) = progress.as_mut() {
-            let progress_value = (frame.timestamp as f64 / duration * 100.0).round();
+            let progress_value = (frame.timestamp as f64 / progress_duration * 100.0).round();
             let _ = progress.send_if_modified(|old_val| {
                 if *old_val != progress_value {
                     *old_val = progress_value;
@@ -154,6 +173,9 @@ where
     }
 
     return Ok(MediaDetails {
+        resolution_width,
+        resolution_height,
+        duration: duration.map(|i| i.round() as _).unwrap_or(duration_tracker),
         video_hash: vid_hasher.compute().to_vec(),
         subtitles: match st_ctx {
             Some(st_ctx) => Some(st_ctx.collect()?.join("\n")),

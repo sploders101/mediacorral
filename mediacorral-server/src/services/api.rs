@@ -61,6 +61,14 @@ impl<T> ToTonic for Result<T, ApplicationError> {
     type T = T;
     fn bubble(self) -> Result<Self::T, tonic::Status> {
         self.map_err(|err| match err {
+            ApplicationError::DbError(sqlx::Error::RowNotFound) => {
+                tonic::Status::not_found(err.to_string())
+            }
+            ApplicationError::DbError(err) => tonic::Status::unknown(err.to_string()),
+            ApplicationError::Io(err) => match err.kind() {
+                ErrorKind::NotFound => tonic::Status::not_found(err.to_string()),
+                _ => tonic::Status::unknown(err.to_string()),
+            },
             ApplicationError::ControllerMissing => tonic::Status::not_found(err.to_string()),
             ApplicationError::TemporaryFailure => tonic::Status::unavailable(err.to_string()),
             ApplicationError::FailedPrecondition(err_str) => {

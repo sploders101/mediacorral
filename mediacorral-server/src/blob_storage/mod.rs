@@ -3,13 +3,25 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
+use thiserror::Error;
 use tokio::{fs::File, io::AsyncWriteExt};
 use uuid::Uuid;
 
-use crate::db::{
-    delete_blob, insert_image_file, insert_ost_download_item,
-    schemas::{ImageFilesItem, OstDownloadsItem, VideoType},
+use crate::{
+    db::{
+        self, delete_blob, insert_image_file, insert_ost_download_item,
+        schemas::{ImageFilesItem, OstDownloadsItem, VideoFilesItem, VideoType},
+    },
+    workers::subtitles::{extract_details, vobsub::PartessCache},
 };
+
+#[derive(Error, Debug)]
+pub enum BlobError {
+    #[error("An I/O error occurred:\n{0}")]
+    Io(#[from] std::io::Error),
+    #[error("A database error occurred:\n{0}")]
+    Db(#[from] sqlx::Error),
+}
 
 pub struct BlobStorageController {
     blob_dir: PathBuf,
@@ -70,6 +82,60 @@ impl BlobStorageController {
             rip_dir,
             db_connection,
         });
+    }
+
+    pub async fn add_video_file(
+        &self,
+        partess_cache: &PartessCache,
+        file_path: &PathBuf,
+        rip_job: Option<i64>,
+    ) -> anyhow::Result<()> {
+        let uuid = Uuid::new_v4().to_string();
+        let new_path = self.blob_dir.join(&uuid);
+        if let Err(err) = tokio::fs::rename(&file_path, &new_path).await {
+            if err.kind() == std::io::ErrorKind::CrossesDevices {
+                tokio::fs::copy(&file_path, &new_path).await?;
+                tokio::fs::remove_file(&file_path).await?;
+            }
+        }
+        let id = db::insert_video_file(
+            &self.db_connection,
+            &VideoFilesItem {
+                id: None,
+                video_type: VideoType::Untagged,
+                match_id: None,
+                blob_id: uuid,
+                resolution_width: None,
+                resolution_height: None,
+                length: None,
+                original_video_hash: None,
+                rip_job,
+            },
+        )
+        .await?;
+
+        let result = {
+            let new_path = new_path.clone();
+            let partess_cache = partess_cache.clone();
+            tokio::task::spawn_blocking(move || {
+                let file = std::fs::File::open(new_path)?;
+                extract_details(file, None, &partess_cache)
+            })
+            .await
+            .unwrap()
+        }?;
+
+        db::add_video_metadata(
+            &self.db_connection,
+            id,
+            result.resolution_width,
+            result.resolution_height,
+            result.duration,
+            &result.video_hash,
+        )
+        .await?;
+
+        return Ok(());
     }
 
     pub async fn add_ost_subtitles(

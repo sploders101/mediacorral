@@ -74,10 +74,10 @@ CREATE TABLE `video_files`(
 	-- Match ID: Identifies the specific movie, special feature, etc this video contains.
 	`match_id` INTEGER,
 	`blob_id` TEXT NOT NULL,
-	`resolution_width` INTEGER NOT NULL,
-	`resolution_height` INTEGER NOT NULL,
-	`length` INTEGER NOT NULL,
-	`original_video_hash` BINARY NOT NULL,
+	`resolution_width` INTEGER,
+	`resolution_height` INTEGER,
+	`length` INTEGER,
+	`original_video_hash` BINARY,
 	`rip_job` INTEGER
 );
 
