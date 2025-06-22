@@ -31,6 +31,7 @@ use crate::{
     db,
     managers::{
         exports::{ExportsDirError, ExportsManager},
+        opensubtitles::OpenSubtitles,
         tmdb::TmdbImporter,
     },
     workers::subtitles::vobsub::PartessCache,
@@ -43,6 +44,7 @@ pub struct Application {
     autorip_enabled: AtomicBool,
     pub blob_storage: BlobStorageController,
     pub tmdb_importer: TmdbImporter,
+    pub ost_importer: OpenSubtitles,
     pub exports_manager: Mutex<ExportsManager>,
     pub drive_controllers: HashMap<String, DriveControllerServiceClient<Channel>>,
 }
@@ -65,6 +67,12 @@ impl Application {
 
         let tmdb_importer = TmdbImporter::new(Arc::clone(&db), config.tmdb_api_key)
             .context("Couldn't create TMDB importer")?;
+
+        let ost_importer = OpenSubtitles::new(
+            config.ost_login.api_key,
+            config.ost_login.username,
+            config.ost_login.password,
+        );
 
         let exports_manager = Mutex::new(
             ExportsManager::new(Arc::clone(&db), exports_dir, config.exports_dirs)
@@ -90,6 +98,7 @@ impl Application {
             autorip_enabled: AtomicBool::new(config.enable_autorip),
             blob_storage,
             tmdb_importer,
+            ost_importer,
             exports_manager,
             drive_controllers,
         });

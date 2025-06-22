@@ -28,10 +28,18 @@ pub struct Args {
 pub struct CoordinatorConfig {
     data_directory: PathBuf,
     tmdb_api_key: String,
+    ost_login: OstCreds,
     serve_address: String,
     exports_dirs: HashMap<String, export_settings::ExportSettings>,
     enable_autorip: bool,
     drive_controllers: HashMap<String, String>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct OstCreds {
+    api_key: String,
+    username: String,
+    password: String,
 }
 
 pub mod export_settings {
