@@ -15,7 +15,7 @@ use makemkv::{
     messaging::{MakemkvMessage, ProgressBar},
 };
 use mediacorral_proto::mediacorral::{
-    coordinator::v1::{
+    server::v1::{
         DiscInsertedRequest, RipFinishedRequest,
         coordinator_notification_service_client::CoordinatorNotificationServiceClient,
     },

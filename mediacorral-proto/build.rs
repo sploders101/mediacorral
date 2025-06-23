@@ -4,8 +4,8 @@ pub fn main() {
             &[
                 "proto/mediacorral/common/tmdb/v1/main.proto",
                 "proto/mediacorral/drive_controller/v1/main.proto",
-                "proto/mediacorral/coordinator/v1/api.proto",
-                "proto/mediacorral/coordinator/v1/notifications.proto",
+                "proto/mediacorral/server/v1/api.proto",
+                "proto/mediacorral/server/v1/notifications.proto",
             ],
             &["proto/"],
         )

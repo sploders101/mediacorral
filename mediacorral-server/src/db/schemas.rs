@@ -1,4 +1,4 @@
-use mediacorral_proto::mediacorral::coordinator::v1 as proto;
+use mediacorral_proto::mediacorral::server::v1 as proto;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use sqlx::prelude::FromRow;

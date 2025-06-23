@@ -1,5 +1,5 @@
 syntax = "proto3";
-package mediacorral.coordinator.v1;
+package mediacorral.server.v1;
 
 import "mediacorral/common/tmdb/v1/main.proto";
 import "mediacorral/drive_controller/v1/main.proto";

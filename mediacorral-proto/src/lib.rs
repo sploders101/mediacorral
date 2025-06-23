@@ -4,9 +4,9 @@ pub mod mediacorral {
             tonic::include_proto!("mediacorral.drive_controller.v1");
         }
     }
-    pub mod coordinator {
+    pub mod server {
         pub mod v1 {
-            tonic::include_proto!("mediacorral.coordinator.v1");
+            tonic::include_proto!("mediacorral.server.v1");
         }
     }
     pub mod common {

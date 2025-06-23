@@ -7,7 +7,7 @@ use crate::db;
 use crate::managers::exports::ExportsDirError;
 use crate::managers::tmdb::TmdbError;
 use mediacorral_proto::mediacorral::{
-    coordinator::v1::{self as proto, coordinator_api_service_server::CoordinatorApiService},
+    server::v1::{self as proto, coordinator_api_service_server::CoordinatorApiService},
     drive_controller::v1::{
         EjectRequest, GetDriveCountRequest, GetDriveMetaRequest, GetJobStatusRequest,
         RetractRequest, RipUpdate, WatchRipJobRequest,

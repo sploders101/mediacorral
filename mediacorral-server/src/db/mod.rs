@@ -1,4 +1,4 @@
-use mediacorral_proto::mediacorral::coordinator::v1 as proto;
+use mediacorral_proto::mediacorral::server::v1 as proto;
 use prost::Message;
 use schemas::*;
 use serde::{Deserialize, Serialize};
