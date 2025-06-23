@@ -568,7 +568,16 @@ fn main() {
                 });
             }
 
+            let reflection = tonic_reflection::server::Builder::configure()
+                .register_encoded_file_descriptor_set(
+                    mediacorral_proto::mediacorral::FILE_DESCRIPTOR_SET,
+                )
+                .with_service_name("mediacorral.drive_controller.v1.DriveControllerService")
+                .build_v1()
+                .unwrap();
+
             Server::builder()
+                .add_service(reflection)
                 .add_service(DriveControllerServiceServer::new(DriveController {
                     id: config.controller_id.clone(),
                     coordinator_notifs: coordinator_client,

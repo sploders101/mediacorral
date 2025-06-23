@@ -83,6 +83,13 @@ async fn main() {
             .expect("Couldn't start application"),
     );
 
+    let reflection = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(mediacorral_proto::mediacorral::FILE_DESCRIPTOR_SET)
+        .with_service_name("mediacorral.server.v1.CoordinatorNotificationService")
+        .with_service_name("mediacorral.server.v1.CoordinatorApiService")
+        .build_v1()
+        .unwrap();
+
     Server::builder()
         .accept_http1(true)
         .layer(GrpcWebLayer::new())
@@ -92,6 +99,7 @@ async fn main() {
         .add_service(CoordinatorApiServiceServer::new(ApiService::new(
             application,
         )))
+        .add_service(reflection)
         .serve(address)
         .await
         .unwrap();
