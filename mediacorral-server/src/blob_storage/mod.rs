@@ -10,7 +10,7 @@ use uuid::Uuid;
 use crate::{
     db::{
         self, delete_blob, insert_image_file, insert_ost_download_item,
-        schemas::{ImageFilesItem, OstDownloadsItem, VideoFilesItem, VideoType},
+        schemas::{ImageFilesItem, OstDownloadsItem, SubtitleFilesItem, VideoFilesItem, VideoType},
     },
     workers::subtitles::{extract_details, vobsub::PartessCache},
 };
@@ -25,61 +25,29 @@ pub enum BlobError {
 
 pub struct BlobStorageController {
     blob_dir: PathBuf,
-    rip_dir: PathBuf,
     db_connection: Arc<sqlx::SqlitePool>,
 }
 impl BlobStorageController {
     pub async fn new(
         db_connection: Arc<sqlx::SqlitePool>,
-        path: impl Into<PathBuf>,
+        blob_dir: impl Into<PathBuf>,
     ) -> std::io::Result<Self> {
-        let path: PathBuf = path.into();
-        if !path.exists() {
+        let blob_dir: PathBuf = blob_dir.into();
+        if !blob_dir.exists() {
             return Err(std::io::Error::new(
                 ErrorKind::NotFound,
                 "Given blob directory not found",
             ));
         }
-        if !path.is_dir() {
+        if !blob_dir.is_dir() {
             return Err(std::io::Error::new(
                 ErrorKind::NotADirectory,
                 "Given blob directory is not a directory",
             ));
         }
 
-        // Make sure blobs dir exists
-        let blob_dir = path.join("blobs");
-        match tokio::fs::create_dir(&blob_dir).await {
-            Ok(()) => {}
-            Err(err) if err.kind() == ErrorKind::AlreadyExists => {}
-            Err(err) => Err(err)?,
-        }
-
-        // Make sure rips dir exists and is clear
-        let rip_dir = path.join("rips");
-        match tokio::fs::read_dir(&rip_dir).await {
-            Ok(mut dirlist) => {
-                while let Ok(Some(item)) = dirlist.next_entry().await {
-                    tokio::fs::remove_dir_all(item.path()).await?;
-                }
-            }
-            Err(err) if err.kind() == ErrorKind::NotFound => {
-                match tokio::fs::create_dir(&rip_dir).await {
-                    Ok(()) => {}
-                    Err(err) if err.kind() == ErrorKind::AlreadyExists => {
-                        panic!(
-                            "Someone else is managing the blobs directory. Please make sure there are no other instances running."
-                        );
-                    }
-                    Err(err) => Err(err)?,
-                }
-            }
-            Err(err) => Err(err)?,
-        }
-
         return Ok(Self {
             blob_dir,
-            rip_dir,
             db_connection,
         });
     }
@@ -134,6 +102,21 @@ impl BlobStorageController {
             &result.video_hash,
         )
         .await?;
+
+        if let Some(subtitles) = result.subtitles {
+            let subs_uuid = Uuid::new_v4().to_string();
+            let mut file = tokio::fs::File::create(self.blob_dir.join(&subs_uuid)).await?;
+            file.write_all(subtitles.as_bytes()).await?;
+            db::insert_subtitle_file(
+                &self.db_connection,
+                &SubtitleFilesItem {
+                    id: None,
+                    blob_id: subs_uuid,
+                    video_file: id,
+                },
+            )
+            .await?;
+        }
 
         return Ok(());
     }

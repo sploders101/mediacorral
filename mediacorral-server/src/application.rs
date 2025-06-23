@@ -8,10 +8,11 @@ use mediacorral_proto::mediacorral::{
     server::v1::SuspectedContents,
 };
 use prost::Message;
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 use std::{
     collections::HashMap,
     ffi::OsStr,
+    io::ErrorKind,
     path::{Path, PathBuf},
     str::FromStr,
     sync::{
@@ -51,7 +52,7 @@ pub struct Application {
 impl Application {
     pub async fn new(config: CoordinatorConfig) -> anyhow::Result<Self> {
         let rip_dir = Path::new(&config.data_directory).join("rips");
-        let blob_dir = Path::new(&config.data_directory).join("storage");
+        let blob_dir = Path::new(&config.data_directory).join("blobs");
         let exports_dir = Path::new(&config.data_directory).join("exports");
         let sqlite_path = Path::new(&config.data_directory).join("database.sqlite");
 
@@ -191,8 +192,7 @@ impl Application {
                 imported: false,
             },
         )
-        .await
-        .unwrap();
+        .await?;
 
         controller
             .rip_media(RipMediaRequest { job_id, drive_id })

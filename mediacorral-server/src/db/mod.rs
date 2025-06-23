@@ -2,7 +2,7 @@ use mediacorral_proto::mediacorral::server::v1 as proto;
 use prost::Message;
 use schemas::*;
 use serde::{Deserialize, Serialize};
-use sqlx::{Row, prelude::FromRow, sqlite::SqliteRow};
+use sqlx::{Row, prelude::FromRow};
 
 pub mod schemas;
 
@@ -487,22 +487,6 @@ pub async fn upsert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
     return Ok(result.get(0));
 }
 
-pub async fn get_episode_id_from_tmdb(db: &Db, tmdb_id: i32) -> Result<i64, sqlx::Error> {
-    return sqlx::query(
-        "
-            SELECT
-                id
-            FROM tv_episodes
-            WHERE
-                tmdb_id = ?
-        ",
-    )
-    .bind(tmdb_id)
-    .fetch_one(db)
-    .await
-    .map(|item| item.get(0));
-}
-
 pub async fn insert_rip_jobs(db: &Db, rip_job: &RipJobsItem) -> Result<i64, sqlx::Error> {
     let result = sqlx::query(
         "
@@ -513,11 +497,13 @@ pub async fn insert_rip_jobs(db: &Db, rip_job: &RipJobsItem) -> Result<i64, sqlx
                 suspected_contents,
                 rip_finished,
                 imported
-            ) VALUES (?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT (id) DO UPDATE SET
                 start_time = ?,
                 disc_title = ?,
-                suspected_contents = ?
+                suspected_contents = ?,
+                rip_finished = ?,
+                imported = ?
             RETURNING id
         ",
     )
@@ -525,9 +511,13 @@ pub async fn insert_rip_jobs(db: &Db, rip_job: &RipJobsItem) -> Result<i64, sqlx
     .bind(rip_job.start_time)
     .bind(&rip_job.disc_title)
     .bind(&rip_job.suspected_contents)
+    .bind(rip_job.rip_finished)
+    .bind(rip_job.imported)
     .bind(rip_job.start_time)
     .bind(&rip_job.disc_title)
     .bind(&rip_job.suspected_contents)
+    .bind(rip_job.rip_finished)
+    .bind(rip_job.imported)
     .fetch_one(db)
     .await?;
 
@@ -700,9 +690,9 @@ pub async fn add_video_metadata(
         "
             UPDATE video_files
             SET
-                resolution_width = ?
-                resolution_height = ?
-                length = ?
+                resolution_width = ?,
+                resolution_height = ?,
+                length = ?,
                 original_video_hash = ?
             WHERE
                 id = ?
@@ -833,29 +823,6 @@ pub async fn get_ost_download_items_by_match(
     )
     .bind(video_type)
     .bind(match_id)
-    .fetch_all(db)
-    .await?;
-    return Ok(results);
-}
-
-pub async fn get_ost_download_items_by_show_id(
-    db: &Db,
-    show_id: i64,
-) -> Result<Vec<String>, sqlx::Error> {
-    let results = sqlx::query(
-        "
-            SELECT
-                ost_downloads.blob_id
-            FROM ost_downloads
-            INNER JOIN tv_episodes ON
-                ost_downloads.match_id = tv_episodes.id
-            WHERE
-                ost_downloads.video_type = 3
-                AND tv_episodes.tv_show_id = ?
-        ",
-    )
-    .bind(show_id)
-    .map(|row: SqliteRow| row.get(0))
     .fetch_all(db)
     .await?;
     return Ok(results);
@@ -1041,32 +1008,6 @@ pub async fn delete_rip_job(db: &Db, rip_job: i64) -> Result<(), sqlx::Error> {
     return Ok(());
 }
 
-pub async fn get_untagged_videos_from_job(
-    db: &Db,
-    rip_job: i64,
-) -> Result<Vec<RipVideoBlobs>, sqlx::Error> {
-    return Ok(sqlx::query_as(
-        "
-            SELECT
-                video_files.id as id,
-                rip_jobs.id as job_id,
-                video_files.blob_id as video_blob,
-                subtitle_files.blob_id as subtitle_blob
-            FROM rip_jobs
-            INNER JOIN video_files ON
-                rip_jobs.id = video_files.rip_job
-            LEFT JOIN subtitle_files ON
-                subtitle_files.video_file = video_files.id
-            WHERE
-                rip_jobs.id = ?
-                AND video_files.match_id is null
-        ",
-    )
-    .bind(rip_job)
-    .fetch_all(db)
-    .await?);
-}
-
 pub async fn get_rip_jobs_with_untagged_videos(
     db: &Db,
     skip: u32,
@@ -1171,30 +1112,6 @@ pub async fn get_ost_subtitles_from_rip(
                 ost_downloads.id = match_info.ost_download_id
             WHERE video_files.rip_job = ?
             GROUP BY ost_downloads.id
-        ",
-    )
-    .bind(rip_job)
-    .fetch_all(db)
-    .await?;
-    return Ok(results);
-}
-
-pub async fn purge_matches_from_rip(
-    db: &Db,
-    rip_job: i64,
-) -> Result<Vec<MatchInfoItem>, sqlx::Error> {
-    let results: Vec<MatchInfoItem> = sqlx::query_as(
-        "
-            DELETE FROM match_info
-            WHERE id IN (
-                SELECT
-                    match_info.id
-                FROM match_info
-                INNER JOIN video_files ON
-                    video_files.id = match_info.video_file_id
-                WHERE
-                    video_files.rip_job = ?
-            )
         ",
     )
     .bind(rip_job)

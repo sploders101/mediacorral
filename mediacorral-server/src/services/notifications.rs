@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use mediacorral_proto::mediacorral::{
+    drive_controller::v1::{GetJobStatusRequest, JobStatus, ReapJobRequest},
     server::v1::{
         DiscInsertedRequest, DiscInsertedResponse, RipFinishedRequest, RipFinishedResponse,
         coordinator_notification_service_server::CoordinatorNotificationService,
     },
-    drive_controller::v1::{GetJobStatusRequest, JobStatus, ReapJobRequest},
 };
 
 use crate::application::Application;
@@ -86,21 +86,15 @@ impl CoordinatorNotificationService for NotificationService {
                 );
             }
             JobStatus::Completed => {
-                if let Err(err) = self.application.import_job(request.job_id).await {
-                    println!(
-                        "An error occurred while importing job {}:\n{}",
-                        request.job_id, err
-                    );
-                }
+                let application = Arc::clone(&self.application);
+                let job_id = request.job_id;
+                tokio::task::spawn(async move {
+                    if let Err(err) = application.import_job(job_id).await {
+                        println!("An error occurred while importing the job:\n{0}", err);
+                    }
+                });
             }
         }
-        let application = Arc::clone(&self.application);
-        let job_id = request.job_id;
-        tokio::task::spawn(async move {
-            if let Err(err) = application.import_job(job_id).await {
-                println!("An error occurred while importing the job:\n{0}", err);
-            }
-        });
         controller
             .reap_job(ReapJobRequest {
                 job_id: request.job_id,
