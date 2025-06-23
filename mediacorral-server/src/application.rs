@@ -57,10 +57,32 @@ impl Application {
         let sqlite_path = Path::new(&config.data_directory).join("database.sqlite");
 
         let db = Arc::new(
-            sqlx::SqlitePool::connect(sqlite_path.to_str().context("Couldn't open database")?)
-                .await
-                .expect("Couldn't open sqlite database"),
+            sqlx::SqlitePool::connect_with(
+                SqliteConnectOptions::new()
+                    .filename(sqlite_path.to_str().context("Couldn't open database")?)
+                    .create_if_missing(true),
+            )
+            .await
+            .expect("Couldn't open sqlite database"),
         );
+        // Populate database
+        if let sqlx::Result::<(String,)>::Err(sqlx::Error::RowNotFound) = sqlx::query_as(
+            "SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%';",
+        )
+        .fetch_one(&*db)
+        .await
+        {
+            sqlx::query(include_str!("db/up.sql")).execute(&*db).await?;
+        }
+
+        for dir in [&rip_dir, &blob_dir, &exports_dir].into_iter() {
+            if let Err(err) = tokio::fs::create_dir(dir).await {
+                if err.kind() != ErrorKind::AlreadyExists {
+                    Err(err)?;
+                }
+            }
+        }
+        if let Ok(false) = tokio::fs::try_exists(&sqlite_path).await {}
 
         let blob_storage = BlobStorageController::new(Arc::clone(&db), blob_dir)
             .await
