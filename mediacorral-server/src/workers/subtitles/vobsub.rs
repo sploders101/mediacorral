@@ -61,7 +61,7 @@ impl VobsubProcessor {
         language: &str,
         codec_data: &[u8],
     ) -> Result<Self, ExtractDetailsError> {
-        let (submit_send_stream, submit_recv_stream) = mpsc::sync_channel(1);
+        let (submit_send_stream, submit_recv_stream) = mpsc::sync_channel(rayon::max_num_threads());
         let (return_send_stream, return_recv_stream) = mpsc::channel();
 
         let mut cache = partess_cache.cache.lock().unwrap();

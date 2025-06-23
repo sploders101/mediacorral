@@ -1,11 +1,11 @@
 use anyhow::Context;
 use futures::{Stream, StreamExt, TryStreamExt};
 use mediacorral_proto::mediacorral::{
-    coordinator::v1::SuspectedContents,
     drive_controller::v1::{
         DriveStatusTag, GetDriveStateRequest, RipMediaRequest,
         drive_controller_service_client::DriveControllerServiceClient,
     },
+    server::v1::SuspectedContents,
 };
 use prost::Message;
 use sqlx::SqlitePool;
