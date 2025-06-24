@@ -48,6 +48,9 @@ service CoordinatorApiService {
   // Retracts a disc
   rpc Retract (RetractRequest) returns (RetractResponse);
 
+  // Gets the current state of the drive
+  rpc GetDriveState (GetDriveStateRequest) returns (mediacorral.drive_controller.v1.DriveState);
+
   // Lists the movies in the database
   rpc ListMovies (ListMoviesRequest) returns (ListMoviesResponse);
 
@@ -209,6 +212,11 @@ message RetractRequest {
   DiscDrive drive = 1;
 }
 message RetractResponse {}
+
+message GetDriveStateRequest {
+  string controller_id = 1;
+  uint32 drive_id = 2;
+}
 
 message ListMoviesRequest {}
 message ListMoviesResponse {

@@ -6,12 +6,13 @@ use crate::application::{Application, ApplicationError};
 use crate::db;
 use crate::managers::exports::ExportsDirError;
 use crate::managers::tmdb::TmdbError;
+use mediacorral_proto::mediacorral::drive_controller::v1 as drive_controller;
 use mediacorral_proto::mediacorral::{
-    server::v1::{self as proto, coordinator_api_service_server::CoordinatorApiService},
     drive_controller::v1::{
         EjectRequest, GetDriveCountRequest, GetDriveMetaRequest, GetJobStatusRequest,
         RetractRequest, RipUpdate, WatchRipJobRequest,
     },
+    server::v1::{self as proto, coordinator_api_service_server::CoordinatorApiService},
 };
 use prost::Message;
 
@@ -449,6 +450,25 @@ impl CoordinatorApiService for ApiService {
             })
             .await?;
         return Ok(tonic::Response::new(proto::RetractResponse {}));
+    }
+
+    /// Gets the current state of the drive
+    async fn get_drive_state(
+        &self,
+        request: tonic::Request<proto::GetDriveStateRequest>,
+    ) -> std::result::Result<tonic::Response<drive_controller::DriveState>, tonic::Status> {
+        let request = request.into_inner();
+        let mut controller = self
+            .application
+            .drive_controllers
+            .get(&request.controller_id)
+            .bubble()?
+            .clone();
+        return controller
+            .get_drive_state(drive_controller::GetDriveStateRequest {
+                drive_id: request.drive_id,
+            })
+            .await;
     }
 
     /// Lists the movies in the database
