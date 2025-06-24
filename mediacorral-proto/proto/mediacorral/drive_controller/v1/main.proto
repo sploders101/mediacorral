@@ -145,9 +145,9 @@ message RipMediaRequest {
 
 // Represents progress as a fraction
 message Progress {
-  uint64 cprog_value = 1;
-  uint64 tprog_value = 2;
-  uint64 max_value = 3;
+  uint32 cprog_value = 1;
+  uint32 tprog_value = 2;
+  uint32 max_value = 3;
 }
 
 // An update to the progress of a rip job
