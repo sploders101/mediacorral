@@ -15,4 +15,4 @@ const transport = new GrpcWebFetchTransport({
 	format: "binary",
 });
 const rpc = new CoordinatorApiServiceClient(transport);
-provide(injectKeys.rpc, rpc);
+app.provide(injectKeys.rpc, rpc);
