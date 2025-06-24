@@ -26,9 +26,12 @@ impl CoordinatorNotificationService for NotificationService {
     ) -> Result<tonic::Response<DiscInsertedResponse>, tonic::Status> {
         let request = request.into_inner();
         if self.application.get_autorip() {
+            // Autorip & autoeject go hand-in-hand. Autorip exists so the user can
+            // rip media without interacting with the UI, and ejecting provides an
+            // intuitive way to physically notify the user that the job is finished.
             let _ = self
                 .application
-                .rip_media(&request.controller_id, request.drive_id, None)
+                .rip_media(&request.controller_id, request.drive_id, None, true)
                 .await;
         }
         return Ok(tonic::Response::new(DiscInsertedResponse {}));
