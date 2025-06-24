@@ -139,6 +139,8 @@ message RipMediaRequest {
   int64 job_id = 1;
   // The ID of the drive to start a rip job for
   uint32 drive_id = 2;
+  // Whether to automatically eject the drive when the rip job is complete
+  bool autoeject = 3;
 }
 
 // Represents progress as a fraction

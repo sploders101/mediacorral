@@ -276,6 +276,8 @@ impl DriveControllerService for DriveController {
         });
         let mut notif_client = self.coordinator_notifs.clone();
         let controller_id = self.id.clone();
+        let ejector = Arc::clone(&drive.ejector);
+        let autoeject = request.autoeject;
         let task_handle = tokio::task::spawn(async move {
             // TODO: Remove unwrap
             while let Ok(Some(event)) = makemkv.next_event().await {
@@ -312,6 +314,9 @@ impl DriveControllerService for DriveController {
                 }
             }
             rip_dir.complete();
+            if autoeject {
+                let _ = ejector.eject();
+            }
             for _ in 0..15 {
                 if let Ok(_) = notif_client
                     .rip_finished(RipFinishedRequest {

@@ -161,6 +161,7 @@ impl Application {
         drive_controller: &str,
         drive_id: u32,
         suspected_contents: Option<SuspectedContents>,
+        autoeject: bool,
     ) -> Result<i64, ApplicationError> {
         let mut controller = self
             .drive_controllers
@@ -217,7 +218,11 @@ impl Application {
         .await?;
 
         controller
-            .rip_media(RipMediaRequest { job_id, drive_id })
+            .rip_media(RipMediaRequest {
+                job_id,
+                drive_id,
+                autoeject,
+            })
             .await?
             .into_inner();
 

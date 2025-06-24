@@ -338,6 +338,7 @@ impl CoordinatorApiService for ApiService {
                 &drive.controller,
                 drive.drive_id,
                 request.suspected_contents,
+                request.autoeject,
             )
             .await
             .bubble()?;
