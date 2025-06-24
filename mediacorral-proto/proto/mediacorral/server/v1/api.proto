@@ -78,6 +78,9 @@ service CoordinatorApiService {
   // Gets a particular job
   rpc GetJobInfo (GetJobInfoRequest) returns (GetJobInfoResponse);
 
+  // Renames a job
+  rpc RenameJob (RenameJobRequest) returns (RenameJobResponse);
+
   // Gets a list of jobs containing untagged files
   rpc GetUntaggedJobs (GetUntaggedJobsRequest) returns (GetUntaggedJobsResponse);
 
@@ -322,6 +325,12 @@ message GetJobInfoRequest {
 message GetJobInfoResponse {
   RipJob details = 1;
 }
+
+message RenameJobRequest {
+  int64 job_id = 1;
+  string new_name = 2;
+}
+message RenameJobResponse {}
 
 message GetUntaggedJobsRequest {
   uint32 skip = 1;

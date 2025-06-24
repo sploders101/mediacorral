@@ -609,6 +609,20 @@ impl CoordinatorApiService for ApiService {
         }));
     }
 
+    /// Renames a job
+    async fn rename_job(
+        &self,
+        request: tonic::Request<proto::RenameJobRequest>,
+    ) -> std::result::Result<tonic::Response<proto::RenameJobResponse>, tonic::Status> {
+        let request = request.into_inner();
+
+        db::rename_rip_job(&self.application.db, request.job_id, &request.new_name)
+            .await
+            .bubble()?;
+
+        return Ok(tonic::Response::new(proto::RenameJobResponse {}));
+    }
+
     /// Gets a list of jobs containing untagged files
     async fn get_untagged_jobs(
         &self,
