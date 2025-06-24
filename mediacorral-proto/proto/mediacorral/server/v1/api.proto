@@ -75,6 +75,9 @@ service CoordinatorApiService {
   // Tags a video file with metadata
   rpc TagFile (TagFileRequest) returns (TagFileResponse);
 
+  // Gets a particular job
+  rpc GetJobInfo (GetJobInfoRequest) returns (GetJobInfoResponse);
+
   // Gets a list of jobs containing untagged files
   rpc GetUntaggedJobs (GetUntaggedJobsRequest) returns (GetUntaggedJobsResponse);
 
@@ -311,6 +314,13 @@ enum VideoType {
   VIDEO_TYPE_MOVIE = 1;
   VIDEO_TYPE_SPECIAL_FEATURE = 2;
   VIDEO_TYPE_TV_EPISODE = 3;
+}
+
+message GetJobInfoRequest {
+  int64 job_id = 1;
+}
+message GetJobInfoResponse {
+  RipJob details = 1;
 }
 
 message GetUntaggedJobsRequest {

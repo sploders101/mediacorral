@@ -594,6 +594,21 @@ impl CoordinatorApiService for ApiService {
         return Ok(tonic::Response::new(proto::TagFileResponse {}));
     }
 
+    /// Gets a particular job
+    async fn get_job_info(
+        &self,
+        request: tonic::Request<proto::GetJobInfoRequest>,
+    ) -> std::result::Result<tonic::Response<proto::GetJobInfoResponse>, tonic::Status> {
+        let request = request.into_inner();
+
+        let rip_job = db::get_rip_job(&self.application.db, request.job_id)
+            .await
+            .bubble()?;
+        return Ok(tonic::Response::new(proto::GetJobInfoResponse {
+            details: Some(rip_job.into()),
+        }));
+    }
+
     /// Gets a list of jobs containing untagged files
     async fn get_untagged_jobs(
         &self,
