@@ -112,7 +112,7 @@ message SearchTmdbTvRequest {
   optional string first_air_date_year = 2;
   optional string language = 3;
   optional string year = 4;
-  uint32 page = 5;
+  optional uint32 page = 5;
 }
 message SearchTmdbTvResponse {
   uint32 page = 1;

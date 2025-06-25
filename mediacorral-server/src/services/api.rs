@@ -180,7 +180,7 @@ impl CoordinatorApiService for ApiService {
                 request.first_air_date_year.as_ref().map(String::as_str),
                 request.language.as_ref().map(String::as_str),
                 request.year.as_ref().map(String::as_str),
-                request.page,
+                request.page.unwrap_or(1),
             )
             .await
             .bubble()?;
