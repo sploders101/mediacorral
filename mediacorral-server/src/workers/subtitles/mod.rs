@@ -138,7 +138,8 @@ where
         .get() as _;
 
     let info = mkv_file.info();
-    let duration = info.duration();
+    let timestamp_scale = info.timestamp_scale().get() as f64 / 1_000_000_000.0;
+    let duration = info.duration().map(|duration| duration * timestamp_scale);
     let progress_duration = duration.unwrap_or(f64::INFINITY);
     if let Some(ref mut progress) = progress {
         let _ = progress.send(0.0);
