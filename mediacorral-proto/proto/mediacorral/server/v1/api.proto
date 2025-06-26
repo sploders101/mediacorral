@@ -54,6 +54,9 @@ service CoordinatorApiService {
   // Lists the movies in the database
   rpc ListMovies (ListMoviesRequest) returns (ListMoviesResponse);
 
+  // Gets a movie by id
+  rpc GetMovie (GetMovieRequest) returns (GetMovieResponse);
+
   // Gets a movie from the database by its TMDB ID
   rpc GetMovieByTmdbId (GetMovieByTmdbIdRequest) returns (GetMovieByTmdbIdResponse);
 
@@ -65,6 +68,12 @@ service CoordinatorApiService {
 
   // Lists the episodes for a given season
   rpc ListTvEpisodes (ListTvEpisodesRequest) returns (ListTvEpisodesResponse);
+
+  // Gets a TV show by id
+  rpc GetTvShow (GetTvShowRequest) returns (GetTvShowResponse);
+
+  // Gets a TV series by id
+  rpc GetTvSeason (GetTvSeasonRequest) returns (GetTvSeasonResponse);
 
   // Gets a particular TV episode
   rpc GetTvEpisode (GetTvEpisodeRequest) returns (GetTvEpisodeResponse);
@@ -237,6 +246,13 @@ message Movie {
   optional string description = 6;
 }
 
+message GetMovieRequest {
+  int64 movie_id = 1;
+}
+message GetMovieResponse {
+  Movie movie = 1;
+}
+
 message GetMovieByTmdbIdRequest {
   int32 tmdb_id = 1;
 }
@@ -290,6 +306,20 @@ message TvEpisode {
   optional int64 thumbnail_blob = 6;
   string title = 7;
   optional string description = 8;
+}
+
+message GetTvShowRequest {
+  int64 show_id = 1;
+}
+message GetTvShowResponse {
+  TvShow tv_show = 1;
+}
+
+message GetTvSeasonRequest {
+  int64 season_id = 1;
+}
+message GetTvSeasonResponse {
+  TvSeason tv_season = 1;
 }
 
 message GetTvEpisodeRequest {

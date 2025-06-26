@@ -96,6 +96,28 @@ pub async fn get_movies(db: &Db) -> Result<Vec<MoviesItem>, sqlx::Error> {
     return Ok(result);
 }
 
+pub async fn get_movie_by_id(db: &Db, movie_id: i64) -> Result<MoviesItem, sqlx::Error> {
+    let result = sqlx::query_as(
+        "
+            SELECT
+                id,
+                tmdb_id,
+                poster_blob,
+                title,
+                release_year,
+                description
+            FROM movies
+            WHERE
+                id = ?
+            LIMIT 1
+        ",
+    )
+    .bind(movie_id)
+    .fetch_one(db)
+    .await?;
+    return Ok(result);
+}
+
 pub async fn get_movie_by_tmdb_id(db: &Db, tmdb_id: i32) -> Result<MoviesItem, sqlx::Error> {
     let result = sqlx::query_as(
         "
@@ -283,6 +305,47 @@ pub async fn get_tv_episodes(db: &Db, season_id: i64) -> Result<Vec<TvEpisodesIt
     )
     .bind(season_id)
     .fetch_all(db)
+    .await?);
+}
+
+pub async fn get_tv_show_by_id(db: &Db, show_id: i64) -> Result<TvShowsItem, sqlx::Error> {
+    return Ok(sqlx::query_as(
+        "
+            SELECT
+                id,
+                tmdb_id,
+                poster_blob,
+                title,
+                original_release_year,
+                description
+            FROM tv_shows
+            WHERE id = ?
+            LIMIT 1
+        ",
+    )
+    .bind(show_id)
+    .fetch_one(db)
+    .await?);
+}
+
+pub async fn get_tv_season_by_id(db: &Db, season_id: i64) -> Result<TvSeasonsItem, sqlx::Error> {
+    return Ok(sqlx::query_as(
+        "
+            SELECT
+                id,
+                tmdb_id,
+                tv_show_id,
+                season_number,
+                poster_blob,
+                title,
+                description
+            FROM tv_seasons
+            WHERE id = ?
+            LIMIT 1
+        ",
+    )
+    .bind(season_id)
+    .fetch_one(db)
     .await?);
 }
 

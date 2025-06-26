@@ -484,6 +484,21 @@ impl CoordinatorApiService for ApiService {
         }));
     }
 
+    /// Gets a movie by id
+    async fn get_movie(
+        &self,
+        request: tonic::Request<proto::GetMovieRequest>,
+    ) -> Result<tonic::Response<proto::GetMovieResponse>, tonic::Status> {
+        let request = request.into_inner();
+
+        let movie = db::get_movie_by_id(&self.application.db, request.movie_id)
+            .await
+            .bubble()?;
+        return Ok(tonic::Response::new(proto::GetMovieResponse {
+            movie: Some(movie.into()),
+        }));
+    }
+
     /// Gets a movie from the database by its TMDB ID
     async fn get_movie_by_tmdb_id(
         &self,
@@ -541,6 +556,36 @@ impl CoordinatorApiService for ApiService {
         return Ok(tonic::Response::new(proto::ListTvEpisodesResponse {
             tv_season_id: request.tv_season_id,
             tv_episodes: episodes.into_iter().map(Into::into).collect(),
+        }));
+    }
+
+    /// Gets a TV show by id
+    async fn get_tv_show(
+        &self,
+        request: tonic::Request<proto::GetTvShowRequest>,
+    ) -> std::result::Result<tonic::Response<proto::GetTvShowResponse>, tonic::Status> {
+        let request = request.into_inner();
+
+        let tv_show = db::get_tv_show_by_id(&self.application.db, request.show_id)
+            .await
+            .bubble()?;
+        return Ok(tonic::Response::new(proto::GetTvShowResponse {
+            tv_show: Some(tv_show.into()),
+        }));
+    }
+
+    /// Gets a TV season by id
+    async fn get_tv_season(
+        &self,
+        request: tonic::Request<proto::GetTvSeasonRequest>,
+    ) -> std::result::Result<tonic::Response<proto::GetTvSeasonResponse>, tonic::Status> {
+        let request = request.into_inner();
+
+        let tv_season = db::get_tv_season_by_id(&self.application.db, request.season_id)
+            .await
+            .bubble()?;
+        return Ok(tonic::Response::new(proto::GetTvSeasonResponse {
+            tv_season: Some(tv_season.into()),
         }));
     }
 
