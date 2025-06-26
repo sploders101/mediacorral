@@ -27,8 +27,7 @@ const resultsMapped = computed(() => {
 	if (results.value === undefined) return undefined;
 	return results.value[1].results
 		.filter(
-			(result) =>
-				!("type" in result && !["movie", "tv"].includes(result.type))
+			(result) => !("type" in result && !["movie", "tv"].includes(result.type))
 		)
 		.map((result) => ({
 			value: result.id,
@@ -107,7 +106,7 @@ async function importItem() {
 				await rpc.importTmdbTv({ tmdbId: selectedItemDetails.value.id });
 				break;
 		}
-	} catch(err) {
+	} catch (err) {
 		alert(err);
 	} finally {
 		importingItem.value = false;

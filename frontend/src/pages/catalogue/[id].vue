@@ -6,7 +6,7 @@ import type {
 import { injectKeys } from "@/scripts/config";
 import { formatRuntime } from "@/scripts/utils";
 
-const route = useRoute("/rip_jobs/[id]");
+const route = useRoute("/catalogue/[id]");
 const rpc = inject(injectKeys.rpc)!;
 const data = ref("");
 const jobInfo = ref<RipJob | undefined>();
