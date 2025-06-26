@@ -28,6 +28,7 @@ impl Into<pb_types::TmdbAnyTitle> for TmdbAnyTitle {
         return pb_types::TmdbAnyTitle {
             id: self.id,
             r#type: self.r#type,
+            title: self.title.or(self.name),
             backdrop_path: self.backdrop_path,
             poster_path: self.poster_path,
             overview: self.overview,

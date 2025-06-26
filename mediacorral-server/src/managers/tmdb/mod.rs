@@ -112,7 +112,7 @@ impl TmdbImporter {
     ) -> TmdbResult<TmdbQueryResults<TmdbTvResult>> {
         let response = self
             .agent
-            .get("https://api.themoviedb.org/3/search/multi")
+            .get("https://api.themoviedb.org/3/search/tv")
             .query(&[
                 ("query", Some(query)),
                 ("first_air_date_year", first_air_date_year),
