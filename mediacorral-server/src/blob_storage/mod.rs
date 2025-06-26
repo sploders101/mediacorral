@@ -12,16 +12,19 @@ use crate::{
         self, delete_blob, insert_image_file, insert_ost_download_item,
         schemas::{ImageFilesItem, OstDownloadsItem, SubtitleFilesItem, VideoFilesItem, VideoType},
     },
-    workers::subtitles::{extract_details, vobsub::PartessCache},
+    workers::subtitles::{extract_details, vobsub::PartessCache, ExtractDetailsError},
 };
 
 #[derive(Error, Debug)]
 pub enum BlobError {
+    #[error("An error occurred while extracting details from the video file:\n{0}")]
+    ExtractDetails(#[from] ExtractDetailsError),
     #[error("An I/O error occurred:\n{0}")]
     Io(#[from] std::io::Error),
     #[error("A database error occurred:\n{0}")]
     Db(#[from] sqlx::Error),
 }
+type BlobResult<T> = Result<T, BlobError>;
 
 pub struct BlobStorageController {
     blob_dir: PathBuf,
@@ -57,7 +60,7 @@ impl BlobStorageController {
         partess_cache: &PartessCache,
         file_path: &PathBuf,
         rip_job: Option<i64>,
-    ) -> anyhow::Result<()> {
+    ) -> BlobResult<()> {
         let uuid = Uuid::new_v4().to_string();
         let new_path = self.blob_dir.join(&uuid);
         if let Err(err) = tokio::fs::rename(&file_path, &new_path).await {
@@ -127,7 +130,7 @@ impl BlobStorageController {
         match_id: i64,
         filename: String,
         data: String,
-    ) -> anyhow::Result<i64> {
+    ) -> BlobResult<i64> {
         let uuid = Uuid::new_v4().to_string();
         let mut file = File::create(self.blob_dir.join(&uuid)).await?;
         file.write_all(data.as_bytes()).await?;
@@ -150,7 +153,7 @@ impl BlobStorageController {
         &self,
         name: Option<String>,
         mime_type: String,
-    ) -> anyhow::Result<(i64, File)> {
+    ) -> BlobResult<(i64, File)> {
         let uuid = Uuid::new_v4().to_string();
         let file = File::open(self.blob_dir.join(&uuid)).await?;
         let id = insert_image_file(
@@ -168,7 +171,7 @@ impl BlobStorageController {
         return Ok((id, file));
     }
 
-    pub async fn delete_blob(&self, blob_id: &str) -> anyhow::Result<()> {
+    pub async fn delete_blob(&self, blob_id: &str) -> BlobResult<()> {
         delete_blob(&self.db_connection, blob_id).await?;
         let file_path = self.blob_dir.join(blob_id);
         tokio::fs::remove_file(file_path).await?;

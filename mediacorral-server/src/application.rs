@@ -33,7 +33,7 @@ use crate::{
     managers::{
         exports::{ExportsDirError, ExportsManager},
         opensubtitles::OpenSubtitles,
-        tmdb::TmdbImporter,
+        tmdb::{TmdbError, TmdbImporter},
     },
     workers::subtitles::vobsub::PartessCache,
 };
@@ -127,18 +127,18 @@ impl Application {
         });
     }
 
-    pub async fn import_tmdb_tv(&self, tmdb_id: i32) -> anyhow::Result<()> {
-        return self
+    pub async fn import_tmdb_tv(&self, tmdb_id: i32) -> Result<(), ApplicationError> {
+        return Ok(self
             .tmdb_importer
             .import_tv(tmdb_id, Some(&self.blob_storage))
-            .await;
+            .await?);
     }
 
-    pub async fn import_tmdb_movie(&self, tmdb_id: i32) -> anyhow::Result<()> {
-        return self
+    pub async fn import_tmdb_movie(&self, tmdb_id: i32) -> Result<(), ApplicationError> {
+        return Ok(self
             .tmdb_importer
             .import_movie(tmdb_id, Some(&self.blob_storage))
-            .await;
+            .await?);
     }
 
     pub async fn rebuild_exports_dir(&self, exports_dir: &String) -> Result<(), ExportsDirError> {
@@ -284,16 +284,34 @@ impl Application {
 
 #[derive(Error, Debug)]
 pub enum ApplicationError {
+    #[error("The requested {0} was not found")]
+    NotFound(&'static str),
     #[error("The requested drive controller was not found.")]
     ControllerMissing,
     #[error("The requested resource is currently busy. Please try again.")]
     TemporaryFailure,
     #[error("Precondition failed:\n{0}")]
     FailedPrecondition(String),
+    #[error("An error occurred while decoding {0}.\n{1}")]
+    DecodeFailed(&'static str, prost::DecodeError),
+    #[error("A TMDB error occurred")]
+    TmdbError(#[from] TmdbError),
     #[error("An unknown error occurred upstream: {0}")]
     TonicError(#[from] tonic::Status),
     #[error("There was an error querying the database:\n{0}")]
     DbError(#[from] sqlx::Error),
     #[error("An I/O eeor occurred:\n{0}")]
     Io(#[from] std::io::Error),
+}
+
+pub fn db_not_found(resource_name: &'static str) -> impl FnOnce(sqlx::Error) -> ApplicationError {
+    return move |error| match error {
+        sqlx::Error::RowNotFound => ApplicationError::NotFound(resource_name),
+        err => ApplicationError::DbError(err),
+    };
+}
+pub fn decode_err(
+    resource_name: &'static str,
+) -> impl FnOnce(prost::DecodeError) -> ApplicationError {
+    return move |error| return ApplicationError::DecodeFailed(resource_name, error);
 }

@@ -1,6 +1,5 @@
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
-use anyhow::Context;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use sqlx::SqlitePool;
 use thiserror::Error;
@@ -11,7 +10,7 @@ use types::{
 };
 
 use crate::{
-    blob_storage::BlobStorageController,
+    blob_storage::{BlobError, BlobStorageController},
     db::{
         self,
         schemas::{MoviesItem, TvShowsItem},
@@ -29,8 +28,25 @@ static IMAGE_BASE: &'static str = "https://image.tmdb.org/t/p/original";
 pub enum TmdbError {
     #[error("An error occurred when performing the request:\n{0:?}")]
     ReqwestError(#[from] reqwest::Error),
-    #[error("An error occurred when validating the response\n{0:?}")]
-    DeserializeError(#[from] serde_json::Error),
+    #[error("An error occurred when parsing {0}:\n{1:?}")]
+    DeserializeError(Cow<'static, str>, serde_json::Error),
+    #[error("Invalid authorization token")]
+    InvalidAuthToken,
+    #[error("An blob error occurred:\n{0}")]
+    Blob(#[from] BlobError),
+    #[error("Missing poster")]
+    MissingPoster,
+    #[error("Unknown image format")]
+    UnknownImageFormat,
+    #[error("The requested content is missing a required field: {0}")]
+    MissingField(&'static str),
+    #[error("A database error occurred:\n{0}")]
+    Db(#[from] sqlx::Error),
+    #[error("An I/O error occurred:\n{0}")]
+    Io(#[from] std::io::Error),
+}
+fn json_err(name: &'static str) -> impl FnOnce(serde_json::Error) -> TmdbError {
+    return move |err| TmdbError::DeserializeError(name.into(), err);
 }
 
 pub type TmdbResult<T> = Result<T, TmdbError>;
@@ -40,13 +56,14 @@ pub struct TmdbImporter {
     agent: reqwest::Client,
 }
 impl TmdbImporter {
-    pub fn new(db: Arc<SqlitePool>, api_key: String) -> anyhow::Result<Self> {
+    pub fn new(db: Arc<SqlitePool>, api_key: String) -> TmdbResult<Self> {
         let agent = reqwest::Client::builder()
             .user_agent(USER_AGENT)
             .default_headers(HeaderMap::from_iter(
                 [(
                     HeaderName::from_static("authorization"),
-                    HeaderValue::from_str(&format!("Bearer {api_key}"))?,
+                    HeaderValue::from_str(&format!("Bearer {api_key}"))
+                        .map_err(|_| TmdbError::InvalidAuthToken)?,
                 )]
                 .into_iter(),
             ))
@@ -73,7 +90,7 @@ impl TmdbImporter {
             .send()
             .await?
             .error_for_status()?;
-        return Ok(response.json().await?);
+        return serde_json::from_slice(&response.bytes().await?).map_err(json_err("multi search"));
     }
 
     pub async fn query_movies(
@@ -99,7 +116,7 @@ impl TmdbImporter {
             .send()
             .await?
             .error_for_status()?;
-        return Ok(response.json().await?);
+        return serde_json::from_slice(&response.bytes().await?).map_err(json_err("movie search"));
     }
 
     pub async fn query_tv(
@@ -123,17 +140,17 @@ impl TmdbImporter {
             .send()
             .await?
             .error_for_status()?;
-        return Ok(response.json().await?);
+        return serde_json::from_slice(&response.bytes().await?).map_err(json_err("tv search"));
     }
 
     async fn get_poster(
         &self,
         poster_path: Option<String>,
         blob_storage: &BlobStorageController,
-    ) -> anyhow::Result<i64> {
+    ) -> TmdbResult<i64> {
         let poster_path = match poster_path {
             Some(path) => path,
-            None => anyhow::bail!("Missing poster"),
+            None => return Err(TmdbError::MissingPoster),
         };
         let mut response = self
             .agent
@@ -144,7 +161,7 @@ impl TmdbImporter {
             .headers()
             .get("content-type")
             .and_then(|value| value.to_str().ok())
-            .context("Unknown image format")?;
+            .ok_or(TmdbError::UnknownImageFormat)?;
         let (id, mut file) = blob_storage
             .add_image(Some(poster_path), String::from(mime_type))
             .await?;
@@ -160,15 +177,18 @@ impl TmdbImporter {
         &self,
         movie_id: i32,
         blob_storage: Option<&BlobStorageController>,
-    ) -> anyhow::Result<()> {
-        let response: TmdbMovieDetails = self
-            .agent
-            .get(format!("https://api.themoviedb.org/3/movie/{movie_id}"))
-            .send()
-            .await?
-            .error_for_status()?
-            .json()
-            .await?;
+    ) -> TmdbResult<()> {
+        let response: TmdbMovieDetails = serde_json::from_slice(
+            &self
+                .agent
+                .get(format!("https://api.themoviedb.org/3/movie/{movie_id}"))
+                .send()
+                .await?
+                .error_for_status()?
+                .bytes()
+                .await?,
+        )
+        .map_err(json_err("movie query"))?;
 
         let poster_blob = match blob_storage {
             Some(blob_storage) => self
@@ -194,7 +214,7 @@ impl TmdbImporter {
             )
             .await?;
         } else {
-            anyhow::bail!("Content missing name");
+            return Err(TmdbError::MissingField("name"));
         }
 
         return Ok(());
@@ -207,16 +227,18 @@ impl TmdbImporter {
         &self,
         tv_id: i32,
         blob_storage: Option<&BlobStorageController>,
-    ) -> anyhow::Result<()> {
-        let response: TmdbTvSeriesDetails = self
-            .agent
-            .get(format!("https://api.themoviedb.org/3/tv/{tv_id}"))
-            .send()
-            .await?
-            .error_for_status()?
-            .json()
-            .await
-            .context("Failed to parse series information")?;
+    ) -> TmdbResult<()> {
+        let response: TmdbTvSeriesDetails = serde_json::from_slice(
+            &self
+                .agent
+                .get(format!("https://api.themoviedb.org/3/tv/{tv_id}"))
+                .send()
+                .await?
+                .error_for_status()?
+                .bytes()
+                .await?,
+        )
+        .map_err(json_err("tv series query"))?;
 
         let poster_blob = match blob_storage {
             Some(blob_storage) => self
@@ -230,23 +252,25 @@ impl TmdbImporter {
         // in case there's rate-limiting, since I'm not confident in the upsert functionality yet.
         let mut season_details_list = Vec::new();
         for season in response.seasons {
-            let season_response: TmdbTvSeasonDetails = self
-                .agent
-                .get(format!(
-                    "https://api.themoviedb.org/3/tv/{}/season/{}",
-                    tv_id, season.season_number
-                ))
-                .send()
-                .await?
-                .error_for_status()?
-                .json()
-                .await
-                .with_context(|| {
-                    format!(
-                        "Failed to parse season {} information",
-                        season.season_number
-                    )
-                })?;
+            let season_response: TmdbTvSeasonDetails = serde_json::from_slice(
+                &self
+                    .agent
+                    .get(format!(
+                        "https://api.themoviedb.org/3/tv/{}/season/{}",
+                        tv_id, season.season_number
+                    ))
+                    .send()
+                    .await?
+                    .error_for_status()?
+                    .bytes()
+                    .await?,
+            )
+            .map_err(|err| {
+                TmdbError::DeserializeError(
+                    Cow::Owned(format!("series {tv_id}, season {}", season.season_number)),
+                    err,
+                )
+            })?;
             season_details_list.push(season_response);
         }
 
