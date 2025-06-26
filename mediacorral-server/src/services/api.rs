@@ -34,9 +34,7 @@ impl<T> ToTonic for Result<T, TmdbError> {
     fn bubble(self) -> Result<Self::T, tonic::Status> {
         return self.map_err(|err| match err {
             TmdbError::ReqwestError(err) => tonic::Status::from_error(Box::from(err)),
-            TmdbError::DeserializeError(err) => {
-                tonic::Status::unknown(format!("Unable to parse TMDB response:\n{err}"))
-            }
+            err => tonic::Status::unknown(format!("An error occurred:\n{err}")),
         });
     }
 }
@@ -62,6 +60,7 @@ impl<T> ToTonic for Result<T, ApplicationError> {
     type T = T;
     fn bubble(self) -> Result<Self::T, tonic::Status> {
         self.map_err(|err| match err {
+            err @ ApplicationError::NotFound(..) => tonic::Status::not_found(err.to_string()),
             ApplicationError::DbError(sqlx::Error::RowNotFound) => {
                 tonic::Status::not_found(err.to_string())
             }
@@ -76,6 +75,7 @@ impl<T> ToTonic for Result<T, ApplicationError> {
                 tonic::Status::failed_precondition(err_str)
             }
             ApplicationError::TonicError(err) => err,
+            err => tonic::Status::unknown(err.to_string()),
         })
     }
 }
