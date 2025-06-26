@@ -77,7 +77,7 @@ impl Into<pb_types::TmdbTvResult> for TmdbTvResult {
     fn into(self) -> pb_types::TmdbTvResult {
         return pb_types::TmdbTvResult {
             id: self.id,
-            name: self.name.or(self.title).or(self.original_name),
+            title: self.name.or(self.title).or(self.original_name),
             origin_country: self.origin_country.unwrap_or_default(),
             original_language: self.original_language,
             overview: self.overview,

@@ -20,7 +20,7 @@ message TmdbMovieResult {
 
 message TmdbTvResult {
   int32 id = 1;
-  optional string name = 2;
+  optional string title = 2;
   repeated string origin_country = 3;
   optional string original_language = 4;
   optional string overview = 5;
