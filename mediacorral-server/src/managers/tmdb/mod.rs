@@ -191,10 +191,7 @@ impl TmdbImporter {
         .map_err(json_err("movie query"))?;
 
         let poster_blob = match blob_storage {
-            Some(blob_storage) => self
-                .get_poster(response.poster_path, blob_storage)
-                .await
-                .ok(),
+            Some(blob_storage) => Some(self.get_poster(response.poster_path, blob_storage).await?),
             None => None,
         };
 
@@ -241,10 +238,7 @@ impl TmdbImporter {
         .map_err(json_err("tv series query"))?;
 
         let poster_blob = match blob_storage {
-            Some(blob_storage) => self
-                .get_poster(response.poster_path, blob_storage)
-                .await
-                .ok(),
+            Some(blob_storage) => Some(self.get_poster(response.poster_path, blob_storage).await?),
             None => None,
         };
 
@@ -291,10 +285,10 @@ impl TmdbImporter {
 
         for season_details in season_details_list {
             let poster_blob = match blob_storage {
-                Some(blob_storage) => self
-                    .get_poster(season_details.poster_path, blob_storage)
-                    .await
-                    .ok(),
+                Some(blob_storage) => Some(
+                    self.get_poster(season_details.poster_path, blob_storage)
+                        .await?,
+                ),
                 None => None,
             };
             let season_id = db::upsert_tv_season(
@@ -314,7 +308,7 @@ impl TmdbImporter {
             for episode in season_details.episodes {
                 let thumbnail_blob = match blob_storage {
                     Some(blob_storage) => {
-                        self.get_poster(episode.still_path, blob_storage).await.ok()
+                        Some(self.get_poster(episode.still_path, blob_storage).await?)
                     }
                     None => None,
                 };
