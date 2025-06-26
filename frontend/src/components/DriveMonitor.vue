@@ -6,7 +6,6 @@ import {
 	type DriveState,
 } from "@/generated/mediacorral/drive_controller/v1/main";
 import type { DiscDrive, RipJob } from "@/generated/mediacorral/server/v1/api";
-import { CoordinatorApiServiceClient } from "@/generated/mediacorral/server/v1/api.client";
 import { injectKeys } from "@/scripts/config";
 import { RpcError } from "@protobuf-ts/runtime-rpc";
 

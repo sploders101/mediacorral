@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import { useRouter, type RouteLocation } from "vue-router";
-import vuetify from "./plugins/vuetify";
+import { AutoripStatus } from "./generated/mediacorral/server/v1/api";
+import { injectKeys } from "./scripts/config";
 
-const router = useRouter();
 const drawer = ref(false);
+const appbar = ref<HTMLDivElement | undefined>();
+provide(injectKeys.appbar, appbar);
 </script>
 
 <template>
@@ -12,7 +13,12 @@ const drawer = ref(false);
 			<template v-slot:prepend>
 				<v-app-bar-nav-icon variant="text" @click.stop="drawer = !drawer" />
 			</template>
-			<v-app-bar-title> Mediacorral </v-app-bar-title>
+			<v-app-bar-title>
+				<div class="mc-appbar" ref="appbar">
+					Mediacorral
+					<v-spacer />
+				</div>
+			</v-app-bar-title>
 		</v-app-bar>
 		<v-navigation-drawer
 			location="left"
@@ -25,6 +31,18 @@ const drawer = ref(false);
 					link
 					title="Rip Control"
 					to="/"
+				/>
+				<v-list-item
+					prepend-icon="mdi-monitor-arrow-down"
+					link
+					title="Metadata Importer"
+					to="/meta_import"
+				/>
+				<v-list-item
+					prepend-icon="mdi-archive-edit"
+					link
+					title="Catalogue"
+					to="/catalogue"
 				/>
 			</v-list>
 		</v-navigation-drawer>

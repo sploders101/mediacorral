@@ -94,9 +94,9 @@ export interface SearchTmdbTvRequest {
      */
     year?: string;
     /**
-     * @generated from protobuf field: uint32 page = 5
+     * @generated from protobuf field: optional uint32 page = 5
      */
-    page: number;
+    page?: number;
 }
 /**
  * @generated from protobuf message mediacorral.server.v1.SearchTmdbTvResponse
@@ -1197,13 +1197,12 @@ class SearchTmdbTvRequest$Type extends MessageType<SearchTmdbTvRequest> {
             { no: 2, name: "first_air_date_year", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 3, name: "language", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 4, name: "year", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 5, name: "page", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+            { no: 5, name: "page", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ }
         ]);
     }
     create(value?: PartialMessage<SearchTmdbTvRequest>): SearchTmdbTvRequest {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.query = "";
-        message.page = 0;
         if (value !== undefined)
             reflectionMergePartial<SearchTmdbTvRequest>(this, message, value);
         return message;
@@ -1225,7 +1224,7 @@ class SearchTmdbTvRequest$Type extends MessageType<SearchTmdbTvRequest> {
                 case /* optional string year */ 4:
                     message.year = reader.string();
                     break;
-                case /* uint32 page */ 5:
+                case /* optional uint32 page */ 5:
                     message.page = reader.uint32();
                     break;
                 default:
@@ -1252,8 +1251,8 @@ class SearchTmdbTvRequest$Type extends MessageType<SearchTmdbTvRequest> {
         /* optional string year = 4; */
         if (message.year !== undefined)
             writer.tag(4, WireType.LengthDelimited).string(message.year);
-        /* uint32 page = 5; */
-        if (message.page !== 0)
+        /* optional uint32 page = 5; */
+        if (message.page !== undefined)
             writer.tag(5, WireType.Varint).uint32(message.page);
         let u = options.writeUnknownFields;
         if (u !== false)

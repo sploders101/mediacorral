@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import DriveMonitor from "@/components/DriveMonitor.vue";
-import type { DiscDrive } from "@/generated/mediacorral/server/v1/api";
-import type { CoordinatorApiServiceClient } from "@/generated/mediacorral/server/v1/api.client";
+import { AutoripStatus, type DiscDrive } from "@/generated/mediacorral/server/v1/api";
 import { injectKeys } from "@/scripts/config";
 
 const rpc = inject(injectKeys.rpc)!;
@@ -15,6 +14,21 @@ onMounted(async () => {
 
 function driveKey(drive: DiscDrive) {
 	return `${drive.controller}/${drive.driveId}`;
+}
+
+const appbar = inject(injectKeys.appbar);
+const autorip = ref<AutoripStatus>(AutoripStatus.UNSPECIFIED);
+onMounted(() => {
+	rpc
+		.autoripStatus({ status: AutoripStatus.UNSPECIFIED })
+		.then(({ response }) => (autorip.value = response.status));
+});
+async function changeAutorip(status: boolean) {
+	autorip.value = AutoripStatus.UNSPECIFIED;
+	await rpc.autoripStatus({
+		status: status ? AutoripStatus.ENABLED : AutoripStatus.DISABLED,
+	});
+	autorip.value = status ? AutoripStatus.ENABLED : AutoripStatus.DISABLED;
 }
 </script>
 
@@ -35,4 +49,13 @@ function driveKey(drive: DiscDrive) {
 			</v-container>
 		</v-tabs-window-item>
 	</v-tabs-window>
+	<teleport :to="appbar">
+		<v-switch
+			label="Autorip"
+			hide-details
+			:loading="autorip === AutoripStatus.UNSPECIFIED"
+			:modelValue="autorip === AutoripStatus.ENABLED"
+			@update:modelValue="changeAutorip($event as boolean)"
+		/>
+	</teleport>
 </template>

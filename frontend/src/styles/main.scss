@@ -7,3 +7,27 @@ div.v-overlay__scrim {
 	opacity: 1;
 	background-color: rgba(0, 0, 0, 0.5);
 }
+
+.flex {
+	display: flex;
+}
+.horizontal {
+	flex-flow: row nowrap;
+}
+
+.v-app-bar-title {
+	margin-inline-end: 20px;
+}
+
+.mc-appbar {
+	display: flex;
+	flex-flow: row nowrap;
+	align-items: center;
+}
+
+.flex {
+	display: flex;
+}
+.row {
+	flex-flow: row nowrap;
+}

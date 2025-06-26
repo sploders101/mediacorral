@@ -19,19 +19,23 @@ export interface TmdbAnyTitle {
      */
     id: number;
     /**
-     * @generated from protobuf field: optional string title = 2
+     * @generated from protobuf field: string type = 2
+     */
+    type: string;
+    /**
+     * @generated from protobuf field: optional string title = 3
      */
     title?: string;
     /**
-     * @generated from protobuf field: optional string backdrop_path = 3
+     * @generated from protobuf field: optional string backdrop_path = 4
      */
     backdropPath?: string;
     /**
-     * @generated from protobuf field: optional string poster_path = 4
+     * @generated from protobuf field: optional string poster_path = 5
      */
     posterPath?: string;
     /**
-     * @generated from protobuf field: optional string overview = 5
+     * @generated from protobuf field: optional string overview = 6
      */
     overview?: string;
 }
@@ -73,9 +77,9 @@ export interface TmdbTvResult {
      */
     id: number;
     /**
-     * @generated from protobuf field: optional string name = 2
+     * @generated from protobuf field: optional string title = 2
      */
-    name?: string;
+    title?: string;
     /**
      * @generated from protobuf field: repeated string origin_country = 3
      */
@@ -437,15 +441,17 @@ class TmdbAnyTitle$Type extends MessageType<TmdbAnyTitle> {
     constructor() {
         super("mediacorral.common.tmdb.v1.TmdbAnyTitle", [
             { no: 1, name: "id", kind: "scalar", T: 5 /*ScalarType.INT32*/ },
-            { no: 2, name: "title", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "backdrop_path", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 4, name: "poster_path", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 5, name: "overview", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
+            { no: 2, name: "type", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "title", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 4, name: "backdrop_path", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 5, name: "poster_path", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 6, name: "overview", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<TmdbAnyTitle>): TmdbAnyTitle {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.id = 0;
+        message.type = "";
         if (value !== undefined)
             reflectionMergePartial<TmdbAnyTitle>(this, message, value);
         return message;
@@ -458,16 +464,19 @@ class TmdbAnyTitle$Type extends MessageType<TmdbAnyTitle> {
                 case /* int32 id */ 1:
                     message.id = reader.int32();
                     break;
-                case /* optional string title */ 2:
+                case /* string type */ 2:
+                    message.type = reader.string();
+                    break;
+                case /* optional string title */ 3:
                     message.title = reader.string();
                     break;
-                case /* optional string backdrop_path */ 3:
+                case /* optional string backdrop_path */ 4:
                     message.backdropPath = reader.string();
                     break;
-                case /* optional string poster_path */ 4:
+                case /* optional string poster_path */ 5:
                     message.posterPath = reader.string();
                     break;
-                case /* optional string overview */ 5:
+                case /* optional string overview */ 6:
                     message.overview = reader.string();
                     break;
                 default:
@@ -485,18 +494,21 @@ class TmdbAnyTitle$Type extends MessageType<TmdbAnyTitle> {
         /* int32 id = 1; */
         if (message.id !== 0)
             writer.tag(1, WireType.Varint).int32(message.id);
-        /* optional string title = 2; */
+        /* string type = 2; */
+        if (message.type !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.type);
+        /* optional string title = 3; */
         if (message.title !== undefined)
-            writer.tag(2, WireType.LengthDelimited).string(message.title);
-        /* optional string backdrop_path = 3; */
+            writer.tag(3, WireType.LengthDelimited).string(message.title);
+        /* optional string backdrop_path = 4; */
         if (message.backdropPath !== undefined)
-            writer.tag(3, WireType.LengthDelimited).string(message.backdropPath);
-        /* optional string poster_path = 4; */
+            writer.tag(4, WireType.LengthDelimited).string(message.backdropPath);
+        /* optional string poster_path = 5; */
         if (message.posterPath !== undefined)
-            writer.tag(4, WireType.LengthDelimited).string(message.posterPath);
-        /* optional string overview = 5; */
+            writer.tag(5, WireType.LengthDelimited).string(message.posterPath);
+        /* optional string overview = 6; */
         if (message.overview !== undefined)
-            writer.tag(5, WireType.LengthDelimited).string(message.overview);
+            writer.tag(6, WireType.LengthDelimited).string(message.overview);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -594,7 +606,7 @@ class TmdbTvResult$Type extends MessageType<TmdbTvResult> {
     constructor() {
         super("mediacorral.common.tmdb.v1.TmdbTvResult", [
             { no: 1, name: "id", kind: "scalar", T: 5 /*ScalarType.INT32*/ },
-            { no: 2, name: "name", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "title", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 3, name: "origin_country", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ },
             { no: 4, name: "original_language", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 5, name: "overview", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
@@ -618,8 +630,8 @@ class TmdbTvResult$Type extends MessageType<TmdbTvResult> {
                 case /* int32 id */ 1:
                     message.id = reader.int32();
                     break;
-                case /* optional string name */ 2:
-                    message.name = reader.string();
+                case /* optional string title */ 2:
+                    message.title = reader.string();
                     break;
                 case /* repeated string origin_country */ 3:
                     message.originCountry.push(reader.string());
@@ -651,9 +663,9 @@ class TmdbTvResult$Type extends MessageType<TmdbTvResult> {
         /* int32 id = 1; */
         if (message.id !== 0)
             writer.tag(1, WireType.Varint).int32(message.id);
-        /* optional string name = 2; */
-        if (message.name !== undefined)
-            writer.tag(2, WireType.LengthDelimited).string(message.name);
+        /* optional string title = 2; */
+        if (message.title !== undefined)
+            writer.tag(2, WireType.LengthDelimited).string(message.title);
         /* repeated string origin_country = 3; */
         for (let i = 0; i < message.originCountry.length; i++)
             writer.tag(3, WireType.LengthDelimited).string(message.originCountry[i]);

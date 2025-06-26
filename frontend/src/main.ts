@@ -8,7 +8,6 @@ import { BASE_URL, injectKeys } from "./scripts/config";
 
 const app = createApp(App);
 registerPlugins(app);
-app.mount("#app");
 
 const transport = new GrpcWebFetchTransport({
 	baseUrl: BASE_URL,
@@ -16,3 +15,5 @@ const transport = new GrpcWebFetchTransport({
 });
 const rpc = new CoordinatorApiServiceClient(transport);
 app.provide(injectKeys.rpc, rpc);
+
+app.mount("#app");
