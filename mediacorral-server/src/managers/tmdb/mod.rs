@@ -34,8 +34,6 @@ pub enum TmdbError {
     InvalidAuthToken,
     #[error("An blob error occurred:\n{0}")]
     Blob(#[from] BlobError),
-    #[error("Missing poster")]
-    MissingPoster,
     #[error("Unknown image format")]
     UnknownImageFormat,
     #[error("The requested content is missing a required field: {0}")]
@@ -145,13 +143,9 @@ impl TmdbImporter {
 
     async fn get_poster(
         &self,
-        poster_path: Option<String>,
+        poster_path: String,
         blob_storage: &BlobStorageController,
     ) -> TmdbResult<i64> {
-        let poster_path = match poster_path {
-            Some(path) => path,
-            None => return Err(TmdbError::MissingPoster),
-        };
         let mut response = self
             .agent
             .get(format!("{IMAGE_BASE}/{poster_path}"))
@@ -163,7 +157,10 @@ impl TmdbImporter {
             .and_then(|value| value.to_str().ok())
             .ok_or(TmdbError::UnknownImageFormat)?;
         let (id, mut file) = blob_storage
-            .add_image(Some(poster_path), String::from(mime_type))
+            .add_image(
+                Some(String::from(poster_path.trim_start_matches('/'))),
+                String::from(mime_type),
+            )
             .await?;
         while let Some(chunk) = response.chunk().await? {
             file.write_all(&chunk).await?;
@@ -190,9 +187,11 @@ impl TmdbImporter {
         )
         .map_err(json_err("movie query"))?;
 
-        let poster_blob = match blob_storage {
-            Some(blob_storage) => Some(self.get_poster(response.poster_path, blob_storage).await?),
-            None => None,
+        let poster_blob = match blob_storage.zip(response.poster_path) {
+            Some((blob_storage, poster_path)) => {
+                Some(self.get_poster(poster_path, blob_storage).await?)
+            }
+            _ => None,
         };
 
         if let Some(title) = response.title.or(response.name) {
@@ -237,9 +236,11 @@ impl TmdbImporter {
         )
         .map_err(json_err("tv series query"))?;
 
-        let poster_blob = match blob_storage {
-            Some(blob_storage) => Some(self.get_poster(response.poster_path, blob_storage).await?),
-            None => None,
+        let poster_blob = match blob_storage.zip(response.poster_path) {
+            Some((blob_storage, poster_path)) => {
+                Some(self.get_poster(poster_path, blob_storage).await?)
+            }
+            _ => None,
         };
 
         // Loop over seasons and postpone database interaction until we have all the information
@@ -284,12 +285,11 @@ impl TmdbImporter {
         .await?;
 
         for season_details in season_details_list {
-            let poster_blob = match blob_storage {
-                Some(blob_storage) => Some(
-                    self.get_poster(season_details.poster_path, blob_storage)
-                        .await?,
-                ),
-                None => None,
+            let poster_blob = match blob_storage.zip(season_details.poster_path) {
+                Some((blob_storage, poster_path)) => {
+                    Some(self.get_poster(poster_path, blob_storage).await?)
+                }
+                _ => None,
             };
             let season_id = db::upsert_tv_season(
                 &self.db,
@@ -306,11 +306,11 @@ impl TmdbImporter {
             .await?;
 
             for episode in season_details.episodes {
-                let thumbnail_blob = match blob_storage {
-                    Some(blob_storage) => {
-                        Some(self.get_poster(episode.still_path, blob_storage).await?)
+                let thumbnail_blob = match blob_storage.zip(episode.still_path) {
+                    Some((blob_storage, still_path)) => {
+                        Some(self.get_poster(still_path, blob_storage).await?)
                     }
-                    None => None,
+                    _ => None,
                 };
                 let _episode_id = db::upsert_tv_episode(
                     &self.db,

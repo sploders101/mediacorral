@@ -155,7 +155,7 @@ impl BlobStorageController {
         mime_type: String,
     ) -> BlobResult<(i64, File)> {
         let uuid = Uuid::new_v4().to_string();
-        let file = File::open(self.blob_dir.join(&uuid)).await?;
+        let file = File::create(self.blob_dir.join(&uuid)).await?;
         let id = insert_image_file(
             &self.db_connection,
             &ImageFilesItem {

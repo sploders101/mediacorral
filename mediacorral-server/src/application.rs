@@ -294,7 +294,7 @@ pub enum ApplicationError {
     FailedPrecondition(String),
     #[error("An error occurred while decoding {0}.\n{1}")]
     DecodeFailed(&'static str, prost::DecodeError),
-    #[error("A TMDB error occurred")]
+    #[error("A TMDB error occurred:\n{0}")]
     TmdbError(#[from] TmdbError),
     #[error("An unknown error occurred upstream: {0}")]
     TonicError(#[from] tonic::Status),
