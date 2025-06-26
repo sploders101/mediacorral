@@ -1,4 +1,5 @@
-use mediacorral_proto::mediacorral::server::v1 as proto;
+use mediacorral_proto::mediacorral::server::v1::{self as proto, SuspectedContents};
+use prost::Message;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use sqlx::prelude::FromRow;
@@ -125,7 +126,9 @@ impl Into<proto::RipJob> for RipJobsItem {
             id: self.id.unwrap_or_default(),
             start_time: self.start_time,
             disc_title: self.disc_title,
-            suspected_contents: self.suspected_contents,
+            suspected_contents: self.suspected_contents.and_then(|contents| {
+                SuspectedContents::decode(std::io::Cursor::new(contents)).ok()
+            }),
             rip_finished: self.rip_finished,
             imported: self.imported,
         };

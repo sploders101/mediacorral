@@ -343,7 +343,7 @@ message RipJob {
   int64 id = 1;
   int64 start_time = 2;
   optional string disc_title = 3;
-  optional bytes suspected_contents = 4;
+  optional SuspectedContents suspected_contents = 4;
   bool rip_finished = 5;
   bool imported = 6;
 }
