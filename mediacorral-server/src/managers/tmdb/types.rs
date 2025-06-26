@@ -15,7 +15,6 @@ pub struct TmdbQueryResults<T> {
 pub struct TmdbAnyTitle {
     pub backdrop_path: Option<String>,
     pub id: i32,
-    pub r#type: String,
     pub name: Option<String>,
     pub title: Option<String>,
     pub original_name: Option<String>,
@@ -27,7 +26,7 @@ impl Into<pb_types::TmdbAnyTitle> for TmdbAnyTitle {
     fn into(self) -> pb_types::TmdbAnyTitle {
         return pb_types::TmdbAnyTitle {
             id: self.id,
-            r#type: self.r#type,
+            r#type: self.media_type,
             title: self.title.or(self.name),
             backdrop_path: self.backdrop_path,
             poster_path: self.poster_path,
