@@ -3,8 +3,14 @@ use lazy_regex::regex;
 use reqwest::StatusCode;
 use serde::Deserialize;
 use serde_json::json;
+use sqlx::SqlitePool;
 use std::{cmp::Ordering, time::SystemTime};
-use tokio::sync::Mutex;
+use tokio::{io::AsyncReadExt, sync::Mutex};
+
+use crate::{
+    blob_storage::BlobStorageController,
+    db::{self, schemas::VideoType},
+};
 
 #[derive(Deserialize)]
 struct LoginResponse {
@@ -252,6 +258,37 @@ impl OpenSubtitles {
         })
         .await
         .unwrap();
+    }
+
+    pub async fn get_subtitles(
+        &self,
+        db: &SqlitePool,
+        blob_controller: &BlobStorageController,
+        video_type: VideoType,
+        video_id: i64,
+        tmdb_id: i32,
+    ) -> anyhow::Result<(String, String)> {
+        let existing_subs =
+            match db::get_ost_download_items_by_match(db, video_type, video_id).await {
+                Ok(row) => row.into_iter().next(),
+                Err(sqlx::Error::RowNotFound) => None,
+                Err(err) => return Err(err.into()),
+            };
+
+        if let Some(existing_subs) = existing_subs {
+            let mut subs = String::new();
+            let file_path = blob_controller.get_file_path(&existing_subs.blob_id);
+            let mut file = tokio::fs::File::open(file_path).await?;
+            file.read_to_string(&mut subs).await?;
+            return Ok((existing_subs.filename, subs));
+        }
+
+        let (filename, subs) = self.find_best_subtitles(tmdb_id).await?;
+        blob_controller
+            .add_ost_subtitles(video_type, video_id, filename.clone(), subs.clone())
+            .await?;
+
+        return Ok((filename, subs));
     }
 }
 

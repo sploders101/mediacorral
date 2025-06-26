@@ -446,6 +446,24 @@ export interface Movie {
     description?: string;
 }
 /**
+ * @generated from protobuf message mediacorral.server.v1.GetMovieRequest
+ */
+export interface GetMovieRequest {
+    /**
+     * @generated from protobuf field: int64 movie_id = 1
+     */
+    movieId: string;
+}
+/**
+ * @generated from protobuf message mediacorral.server.v1.GetMovieResponse
+ */
+export interface GetMovieResponse {
+    /**
+     * @generated from protobuf field: mediacorral.server.v1.Movie movie = 1
+     */
+    movie?: Movie;
+}
+/**
  * @generated from protobuf message mediacorral.server.v1.GetMovieByTmdbIdRequest
  */
 export interface GetMovieByTmdbIdRequest {
@@ -621,6 +639,42 @@ export interface TvEpisode {
     description?: string;
 }
 /**
+ * @generated from protobuf message mediacorral.server.v1.GetTvShowRequest
+ */
+export interface GetTvShowRequest {
+    /**
+     * @generated from protobuf field: int64 show_id = 1
+     */
+    showId: string;
+}
+/**
+ * @generated from protobuf message mediacorral.server.v1.GetTvShowResponse
+ */
+export interface GetTvShowResponse {
+    /**
+     * @generated from protobuf field: mediacorral.server.v1.TvShow tv_show = 1
+     */
+    tvShow?: TvShow;
+}
+/**
+ * @generated from protobuf message mediacorral.server.v1.GetTvSeasonRequest
+ */
+export interface GetTvSeasonRequest {
+    /**
+     * @generated from protobuf field: int64 season_id = 1
+     */
+    seasonId: string;
+}
+/**
+ * @generated from protobuf message mediacorral.server.v1.GetTvSeasonResponse
+ */
+export interface GetTvSeasonResponse {
+    /**
+     * @generated from protobuf field: mediacorral.server.v1.TvSeason tv_season = 1
+     */
+    tvSeason?: TvSeason;
+}
+/**
  * @generated from protobuf message mediacorral.server.v1.GetTvEpisodeRequest
  */
 export interface GetTvEpisodeRequest {
@@ -753,9 +807,9 @@ export interface RipJob {
      */
     discTitle?: string;
     /**
-     * @generated from protobuf field: optional bytes suspected_contents = 4
+     * @generated from protobuf field: optional mediacorral.server.v1.SuspectedContents suspected_contents = 4
      */
-    suspectedContents?: Uint8Array;
+    suspectedContents?: SuspectedContents;
     /**
      * @generated from protobuf field: bool rip_finished = 5
      */
@@ -2794,6 +2848,99 @@ class Movie$Type extends MessageType<Movie> {
  */
 export const Movie = new Movie$Type();
 // @generated message type with reflection information, may provide speed optimized methods
+class GetMovieRequest$Type extends MessageType<GetMovieRequest> {
+    constructor() {
+        super("mediacorral.server.v1.GetMovieRequest", [
+            { no: 1, name: "movie_id", kind: "scalar", T: 3 /*ScalarType.INT64*/ }
+        ]);
+    }
+    create(value?: PartialMessage<GetMovieRequest>): GetMovieRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.movieId = "0";
+        if (value !== undefined)
+            reflectionMergePartial<GetMovieRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: GetMovieRequest): GetMovieRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* int64 movie_id */ 1:
+                    message.movieId = reader.int64().toString();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: GetMovieRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* int64 movie_id = 1; */
+        if (message.movieId !== "0")
+            writer.tag(1, WireType.Varint).int64(message.movieId);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.GetMovieRequest
+ */
+export const GetMovieRequest = new GetMovieRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class GetMovieResponse$Type extends MessageType<GetMovieResponse> {
+    constructor() {
+        super("mediacorral.server.v1.GetMovieResponse", [
+            { no: 1, name: "movie", kind: "message", T: () => Movie }
+        ]);
+    }
+    create(value?: PartialMessage<GetMovieResponse>): GetMovieResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<GetMovieResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: GetMovieResponse): GetMovieResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* mediacorral.server.v1.Movie movie */ 1:
+                    message.movie = Movie.internalBinaryRead(reader, reader.uint32(), options, message.movie);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: GetMovieResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* mediacorral.server.v1.Movie movie = 1; */
+        if (message.movie)
+            Movie.internalBinaryWrite(message.movie, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.GetMovieResponse
+ */
+export const GetMovieResponse = new GetMovieResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
 class GetMovieByTmdbIdRequest$Type extends MessageType<GetMovieByTmdbIdRequest> {
     constructor() {
         super("mediacorral.server.v1.GetMovieByTmdbIdRequest", [
@@ -3451,6 +3598,192 @@ class TvEpisode$Type extends MessageType<TvEpisode> {
  */
 export const TvEpisode = new TvEpisode$Type();
 // @generated message type with reflection information, may provide speed optimized methods
+class GetTvShowRequest$Type extends MessageType<GetTvShowRequest> {
+    constructor() {
+        super("mediacorral.server.v1.GetTvShowRequest", [
+            { no: 1, name: "show_id", kind: "scalar", T: 3 /*ScalarType.INT64*/ }
+        ]);
+    }
+    create(value?: PartialMessage<GetTvShowRequest>): GetTvShowRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.showId = "0";
+        if (value !== undefined)
+            reflectionMergePartial<GetTvShowRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: GetTvShowRequest): GetTvShowRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* int64 show_id */ 1:
+                    message.showId = reader.int64().toString();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: GetTvShowRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* int64 show_id = 1; */
+        if (message.showId !== "0")
+            writer.tag(1, WireType.Varint).int64(message.showId);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.GetTvShowRequest
+ */
+export const GetTvShowRequest = new GetTvShowRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class GetTvShowResponse$Type extends MessageType<GetTvShowResponse> {
+    constructor() {
+        super("mediacorral.server.v1.GetTvShowResponse", [
+            { no: 1, name: "tv_show", kind: "message", T: () => TvShow }
+        ]);
+    }
+    create(value?: PartialMessage<GetTvShowResponse>): GetTvShowResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<GetTvShowResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: GetTvShowResponse): GetTvShowResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* mediacorral.server.v1.TvShow tv_show */ 1:
+                    message.tvShow = TvShow.internalBinaryRead(reader, reader.uint32(), options, message.tvShow);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: GetTvShowResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* mediacorral.server.v1.TvShow tv_show = 1; */
+        if (message.tvShow)
+            TvShow.internalBinaryWrite(message.tvShow, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.GetTvShowResponse
+ */
+export const GetTvShowResponse = new GetTvShowResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class GetTvSeasonRequest$Type extends MessageType<GetTvSeasonRequest> {
+    constructor() {
+        super("mediacorral.server.v1.GetTvSeasonRequest", [
+            { no: 1, name: "season_id", kind: "scalar", T: 3 /*ScalarType.INT64*/ }
+        ]);
+    }
+    create(value?: PartialMessage<GetTvSeasonRequest>): GetTvSeasonRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.seasonId = "0";
+        if (value !== undefined)
+            reflectionMergePartial<GetTvSeasonRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: GetTvSeasonRequest): GetTvSeasonRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* int64 season_id */ 1:
+                    message.seasonId = reader.int64().toString();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: GetTvSeasonRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* int64 season_id = 1; */
+        if (message.seasonId !== "0")
+            writer.tag(1, WireType.Varint).int64(message.seasonId);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.GetTvSeasonRequest
+ */
+export const GetTvSeasonRequest = new GetTvSeasonRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class GetTvSeasonResponse$Type extends MessageType<GetTvSeasonResponse> {
+    constructor() {
+        super("mediacorral.server.v1.GetTvSeasonResponse", [
+            { no: 1, name: "tv_season", kind: "message", T: () => TvSeason }
+        ]);
+    }
+    create(value?: PartialMessage<GetTvSeasonResponse>): GetTvSeasonResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<GetTvSeasonResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: GetTvSeasonResponse): GetTvSeasonResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* mediacorral.server.v1.TvSeason tv_season */ 1:
+                    message.tvSeason = TvSeason.internalBinaryRead(reader, reader.uint32(), options, message.tvSeason);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: GetTvSeasonResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* mediacorral.server.v1.TvSeason tv_season = 1; */
+        if (message.tvSeason)
+            TvSeason.internalBinaryWrite(message.tvSeason, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.GetTvSeasonResponse
+ */
+export const GetTvSeasonResponse = new GetTvSeasonResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
 class GetTvEpisodeRequest$Type extends MessageType<GetTvEpisodeRequest> {
     constructor() {
         super("mediacorral.server.v1.GetTvEpisodeRequest", [
@@ -4032,7 +4365,7 @@ class RipJob$Type extends MessageType<RipJob> {
             { no: 1, name: "id", kind: "scalar", T: 3 /*ScalarType.INT64*/ },
             { no: 2, name: "start_time", kind: "scalar", T: 3 /*ScalarType.INT64*/ },
             { no: 3, name: "disc_title", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 4, name: "suspected_contents", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
+            { no: 4, name: "suspected_contents", kind: "message", T: () => SuspectedContents },
             { no: 5, name: "rip_finished", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 6, name: "imported", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
@@ -4061,8 +4394,8 @@ class RipJob$Type extends MessageType<RipJob> {
                 case /* optional string disc_title */ 3:
                     message.discTitle = reader.string();
                     break;
-                case /* optional bytes suspected_contents */ 4:
-                    message.suspectedContents = reader.bytes();
+                case /* optional mediacorral.server.v1.SuspectedContents suspected_contents */ 4:
+                    message.suspectedContents = SuspectedContents.internalBinaryRead(reader, reader.uint32(), options, message.suspectedContents);
                     break;
                 case /* bool rip_finished */ 5:
                     message.ripFinished = reader.bool();
@@ -4091,9 +4424,9 @@ class RipJob$Type extends MessageType<RipJob> {
         /* optional string disc_title = 3; */
         if (message.discTitle !== undefined)
             writer.tag(3, WireType.LengthDelimited).string(message.discTitle);
-        /* optional bytes suspected_contents = 4; */
-        if (message.suspectedContents !== undefined)
-            writer.tag(4, WireType.LengthDelimited).bytes(message.suspectedContents);
+        /* optional mediacorral.server.v1.SuspectedContents suspected_contents = 4; */
+        if (message.suspectedContents)
+            SuspectedContents.internalBinaryWrite(message.suspectedContents, writer.tag(4, WireType.LengthDelimited).fork(), options).join();
         /* bool rip_finished = 5; */
         if (message.ripFinished !== false)
             writer.tag(5, WireType.Varint).bool(message.ripFinished);
@@ -4611,10 +4944,13 @@ export const CoordinatorApiService = new ServiceType("mediacorral.server.v1.Coor
     { name: "Retract", options: {}, I: RetractRequest, O: RetractResponse },
     { name: "GetDriveState", options: {}, I: GetDriveStateRequest, O: DriveState },
     { name: "ListMovies", options: {}, I: ListMoviesRequest, O: ListMoviesResponse },
+    { name: "GetMovie", options: {}, I: GetMovieRequest, O: GetMovieResponse },
     { name: "GetMovieByTmdbId", options: {}, I: GetMovieByTmdbIdRequest, O: GetMovieByTmdbIdResponse },
     { name: "ListTvShows", options: {}, I: ListTvShowsRequest, O: ListTvShowsResponse },
     { name: "ListTvSeasons", options: {}, I: ListTvSeasonsRequest, O: ListTvSeasonsResponse },
     { name: "ListTvEpisodes", options: {}, I: ListTvEpisodesRequest, O: ListTvEpisodesResponse },
+    { name: "GetTvShow", options: {}, I: GetTvShowRequest, O: GetTvShowResponse },
+    { name: "GetTvSeason", options: {}, I: GetTvSeasonRequest, O: GetTvSeasonResponse },
     { name: "GetTvEpisode", options: {}, I: GetTvEpisodeRequest, O: GetTvEpisodeResponse },
     { name: "GetTvEpisodeByTmdbId", options: {}, I: GetTvEpisodeByTmdbIdRequest, O: GetTvEpisodeByTmdbIdResponse },
     { name: "TagFile", options: {}, I: TagFileRequest, O: TagFileResponse },

@@ -5,7 +5,7 @@ use mediacorral_proto::mediacorral::{
         DriveStatusTag, GetDriveStateRequest, RipMediaRequest,
         drive_controller_service_client::DriveControllerServiceClient,
     },
-    server::v1::SuspectedContents,
+    server::v1::{SuspectedContents, suspected_contents},
 };
 use prost::Message;
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
@@ -29,7 +29,10 @@ use tonic::transport::{Channel, Endpoint};
 use crate::{
     CoordinatorConfig,
     blob_storage::BlobStorageController,
-    db,
+    db::{
+        self,
+        schemas::{MoviesItem, VideoType},
+    },
     managers::{
         exports::{ExportsDirError, ExportsManager},
         opensubtitles::OpenSubtitles,
@@ -279,6 +282,54 @@ impl Application {
                 }
             }
         })));
+    }
+
+    /// This ensures a movie is imported from TMDB if it isn't already
+    async fn autoimport_movie(&self, tmdb_id: i32) -> Result<MoviesItem, ApplicationError> {
+        match db::get_movie_by_tmdb_id(&self.db, tmdb_id).await {
+            Ok(movie) => return Ok(movie),
+            Err(sqlx::Error::RowNotFound) => {}
+            Err(err) => return Err(err.into()),
+        }
+        self.import_tmdb_movie(tmdb_id).await?;
+        return Ok(db::get_movie_by_tmdb_id(&self.db, tmdb_id).await?);
+    }
+
+    async fn analyze_job(&self, job_id: i64) -> Result<(), ApplicationError> {
+        let result = db::get_rip_job(&self.db, job_id)
+            .await
+            .map_err(db_not_found("job"))?;
+
+        let suspicion = match result.suspected_contents {
+            Some(suspicion) => SuspectedContents::decode(std::io::Cursor::new(suspicion)),
+            None => return Ok(()),
+        }
+        .map_err(decode_err("suspected contents"))?;
+
+        match suspicion.suspected_contents {
+            Some(suspected_contents::SuspectedContents::Movie(movie)) => {
+                let movie = self.autoimport_movie(movie.tmdb_id).await?;
+            }
+            Some(suspected_contents::SuspectedContents::TvEpisodes(episode_ids)) => {
+                for episode_id in episode_ids.episode_tmdb_ids {
+                    let episode = db::get_tv_episode_by_tmdb_id(&self.db, episode_id).await?;
+                    let subtitles = self
+                        .ost_importer
+                        .get_subtitles(
+                            &self.db,
+                            &self.blob_storage,
+                            VideoType::TvEpisode,
+                            episode.id.expect("Primary key missing in query result"),
+                            episode_id,
+                        )
+                        .await
+                        .expect("TODO: type ost errors and remove this");
+                }
+            }
+            None => {}
+        }
+
+        return Ok(());
     }
 }
 

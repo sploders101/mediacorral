@@ -18,6 +18,10 @@ import type { GetTvEpisodeByTmdbIdResponse } from "./api";
 import type { GetTvEpisodeByTmdbIdRequest } from "./api";
 import type { GetTvEpisodeResponse } from "./api";
 import type { GetTvEpisodeRequest } from "./api";
+import type { GetTvSeasonResponse } from "./api";
+import type { GetTvSeasonRequest } from "./api";
+import type { GetTvShowResponse } from "./api";
+import type { GetTvShowRequest } from "./api";
 import type { ListTvEpisodesResponse } from "./api";
 import type { ListTvEpisodesRequest } from "./api";
 import type { ListTvSeasonsResponse } from "./api";
@@ -26,6 +30,8 @@ import type { ListTvShowsResponse } from "./api";
 import type { ListTvShowsRequest } from "./api";
 import type { GetMovieByTmdbIdResponse } from "./api";
 import type { GetMovieByTmdbIdRequest } from "./api";
+import type { GetMovieResponse } from "./api";
+import type { GetMovieRequest } from "./api";
 import type { ListMoviesResponse } from "./api";
 import type { ListMoviesRequest } from "./api";
 import type { DriveState } from "../../drive_controller/v1/main";
@@ -164,6 +170,12 @@ export interface ICoordinatorApiServiceClient {
      */
     listMovies(input: ListMoviesRequest, options?: RpcOptions): UnaryCall<ListMoviesRequest, ListMoviesResponse>;
     /**
+     * Gets a movie by id
+     *
+     * @generated from protobuf rpc: GetMovie
+     */
+    getMovie(input: GetMovieRequest, options?: RpcOptions): UnaryCall<GetMovieRequest, GetMovieResponse>;
+    /**
      * Gets a movie from the database by its TMDB ID
      *
      * @generated from protobuf rpc: GetMovieByTmdbId
@@ -187,6 +199,18 @@ export interface ICoordinatorApiServiceClient {
      * @generated from protobuf rpc: ListTvEpisodes
      */
     listTvEpisodes(input: ListTvEpisodesRequest, options?: RpcOptions): UnaryCall<ListTvEpisodesRequest, ListTvEpisodesResponse>;
+    /**
+     * Gets a TV show by id
+     *
+     * @generated from protobuf rpc: GetTvShow
+     */
+    getTvShow(input: GetTvShowRequest, options?: RpcOptions): UnaryCall<GetTvShowRequest, GetTvShowResponse>;
+    /**
+     * Gets a TV series by id
+     *
+     * @generated from protobuf rpc: GetTvSeason
+     */
+    getTvSeason(input: GetTvSeasonRequest, options?: RpcOptions): UnaryCall<GetTvSeasonRequest, GetTvSeasonResponse>;
     /**
      * Gets a particular TV episode
      *
@@ -385,12 +409,21 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
         return stackIntercept<ListMoviesRequest, ListMoviesResponse>("unary", this._transport, method, opt, input);
     }
     /**
+     * Gets a movie by id
+     *
+     * @generated from protobuf rpc: GetMovie
+     */
+    getMovie(input: GetMovieRequest, options?: RpcOptions): UnaryCall<GetMovieRequest, GetMovieResponse> {
+        const method = this.methods[16], opt = this._transport.mergeOptions(options);
+        return stackIntercept<GetMovieRequest, GetMovieResponse>("unary", this._transport, method, opt, input);
+    }
+    /**
      * Gets a movie from the database by its TMDB ID
      *
      * @generated from protobuf rpc: GetMovieByTmdbId
      */
     getMovieByTmdbId(input: GetMovieByTmdbIdRequest, options?: RpcOptions): UnaryCall<GetMovieByTmdbIdRequest, GetMovieByTmdbIdResponse> {
-        const method = this.methods[16], opt = this._transport.mergeOptions(options);
+        const method = this.methods[17], opt = this._transport.mergeOptions(options);
         return stackIntercept<GetMovieByTmdbIdRequest, GetMovieByTmdbIdResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -399,7 +432,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: ListTvShows
      */
     listTvShows(input: ListTvShowsRequest, options?: RpcOptions): UnaryCall<ListTvShowsRequest, ListTvShowsResponse> {
-        const method = this.methods[17], opt = this._transport.mergeOptions(options);
+        const method = this.methods[18], opt = this._transport.mergeOptions(options);
         return stackIntercept<ListTvShowsRequest, ListTvShowsResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -408,7 +441,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: ListTvSeasons
      */
     listTvSeasons(input: ListTvSeasonsRequest, options?: RpcOptions): UnaryCall<ListTvSeasonsRequest, ListTvSeasonsResponse> {
-        const method = this.methods[18], opt = this._transport.mergeOptions(options);
+        const method = this.methods[19], opt = this._transport.mergeOptions(options);
         return stackIntercept<ListTvSeasonsRequest, ListTvSeasonsResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -417,8 +450,26 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: ListTvEpisodes
      */
     listTvEpisodes(input: ListTvEpisodesRequest, options?: RpcOptions): UnaryCall<ListTvEpisodesRequest, ListTvEpisodesResponse> {
-        const method = this.methods[19], opt = this._transport.mergeOptions(options);
+        const method = this.methods[20], opt = this._transport.mergeOptions(options);
         return stackIntercept<ListTvEpisodesRequest, ListTvEpisodesResponse>("unary", this._transport, method, opt, input);
+    }
+    /**
+     * Gets a TV show by id
+     *
+     * @generated from protobuf rpc: GetTvShow
+     */
+    getTvShow(input: GetTvShowRequest, options?: RpcOptions): UnaryCall<GetTvShowRequest, GetTvShowResponse> {
+        const method = this.methods[21], opt = this._transport.mergeOptions(options);
+        return stackIntercept<GetTvShowRequest, GetTvShowResponse>("unary", this._transport, method, opt, input);
+    }
+    /**
+     * Gets a TV series by id
+     *
+     * @generated from protobuf rpc: GetTvSeason
+     */
+    getTvSeason(input: GetTvSeasonRequest, options?: RpcOptions): UnaryCall<GetTvSeasonRequest, GetTvSeasonResponse> {
+        const method = this.methods[22], opt = this._transport.mergeOptions(options);
+        return stackIntercept<GetTvSeasonRequest, GetTvSeasonResponse>("unary", this._transport, method, opt, input);
     }
     /**
      * Gets a particular TV episode
@@ -426,7 +477,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: GetTvEpisode
      */
     getTvEpisode(input: GetTvEpisodeRequest, options?: RpcOptions): UnaryCall<GetTvEpisodeRequest, GetTvEpisodeResponse> {
-        const method = this.methods[20], opt = this._transport.mergeOptions(options);
+        const method = this.methods[23], opt = this._transport.mergeOptions(options);
         return stackIntercept<GetTvEpisodeRequest, GetTvEpisodeResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -435,7 +486,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: GetTvEpisodeByTmdbId
      */
     getTvEpisodeByTmdbId(input: GetTvEpisodeByTmdbIdRequest, options?: RpcOptions): UnaryCall<GetTvEpisodeByTmdbIdRequest, GetTvEpisodeByTmdbIdResponse> {
-        const method = this.methods[21], opt = this._transport.mergeOptions(options);
+        const method = this.methods[24], opt = this._transport.mergeOptions(options);
         return stackIntercept<GetTvEpisodeByTmdbIdRequest, GetTvEpisodeByTmdbIdResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -444,7 +495,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: TagFile
      */
     tagFile(input: TagFileRequest, options?: RpcOptions): UnaryCall<TagFileRequest, TagFileResponse> {
-        const method = this.methods[22], opt = this._transport.mergeOptions(options);
+        const method = this.methods[25], opt = this._transport.mergeOptions(options);
         return stackIntercept<TagFileRequest, TagFileResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -453,7 +504,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: GetJobInfo
      */
     getJobInfo(input: GetJobInfoRequest, options?: RpcOptions): UnaryCall<GetJobInfoRequest, GetJobInfoResponse> {
-        const method = this.methods[23], opt = this._transport.mergeOptions(options);
+        const method = this.methods[26], opt = this._transport.mergeOptions(options);
         return stackIntercept<GetJobInfoRequest, GetJobInfoResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -462,7 +513,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: RenameJob
      */
     renameJob(input: RenameJobRequest, options?: RpcOptions): UnaryCall<RenameJobRequest, RenameJobResponse> {
-        const method = this.methods[24], opt = this._transport.mergeOptions(options);
+        const method = this.methods[27], opt = this._transport.mergeOptions(options);
         return stackIntercept<RenameJobRequest, RenameJobResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -471,7 +522,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: GetUntaggedJobs
      */
     getUntaggedJobs(input: GetUntaggedJobsRequest, options?: RpcOptions): UnaryCall<GetUntaggedJobsRequest, GetUntaggedJobsResponse> {
-        const method = this.methods[25], opt = this._transport.mergeOptions(options);
+        const method = this.methods[28], opt = this._transport.mergeOptions(options);
         return stackIntercept<GetUntaggedJobsRequest, GetUntaggedJobsResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -480,7 +531,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: GetJobCatalogueInfo
      */
     getJobCatalogueInfo(input: GetJobCatalogueInfoRequest, options?: RpcOptions): UnaryCall<GetJobCatalogueInfoRequest, GetJobCatalogueInfoResponse> {
-        const method = this.methods[26], opt = this._transport.mergeOptions(options);
+        const method = this.methods[29], opt = this._transport.mergeOptions(options);
         return stackIntercept<GetJobCatalogueInfoRequest, GetJobCatalogueInfoResponse>("unary", this._transport, method, opt, input);
     }
 }

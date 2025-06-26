@@ -865,6 +865,37 @@ pub async fn insert_ost_download_item(
     return Ok(result.get(0));
 }
 
+pub async fn get_ost_download_items_by_tmdb_id(
+    db: &Db,
+    tmdb_id: i32,
+) -> Result<OstDownloadsItem, sqlx::Error> {
+    let results = sqlx::query_as(
+        "
+            SELECT
+                ost_downloads.id,
+                ost_downloads.video_type,
+                ost_downloads.match_id,
+                ost_downloads.filename,
+                ost_downloads.blob_id
+            FROM ost_downloads
+            LEFT JOIN tv_episodes ON
+                ost_downloads.video_type = 3
+                AND tv_episodes.id = ost_downloads.match_id
+            LEFT JOIN movies ON
+                ost_downloads.video_type = 1
+                AND movies.id = ost_downloads.match_id
+            WHERE
+                tv_episodes.tmdb_id = ?
+                OR movies.tmdb_id = ?
+        ",
+    )
+    .bind(tmdb_id)
+    .bind(tmdb_id)
+    .fetch_one(db)
+    .await?;
+    return Ok(results);
+}
+
 pub async fn get_ost_download_items_by_match(
     db: &Db,
     video_type: VideoType,
