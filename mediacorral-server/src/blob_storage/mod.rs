@@ -12,7 +12,7 @@ use crate::{
         self, delete_blob, insert_image_file, insert_ost_download_item,
         schemas::{ImageFilesItem, OstDownloadsItem, SubtitleFilesItem, VideoFilesItem, VideoType},
     },
-    workers::subtitles::{extract_details, vobsub::PartessCache, ExtractDetailsError},
+    workers::subtitles::{ExtractDetailsError, extract_details, vobsub::PartessCache},
 };
 
 #[derive(Error, Debug)]

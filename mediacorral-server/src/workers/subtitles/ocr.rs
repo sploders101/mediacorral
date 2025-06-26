@@ -1,9 +1,11 @@
 use std::{
-    io::Cursor, ops::{Deref, DerefMut}, sync::{Arc, Mutex}
+    io::Cursor,
+    ops::{Deref, DerefMut},
+    sync::{Arc, Mutex},
 };
 
 use image::GrayImage;
-use leptess::{leptonica, LepTess, Variable};
+use leptess::{LepTess, Variable, leptonica};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -27,7 +29,9 @@ impl PartessInstance {
         let mut img_bytes: Cursor<Vec<u8>> = Cursor::new(Vec::new());
         image.write_to(&mut img_bytes, image::ImageFormat::Pnm)?;
         leptess.set_image_from_mem(img_bytes.get_ref())?;
-        return Ok(leptess.get_utf8_text().map_err(|_| PartessError::InvalidOcrOutput)?);
+        return Ok(leptess
+            .get_utf8_text()
+            .map_err(|_| PartessError::InvalidOcrOutput)?);
     }
 }
 impl Deref for PartessInstance {

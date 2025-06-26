@@ -6,13 +6,17 @@ mod workers;
 
 #[tokio::main]
 async fn main() {
-    let file = std::env::args().into_iter().nth(1).expect("Please specify a filename");
+    let file = std::env::args()
+        .into_iter()
+        .nth(1)
+        .expect("Please specify a filename");
     let tess_cache = PartessCache::new();
     for _ in 0..2 {
         let file = File::open(&file).unwrap();
         let (sender, mut receiver) = watch::channel(0.0);
         let tess_cache = tess_cache.clone();
-        let mut result_thread = tokio::task::spawn_blocking(move || extract_details(file, Some(sender), &tess_cache));
+        let mut result_thread =
+            tokio::task::spawn_blocking(move || extract_details(file, Some(sender), &tess_cache));
         let result = loop {
             tokio::select! {
                 Ok(_) = receiver.changed() => {

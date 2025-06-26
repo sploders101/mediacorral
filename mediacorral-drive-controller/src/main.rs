@@ -15,10 +15,6 @@ use makemkv::{
     messaging::{MakemkvMessage, ProgressBar},
 };
 use mediacorral_proto::mediacorral::{
-    server::v1::{
-        DiscInsertedRequest, RipFinishedRequest,
-        coordinator_notification_service_client::CoordinatorNotificationServiceClient,
-    },
     drive_controller::v1::{
         DriveState, DriveStatusTag, EjectRequest, EjectResponse, GetDriveCountRequest,
         GetDriveCountResponse, GetDriveMetaRequest, GetDriveMetaResponse, GetDriveStateRequest,
@@ -27,6 +23,10 @@ use mediacorral_proto::mediacorral::{
         WatchRipJobRequest,
         drive_controller_service_server::{DriveControllerService, DriveControllerServiceServer},
         rip_update,
+    },
+    server::v1::{
+        DiscInsertedRequest, RipFinishedRequest,
+        coordinator_notification_service_client::CoordinatorNotificationServiceClient,
     },
 };
 use serde::Deserialize;
