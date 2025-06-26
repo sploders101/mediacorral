@@ -3,10 +3,11 @@ package mediacorral.common.tmdb.v1;
 
 message TmdbAnyTitle {
   int32 id = 1;
-  optional string title = 2;
-  optional string backdrop_path = 3;
-  optional string poster_path = 4;
-  optional string overview = 5;
+  string type = 2;
+  optional string title = 3;
+  optional string backdrop_path = 4;
+  optional string poster_path = 5;
+  optional string overview = 6;
 }
 
 message TmdbMovieResult {
