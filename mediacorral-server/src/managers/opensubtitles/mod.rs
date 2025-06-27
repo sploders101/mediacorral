@@ -294,7 +294,7 @@ impl OpenSubtitles {
         video_type: VideoType,
         video_id: i64,
         tmdb_id: i32,
-    ) -> anyhow::Result<(String, String)> {
+    ) -> anyhow::Result<(i64, String)> {
         let existing_subs =
             match db::get_ost_download_items_by_match(db, video_type, video_id).await {
                 Ok(row) => row.into_iter().next(),
@@ -307,15 +307,20 @@ impl OpenSubtitles {
             let file_path = blob_controller.get_file_path(&existing_subs.blob_id);
             let mut file = tokio::fs::File::open(file_path).await?;
             file.read_to_string(&mut subs).await?;
-            return Ok((existing_subs.filename, subs));
+            return Ok((
+                existing_subs
+                    .id
+                    .expect("Primary key missing in query result"),
+                subs,
+            ));
         }
 
         let (filename, subs) = self.find_best_subtitles(tmdb_id).await?;
-        blob_controller
+        let result = blob_controller
             .add_ost_subtitles(video_type, video_id, filename.clone(), subs.clone())
             .await?;
 
-        return Ok((filename, subs));
+        return Ok((result, subs));
     }
 }
 
