@@ -15,6 +15,7 @@ mod application;
 mod blob_storage;
 mod db;
 mod managers;
+mod rayon_helpers;
 mod services;
 mod workers;
 

@@ -4,16 +4,15 @@
 
 use std::{
     collections::HashMap,
-    sync::{
-        Arc, Mutex,
-        mpsc::{self, Receiver, Sender, SyncSender},
-    },
+    sync::{Arc, Mutex},
 };
 
 use image::{GrayImage, Rgb, Rgba, RgbaImage};
 
 use leptess::Variable;
 use thiserror::Error;
+
+use crate::rayon_helpers::BackpressuredRayon;
 
 use super::{ExtractDetailsError, ocr::Partess, process_image};
 
@@ -49,11 +48,17 @@ impl Clone for PartessCache {
 
 pub struct VobsubProcessor {
     partess: Partess,
-    idx_data: Arc<IdxData>,
-    submit_send_stream: SyncSender<(u64, Vec<u8>)>,
-    submit_recv_stream: Arc<Mutex<Receiver<(u64, Vec<u8>)>>>,
-    return_send_stream: Sender<Result<(u64, String), ExtractDetailsError>>,
-    return_recv_stream: Receiver<Result<(u64, String), ExtractDetailsError>>,
+    rayon_pool: BackpressuredRayon<
+        Box<
+            dyn Fn((u64, Vec<u8>)) -> Result<(u64, String), ExtractDetailsError>
+                + Send
+                + Sync
+                + 'static,
+        >,
+        (u64, Vec<u8>),
+        (u64, String),
+        ExtractDetailsError,
+    >,
 }
 impl VobsubProcessor {
     pub fn new(
@@ -61,9 +66,6 @@ impl VobsubProcessor {
         language: &str,
         codec_data: &[u8],
     ) -> Result<Self, ExtractDetailsError> {
-        let (submit_send_stream, submit_recv_stream) = mpsc::sync_channel(rayon::max_num_threads());
-        let (return_send_stream, return_recv_stream) = mpsc::channel();
-
         let mut cache = partess_cache.cache.lock().unwrap();
         let partess = match cache.get(language) {
             Some(partess) => partess.clone(),
@@ -82,54 +84,26 @@ impl VobsubProcessor {
             }
         };
         drop(cache);
+        let idx_data = parse_idx(codec_data)?;
         return Ok(Self {
-            partess,
-            idx_data: Arc::new(parse_idx(codec_data)?),
-            submit_send_stream,
-            submit_recv_stream: Arc::new(Mutex::new(submit_recv_stream)),
-            return_send_stream,
-            return_recv_stream,
+            partess: partess.clone(),
+            rayon_pool: BackpressuredRayon::new(
+                5,
+                Box::new(move |(timestamp, data)| {
+                    let frame = parse_frame(&idx_data, &data)?;
+                    let image: GrayImage = process_image(frame);
+                    let mut partess = partess.get()?;
+                    let sub = partess.ocr_image(image)?;
+                    return Ok((timestamp, sub));
+                }),
+            ),
         });
     }
     pub fn push_frame(&self, timestamp: u64, data: Vec<u8>) {
-        let partess = self.partess.clone();
-        let idx_data = Arc::clone(&self.idx_data);
-        let sender = self.return_send_stream.clone();
-        let receiver = Arc::clone(&self.submit_recv_stream);
-        self.submit_send_stream.send((timestamp, data)).unwrap();
-        rayon::spawn(move || {
-            // This has a somewhat convoluted way of implementing backpressure.
-            // We use a sync_channel to load up the stream, then spawn threads
-            // via rayon to consume it. If we load too much into the stream, the
-            // caller will be forced to wait until rayon schedules our threads to
-            // consume the data. This is important for images, as they can consume
-            // a lot of memory if we load them too fast.
-            let (timestamp, data) = receiver.lock().unwrap().try_recv().unwrap();
-            macro_rules! try_send {
-                ($val:expr) => {
-                    match $val {
-                        Ok(val) => val,
-                        Err(err) => {
-                            let _ = sender.send(Err(ExtractDetailsError::from(err)));
-                            return;
-                        }
-                    }
-                };
-            }
-            let frame = try_send!(parse_frame(&idx_data, &data));
-            let image: GrayImage = process_image(frame);
-            let mut partess = try_send!(partess.get());
-            let sub = try_send!(partess.ocr_image(image));
-            let _ = sender.send(Ok((timestamp, sub)));
-        });
+        self.rayon_pool.push_data((timestamp, data))
     }
     pub fn collect(self) -> Result<Vec<String>, ExtractDetailsError> {
-        drop(self.return_send_stream);
-        let mut subs = Vec::new();
-        while let Ok(result) = self.return_recv_stream.recv() {
-            let result = result?;
-            subs.push(result);
-        }
+        let mut subs = self.rayon_pool.try_collect()?;
         subs.sort_by_key(|(timestamp, _sub)| *timestamp);
         return Ok(subs.into_iter().map(|(_timestamp, sub)| sub).collect());
     }
