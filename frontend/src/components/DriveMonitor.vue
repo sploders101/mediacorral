@@ -138,7 +138,7 @@ watch(
 );
 
 let jobTrackerAbort: AbortController = new AbortController();
-async function trackJob(jobId: string) {
+async function trackJob(jobId: bigint) {
 	jobTrackerAbort.abort("Tracker obsoleted");
 	jobTrackerAbort = new AbortController();
 	let response = rpc.streamRipJobUpdates(

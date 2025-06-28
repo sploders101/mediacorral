@@ -10,13 +10,12 @@ import type {
 } from "@/generated/mediacorral/server/v1/api";
 import { injectKeys } from "@/scripts/config";
 import { formatRuntime } from "@/scripts/utils";
-import type { utf8read } from "@protobuf-ts/runtime";
 
 interface MetaCache {
-	movies: Record<string, Movie>;
-	tvShows: Record<string, TvShow>;
-	tvSeasons: Record<string, TvSeason>;
-	tvEpisodes: Record<string, TvEpisode>;
+	movies: Map<bigint, Movie>;
+	tvShows: Map<bigint, TvShow>;
+	tvSeasons: Map<bigint, TvSeason>;
+	tvEpisodes: Map<bigint, TvEpisode>;
 }
 
 const loading = ref(false);
@@ -26,20 +25,19 @@ const data = ref("");
 const jobInfo = ref<RipJob | undefined>();
 const catInfo = ref<GetJobCatalogueInfoResponse>();
 const cache = reactive<MetaCache>({
-	movies: {},
-	tvShows: {},
-	tvSeasons: {},
-	tvEpisodes: {},
+	movies: new Map(),
+	tvShows: new Map(),
+	tvSeasons: new Map(),
+	tvEpisodes: new Map(),
 });
 
 watch(() => route.params.id, refreshData, { immediate: true });
 
 async function refreshData() {
 	loading.value = true;
-	const jobInfoResponse = await rpc.getJobInfo({ jobId: route.params.id });
-	const catInfoResponse = await rpc.getJobCatalogueInfo({
-		jobId: route.params.id,
-	});
+	let jobId = BigInt(route.params.id);
+	const jobInfoResponse = await rpc.getJobInfo({ jobId });
+	const catInfoResponse = await rpc.getJobCatalogueInfo({ jobId });
 	jobInfo.value = jobInfoResponse.response.details;
 	catInfo.value = catInfoResponse.response;
 	console.log(jobInfoResponse.response.details, catInfoResponse.response);
@@ -54,35 +52,35 @@ async function refreshData() {
 					tmdbId: suspectedContents.movie.tmdbId,
 				});
 				if (movie.movie === undefined) throw new Error("Movie missing");
-				if (cache.movies[movie.movie.id] === undefined) {
-					cache.movies[movie.movie.id] = movie.movie;
+				if (cache.movies.get(movie.movie.id) === undefined) {
+					cache.movies.set(movie.movie.id, movie.movie);
 				}
 				break;
 			case "tvEpisodes":
-				const tvShows = new Set<string>();
-				const tvSeasons = new Set<string>();
+				const tvShows = new Set<bigint>();
+				const tvSeasons = new Set<bigint>();
 				for (const tmdbId of suspectedContents.tvEpisodes.episodeTmdbIds) {
 					const { response: tvEpisode } = await rpc.getTvEpisodeByTmdbId({
 						tmdbId: tmdbId,
 					});
 					if (tvEpisode.episode === undefined)
 						throw new Error("TV episode missing");
-					cache.tvEpisodes[tvEpisode.episode.id] = tvEpisode.episode;
+					cache.tvEpisodes.set(tvEpisode.episode.id, tvEpisode.episode);
 					tvShows.add(tvEpisode.episode.tvShowId);
 					tvSeasons.add(tvEpisode.episode.tvSeasonId);
 				}
 				for (const tvId of tvShows) {
-					if (cache.tvShows[tvId] !== undefined) continue;
+					if (cache.tvShows.has(tvId)) continue;
 					const { response: tvShow } = await rpc.getTvShow({ showId: tvId });
 					if (tvShow.tvShow === undefined) throw new Error("TV show missing");
-					cache.tvShows[tvShow.tvShow.id] = tvShow.tvShow;
+					cache.tvShows.set(tvShow.tvShow.id, tvShow.tvShow);
 				}
 				for (const seasonId of tvSeasons) {
-					if (cache.tvSeasons[seasonId] !== undefined) continue;
+					if (cache.tvSeasons.has(seasonId)) continue;
 					const { response: tvSeason } = await rpc.getTvSeason({ seasonId });
 					if (tvSeason.tvSeason === undefined)
 						throw new Error("TV season missing");
-					cache.tvSeasons[tvSeason.tvSeason.id] = tvSeason.tvSeason;
+					cache.tvSeasons.set(tvSeason.tvSeason.id, tvSeason.tvSeason);
 				}
 		}
 	}

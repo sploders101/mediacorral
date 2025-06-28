@@ -4,7 +4,7 @@ cd "$(dirname "$0")"
 
 npx protoc \
 	--ts_out src/generated/ \
-	--ts_opt long_type_string \
+	--ts_opt long_type_bigint \
 	--proto_path ../mediacorral-proto/proto \
 	../mediacorral-proto/proto/mediacorral/server/v1/api.proto \
 	../mediacorral-proto/proto/mediacorral/server/v1/exports.proto \
