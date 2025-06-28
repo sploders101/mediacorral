@@ -1,6 +1,8 @@
+use futures::Stream;
 use std::sync::Arc;
 use std::sync::mpsc as smpsc;
 use tokio::sync::mpsc as ampsc;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 
 /// This data structure is for running analytics on large data
 /// sets with Rayon where the input is large, and the output is
@@ -45,13 +47,19 @@ impl<F: Fn(D) -> R + Send + Sync + 'static, D: Send + 'static, R: Send + 'static
         let receiver = Arc::clone(&self.in_recv);
         let result_sender = self.out_send.clone();
         let process_func = Arc::clone(&self.process_func);
-        rayon::spawn(move || {
+        rayon::spawn_fifo(move || {
             let mut receiver = receiver.lock().unwrap();
             if let Some(data) = receiver.blocking_recv() {
                 let result = process_func(data);
                 let _ = result_sender.send(result);
             }
         });
+    }
+    pub fn to_stream(self) -> impl Stream<Item = R> + Send + Unpin + 'static {
+        drop(self.in_send);
+        drop(self.in_recv);
+        drop(self.out_send);
+        return UnboundedReceiverStream::new(self.out_recv);
     }
     pub async fn collect(mut self) -> Vec<R> {
         drop(self.in_send);
@@ -73,6 +81,14 @@ impl<F: Fn(D) -> R + Send + Sync + 'static, D: Send + 'static, R: Send + 'static
             results.push(result.as_result()?);
         }
         return Ok(results);
+    }
+}
+
+pub struct ReceiverIterator<T>(smpsc::Receiver<T>);
+impl<T> Iterator for ReceiverIterator<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        return self.0.recv().ok();
     }
 }
 
@@ -118,13 +134,19 @@ impl<F: Fn(D) -> R + Send + Sync + 'static, D: Send + 'static, R: Send + 'static
         let receiver = Arc::clone(&self.in_recv);
         let result_sender = self.out_send.clone();
         let process_func = Arc::clone(&self.process_func);
-        rayon::spawn(move || {
+        rayon::spawn_fifo(move || {
             let receiver = receiver.lock().unwrap();
             if let Ok(data) = receiver.recv() {
                 let result = process_func(data);
                 let _ = result_sender.send(result);
             }
         });
+    }
+    pub fn to_receiver(self) -> impl Iterator<Item = R> + Send + 'static {
+        drop(self.in_send);
+        drop(self.in_recv);
+        drop(self.out_send);
+        return ReceiverIterator(self.out_recv);
     }
     pub fn collect(self) -> Vec<R> {
         drop(self.in_send);

@@ -164,7 +164,6 @@ impl From<proto::VideoType> for VideoType {
     }
 }
 
-#[serde_as]
 #[derive(Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
 pub struct VideoFilesItem {
     pub id: Option<i64>,

@@ -22,7 +22,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 use thiserror::Error;
-use tokio::sync::Mutex;
+use tokio::{fs::File, io::AsyncReadExt, sync::Mutex};
 use tokio_stream::wrappers::ReadDirStream;
 use tonic::transport::{Channel, Endpoint};
 
@@ -31,13 +31,14 @@ use crate::{
     blob_storage::BlobStorageController,
     db::{
         self,
-        schemas::{MoviesItem, VideoType},
+        schemas::{MatchInfoItem, MoviesItem, VideoType},
     },
     managers::{
         exports::{ExportsDirError, ExportsManager},
         opensubtitles::OpenSubtitles,
         tmdb::{TmdbError, TmdbImporter},
     },
+    rayon_helpers::BackpressuredAsyncRayon,
     workers::subtitles::vobsub::PartessCache,
 };
 
@@ -311,12 +312,26 @@ impl Application {
 
         match suspicion.suspected_contents {
             Some(suspected_contents::SuspectedContents::Movie(movie)) => {
-                let movie = self.autoimport_movie(movie.tmdb_id).await?;
+                self.autoimport_movie(movie.tmdb_id).await?;
             }
             Some(suspected_contents::SuspectedContents::TvEpisodes(episode_ids)) => {
+                struct SubsInfo {
+                    tmdb_id: i32,
+                    ost_download_id: i64,
+                    ost_subs: Arc<str>,
+                    video_file_id: i64,
+                    disc_subs: String,
+                }
+                let work_queue = BackpressuredAsyncRayon::new(5, |subs: SubsInfo| MatchInfoItem {
+                    id: None,
+                    video_file_id: subs.video_file_id,
+                    ost_download_id: subs.ost_download_id,
+                    distance: levenshtein::levenshtein(&subs.ost_subs, &subs.disc_subs) as _,
+                    max_distance: subs.ost_subs.len().max(subs.disc_subs.len()) as _,
+                });
                 for episode_id in episode_ids.episode_tmdb_ids {
                     let episode = db::get_tv_episode_by_tmdb_id(&self.db, episode_id).await?;
-                    let subtitles = self
+                    let (ost_download_id, ost_subs) = self
                         .ost_importer
                         .get_subtitles(
                             &self.db,
@@ -327,6 +342,27 @@ impl Application {
                         )
                         .await
                         .expect("TODO: type ost errors and remove this");
+                    let ost_subs = Arc::<str>::from(ost_subs);
+                    for video_file in db::get_disc_subs_from_rip(&self.db, job_id).await? {
+                        let mut disc_subs = String::new();
+                        File::open(self.blob_storage.get_file_path(&video_file.subtitle_blob))
+                            .await?
+                            .read_to_string(&mut disc_subs)
+                            .await?;
+                        work_queue
+                            .push_data(SubsInfo {
+                                tmdb_id: episode_id,
+                                ost_download_id,
+                                ost_subs: Arc::clone(&ost_subs),
+                                video_file_id: video_file.video_id,
+                                disc_subs,
+                            })
+                            .await;
+                    }
+                }
+                let mut reader_stream = work_queue.to_stream();
+                while let Some(item) = reader_stream.next().await {
+                    db::insert_match_info_item(&self.db, &item);
                 }
             }
             None => {}

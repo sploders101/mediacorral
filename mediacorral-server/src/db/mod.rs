@@ -1162,6 +1162,35 @@ pub async fn get_videos_from_rip(
     return Ok(results);
 }
 
+#[derive(Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
+pub struct DiscSubsWithVideo {
+    pub video_id: i64,
+    pub subtitle_id: i64,
+    pub subtitle_blob: String,
+}
+pub async fn get_disc_subs_from_rip(
+    db: &Db,
+    rip_job: i64,
+) -> Result<Vec<DiscSubsWithVideo>, sqlx::Error> {
+    let results: Vec<DiscSubsWithVideo> = sqlx::query_as(
+        "
+            SELECT
+                video_files.id as video_id,
+                subtitle_files.id as subtitle_id,
+                subtitle_files.blob_id
+            FROM video_files
+            INNER JOIN subtitle_files ON
+                video_files.id = subtitle_files.video_file
+            WHERE
+                video_files.rip_job = ?
+        ",
+    )
+    .bind(rip_job)
+    .fetch_all(db)
+    .await?;
+    return Ok(results);
+}
+
 pub async fn get_matches_from_rip(
     db: &Db,
     rip_job: i64,
