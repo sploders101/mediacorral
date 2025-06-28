@@ -1177,7 +1177,7 @@ pub async fn get_disc_subs_from_rip(
             SELECT
                 video_files.id as video_id,
                 subtitle_files.id as subtitle_id,
-                subtitle_files.blob_id
+                subtitle_files.blob_id as subtitle_blob
             FROM video_files
             INNER JOIN subtitle_files ON
                 video_files.id = subtitle_files.video_file
