@@ -289,7 +289,7 @@ impl Application {
     }
 
     /// This ensures a movie is imported from TMDB if it isn't already
-    async fn autoimport_movie(&self, tmdb_id: i32) -> Result<MoviesItem, ApplicationError> {
+    pub async fn autoimport_movie(&self, tmdb_id: i32) -> Result<MoviesItem, ApplicationError> {
         match db::get_movie_by_tmdb_id(&self.db, tmdb_id).await {
             Ok(movie) => return Ok(movie),
             Err(sqlx::Error::RowNotFound) => {}
@@ -299,7 +299,7 @@ impl Application {
         return Ok(db::get_movie_by_tmdb_id(&self.db, tmdb_id).await?);
     }
 
-    async fn analyze_job(&self, job_id: i64) -> Result<(), ApplicationError> {
+    pub async fn analyze_job(&self, job_id: i64) -> Result<(), ApplicationError> {
         let result = db::get_rip_job(&self.db, job_id)
             .await
             .map_err(db_not_found("job"))?;

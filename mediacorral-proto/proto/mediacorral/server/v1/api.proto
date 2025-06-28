@@ -90,6 +90,9 @@ service CoordinatorApiService {
   // Renames a job
   rpc RenameJob (RenameJobRequest) returns (RenameJobResponse);
 
+  // Adds a suspicion to a job
+  rpc SuspectJob (SuspectJobRequest) returns (SuspectJobResponse);
+
   // Gets a list of jobs containing untagged files
   rpc GetUntaggedJobs (GetUntaggedJobsRequest) returns (GetUntaggedJobsResponse);
 
@@ -367,6 +370,12 @@ message RenameJobRequest {
   string new_name = 2;
 }
 message RenameJobResponse {}
+
+message SuspectJobRequest {
+  int64 job_id = 1;
+  SuspectedContents suspicion = 2;
+}
+message SuspectJobResponse {}
 
 message GetUntaggedJobsRequest {
   uint32 skip = 1;
