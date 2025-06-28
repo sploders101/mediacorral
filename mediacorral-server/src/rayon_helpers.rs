@@ -174,7 +174,7 @@ impl<F: Fn(D) -> R + Send + Sync + 'static, D: Send + 'static, R: Send + 'static
 }
 
 /// Simple trait wrapper for results
-trait Try {
+pub trait Try {
     type Success;
     type Error;
     fn as_result(self) -> Result<Self::Success, Self::Error>;
