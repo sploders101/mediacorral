@@ -229,9 +229,10 @@ impl CoordinatorApiService for ApiService {
     ) -> std::result::Result<tonic::Response<proto::ImportTmdbTvResponse>, tonic::Status> {
         let request = request.into_inner();
 
-        self.application
-            .import_tmdb_tv(request.tmdb_id)
+        let application = Arc::clone(&self.application);
+        tokio::task::spawn(async move { application.import_tmdb_tv(request.tmdb_id).await })
             .await
+            .unwrap()
             .bubble()?;
         return Ok(tonic::Response::new(proto::ImportTmdbTvResponse {}));
     }
@@ -243,9 +244,10 @@ impl CoordinatorApiService for ApiService {
     ) -> std::result::Result<tonic::Response<proto::ImportTmdbMovieResponse>, tonic::Status> {
         let request = request.into_inner();
 
-        self.application
-            .import_tmdb_movie(request.tmdb_id)
+        let application = Arc::clone(&self.application);
+        tokio::task::spawn(async move { application.import_tmdb_movie(request.tmdb_id).await })
             .await
+            .unwrap()
             .bubble()?;
         return Ok(tonic::Response::new(proto::ImportTmdbMovieResponse {}));
     }
@@ -257,10 +259,13 @@ impl CoordinatorApiService for ApiService {
     ) -> std::result::Result<tonic::Response<proto::RebuildExportsDirResponse>, tonic::Status> {
         let request = request.into_inner();
 
-        self.application
-            .rebuild_exports_dir(&request.exports_dir)
-            .await
-            .bubble()?;
+        let application = Arc::clone(&self.application);
+        tokio::task::spawn(
+            async move { application.rebuild_exports_dir(&request.exports_dir).await },
+        )
+        .await
+        .unwrap()
+        .bubble()?;
 
         return Ok(tonic::Response::new(proto::RebuildExportsDirResponse {}));
     }
@@ -333,16 +338,20 @@ impl CoordinatorApiService for ApiService {
         let drive = request
             .drive
             .ok_or_else(|| tonic::Status::invalid_argument("Missing drive info"))?;
-        let job_id = self
-            .application
-            .rip_media(
-                &drive.controller,
-                drive.drive_id,
-                request.suspected_contents,
-                request.autoeject,
-            )
-            .await
-            .bubble()?;
+        let application = Arc::clone(&self.application);
+        let job_id = tokio::task::spawn(async move {
+            application
+                .rip_media(
+                    &drive.controller,
+                    drive.drive_id,
+                    request.suspected_contents,
+                    request.autoeject,
+                )
+                .await
+        })
+        .await
+        .unwrap()
+        .bubble()?;
         return Ok(tonic::Response::new(proto::StartRipJobResponse { job_id }));
     }
 
