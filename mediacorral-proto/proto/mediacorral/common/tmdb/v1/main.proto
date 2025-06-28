@@ -54,13 +54,12 @@ message TmdbSpokenLanguage {
 
 message TmdbMovieDetails {
   int32 id = 1;
-  uint32 imdb_id = 2;
-  optional string title = 3;
-  repeated TmdbGenre genres = 4;
-  optional string poster_path = 5;
-  optional string release_date = 6;
-  optional string overview = 7;
-  uint32 runtime = 8;
+  optional string title = 2;
+  repeated TmdbGenre genres = 3;
+  optional string poster_path = 4;
+  optional string release_date = 5;
+  optional string overview = 6;
+  uint32 runtime = 7;
 }
 
 message TmdbTvCreator {

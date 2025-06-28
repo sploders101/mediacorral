@@ -159,7 +159,6 @@ impl Into<pb_types::TmdbSpokenLanguage> for TmdbSpokenLanguage {
 pub struct TmdbMovieDetails {
     pub genres: Option<Vec<TmdbGenre>>,
     pub id: i32,
-    pub imdb_id: u32,
     pub overview: Option<String>,
     pub poster_path: Option<String>,
     pub release_date: Option<String>,
@@ -171,7 +170,6 @@ impl Into<pb_types::TmdbMovieDetails> for TmdbMovieDetails {
     fn into(self) -> pb_types::TmdbMovieDetails {
         return pb_types::TmdbMovieDetails {
             id: self.id,
-            imdb_id: self.imdb_id,
             title: self.title,
             genres: self
                 .genres
