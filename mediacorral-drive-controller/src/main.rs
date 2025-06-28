@@ -279,7 +279,6 @@ impl DriveControllerService for DriveController {
         let ejector = Arc::clone(&drive.ejector);
         let autoeject = request.autoeject;
         let task_handle = tokio::task::spawn(async move {
-            // TODO: Remove unwrap
             while let Ok(Some(event)) = makemkv.next_event().await {
                 match event {
                     MakemkvMessage::ProgressTitle { bar, name, .. } => {

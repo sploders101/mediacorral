@@ -35,7 +35,7 @@ use crate::{
     },
     managers::{
         exports::{ExportsDirError, ExportsManager},
-        opensubtitles::OpenSubtitles,
+        opensubtitles::{OpenSubtitles, OstError},
         tmdb::{TmdbError, TmdbImporter},
     },
     rayon_helpers::BackpressuredAsyncRayon,
@@ -316,7 +316,6 @@ impl Application {
             }
             Some(suspected_contents::SuspectedContents::TvEpisodes(episode_ids)) => {
                 struct SubsInfo {
-                    tmdb_id: i32,
                     ost_download_id: i64,
                     ost_subs: Arc<str>,
                     video_file_id: i64,
@@ -331,7 +330,7 @@ impl Application {
                 });
                 for episode_id in episode_ids.episode_tmdb_ids {
                     let episode = db::get_tv_episode_by_tmdb_id(&self.db, episode_id).await?;
-                    let (ost_download_id, ost_subs) = self
+                    let (ost_download_id, ost_subs) = match self
                         .ost_importer
                         .get_subtitles(
                             &self.db,
@@ -341,7 +340,11 @@ impl Application {
                             episode_id,
                         )
                         .await
-                        .expect("TODO: type ost errors and remove this");
+                    {
+                        Ok(result) => result,
+                        Err(OstError::NoSubtitlesFound | OstError::UnreliableSubtitles) => continue,
+                        Err(err) => return Err(err.into()),
+                    };
                     let ost_subs = Arc::<str>::from(ost_subs);
                     for video_file in db::get_disc_subs_from_rip(&self.db, job_id).await? {
                         let mut disc_subs = String::new();
@@ -351,7 +354,6 @@ impl Application {
                             .await?;
                         work_queue
                             .push_data(SubsInfo {
-                                tmdb_id: episode_id,
                                 ost_download_id,
                                 ost_subs: Arc::clone(&ost_subs),
                                 video_file_id: video_file.video_id,
@@ -362,7 +364,7 @@ impl Application {
                 }
                 let mut reader_stream = work_queue.to_stream();
                 while let Some(item) = reader_stream.next().await {
-                    db::insert_match_info_item(&self.db, &item);
+                    db::insert_match_info_item(&self.db, &item).await?;
                 }
             }
             None => {}
@@ -384,6 +386,8 @@ pub enum ApplicationError {
     FailedPrecondition(String),
     #[error("An error occurred while decoding {0}.\n{1}")]
     DecodeFailed(&'static str, prost::DecodeError),
+    #[error("An unknown OST error occurred:\n{0}")]
+    Ost(#[from] OstError),
     #[error("A TMDB error occurred:\n{0}")]
     TmdbError(#[from] TmdbError),
     #[error("An unknown error occurred upstream: {0}")]

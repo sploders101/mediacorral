@@ -1,7 +1,6 @@
 use mediacorral_proto::mediacorral::server::v1::{self as proto, SuspectedContents};
 use prost::Message;
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use sqlx::prelude::FromRow;
 
 // Movie Metadata

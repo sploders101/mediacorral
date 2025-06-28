@@ -1,17 +1,17 @@
-use anyhow::{Context, anyhow};
 use lazy_regex::regex;
 use reqwest::StatusCode;
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::SqlitePool;
 use std::{cmp::Ordering, time::SystemTime};
+use thiserror::Error;
 use tokio::{
     io::AsyncReadExt,
     sync::{Mutex, oneshot},
 };
 
 use crate::{
-    blob_storage::BlobStorageController,
+    blob_storage::{BlobError, BlobStorageController},
     db::{self, schemas::VideoType},
 };
 
@@ -19,6 +19,24 @@ use crate::{
 struct LoginResponse {
     token: String,
 }
+
+#[derive(Error, Debug)]
+pub enum OstError {
+    #[error("No subtitles found")]
+    NoSubtitlesFound,
+    #[error("Couldn't find reliable subtitles")]
+    UnreliableSubtitles,
+    #[error("An unknown blob storage error occurred:\n{0}")]
+    BlobError(#[from] BlobError),
+    #[error("An unknown reqwest error occurred:\n{0}")]
+    ReqwestError(#[from] reqwest::Error),
+    #[error("An unknown database error occurred:\n{0}")]
+    Db(#[from] sqlx::Error),
+    #[error("An unknown I/O error occurred:\n{0}")]
+    Io(#[from] std::io::Error),
+}
+
+type OstResult<T> = Result<T, OstError>;
 
 pub struct OpenSubtitles {
     agent: reqwest::Client,
@@ -88,7 +106,7 @@ impl OpenSubtitles {
         }
     }
 
-    pub async fn find_subtitles(&self, tmdb_id: i32) -> anyhow::Result<Vec<SubtitleSummary>> {
+    pub async fn find_subtitles(&self, tmdb_id: i32) -> OstResult<Vec<SubtitleSummary>> {
         let search_result: SearchResults = self
             .authenticated(|| {
                 self.agent
@@ -97,8 +115,7 @@ impl OpenSubtitles {
             })
             .await?
             .json()
-            .await
-            .context("Couldn't search subtitles")?;
+            .await?;
 
         let mut files: Vec<SubtitleSummary> = search_result
             .data
@@ -153,7 +170,7 @@ impl OpenSubtitles {
         return Ok(files);
     }
 
-    pub async fn download_subtitles(&self, file_id: u32) -> anyhow::Result<String> {
+    pub async fn download_subtitles(&self, file_id: u32) -> OstResult<String> {
         let pointer: DownloadPointer = self
             .authenticated(|| {
                 self.agent
@@ -164,21 +181,19 @@ impl OpenSubtitles {
             })
             .await?
             .json()
-            .await
-            .context("Couldn't locate download URL")?;
+            .await?;
 
         return Ok(self
             .authenticated(|| self.agent.get(&pointer.link))
             .await?
             .text()
-            .await
-            .context("Couldn't download subtitles")?);
+            .await?);
     }
 
     /// Finds the best subtitles by grabbing up to 3 and comparing them. The one that
     /// matches more closely with the rest gets picked.
     /// returns `(file_name, subtitles)`
-    pub async fn find_best_subtitles(&self, tmdb_id: i32) -> anyhow::Result<(String, String)> {
+    pub async fn find_best_subtitles(&self, tmdb_id: i32) -> OstResult<(String, String)> {
         let subtitle_results = self.find_subtitles(tmdb_id).await?.into_iter().take(3);
 
         let mut subtitles = Vec::with_capacity(3);
@@ -189,12 +204,11 @@ impl OpenSubtitles {
             ));
         }
 
-        let (ret_chan_sender, ret_chan_recv) =
-            oneshot::channel::<anyhow::Result<(String, String)>>();
+        let (ret_chan_sender, ret_chan_recv) = oneshot::channel::<OstResult<(String, String)>>();
         tokio::task::spawn_blocking(move || {
             rayon::spawn(move || match subtitles.len() {
                 0 => {
-                    let _ = ret_chan_sender.send(Err(anyhow!("No subtitles found")));
+                    let _ = ret_chan_sender.send(Err(OstError::NoSubtitlesFound));
                     return;
                 }
                 1 => {
@@ -207,8 +221,7 @@ impl OpenSubtitles {
                     let distance = levenshtein::levenshtein(&file1.1, &file2.1);
                     let max_distance = file1.1.len().max(file2.1.len());
                     if distance > max_distance / 2 {
-                        let _ =
-                            ret_chan_sender.send(Err(anyhow!("Couldn't find reliable subtitles")));
+                        let _ = ret_chan_sender.send(Err(OstError::UnreliableSubtitles));
                         return;
                     }
                     let _ = ret_chan_sender.send(Ok(file1));
@@ -247,8 +260,7 @@ impl OpenSubtitles {
                     distances.sort_by_key(|item| item.1);
 
                     if distances[0].0 > max_distance / 2 {
-                        let _ =
-                            ret_chan_sender.send(Err(anyhow!("Couldn't find reliable subtitles")));
+                        let _ = ret_chan_sender.send(Err(OstError::UnreliableSubtitles));
                         return;
                     }
 
@@ -294,7 +306,7 @@ impl OpenSubtitles {
         video_type: VideoType,
         video_id: i64,
         tmdb_id: i32,
-    ) -> anyhow::Result<(i64, String)> {
+    ) -> OstResult<(i64, String)> {
         let existing_subs =
             match db::get_ost_download_items_by_match(db, video_type, video_id).await {
                 Ok(row) => row.into_iter().next(),
