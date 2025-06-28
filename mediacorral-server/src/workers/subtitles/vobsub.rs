@@ -56,8 +56,7 @@ pub struct VobsubProcessor {
                 + 'static,
         >,
         (u64, Vec<u8>),
-        (u64, String),
-        ExtractDetailsError,
+        Result<(u64, String), ExtractDetailsError>,
     >,
 }
 impl VobsubProcessor {

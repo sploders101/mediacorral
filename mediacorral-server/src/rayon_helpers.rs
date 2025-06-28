@@ -13,23 +13,18 @@ use tokio::sync::mpsc as ampsc;
 /// unnecessarily. If the output data is large, this is not the
 /// right abstraction.
 pub struct BackpressuredAsyncRayon<
-    F: Fn(D) -> Result<R, E> + Send + Sync + 'static,
+    F: Fn(D) -> R + Send + Sync + 'static,
     D: Send + 'static,
     R: Send + 'static,
-    E: Send + 'static,
 > {
     process_func: Arc<F>,
     in_send: ampsc::Sender<D>,
     in_recv: Arc<std::sync::Mutex<ampsc::Receiver<D>>>,
-    out_send: ampsc::UnboundedSender<Result<R, E>>,
-    out_recv: ampsc::UnboundedReceiver<Result<R, E>>,
+    out_send: ampsc::UnboundedSender<R>,
+    out_recv: ampsc::UnboundedReceiver<R>,
 }
-impl<
-    F: Fn(D) -> Result<R, E> + Send + Sync + 'static,
-    D: Send + 'static,
-    R: Send + 'static,
-    E: Send + 'static,
-> BackpressuredAsyncRayon<F, D, R, E>
+impl<F: Fn(D) -> R + Send + Sync + 'static, D: Send + 'static, R: Send + 'static>
+    BackpressuredAsyncRayon<F, D, R>
 {
     pub fn new(backfill_size: usize, process_func: F) -> Self {
         let (in_send, in_recv) = ampsc::channel(backfill_size);
@@ -58,7 +53,7 @@ impl<
             }
         });
     }
-    pub async fn collect(mut self) -> Vec<Result<R, E>> {
+    pub async fn collect(mut self) -> Vec<R> {
         drop(self.in_send);
         drop(self.in_recv);
         drop(self.out_send);
@@ -66,13 +61,16 @@ impl<
         while self.out_recv.recv_many(&mut results, usize::MAX).await > 0 {}
         return results;
     }
-    pub async fn try_collect(mut self) -> Result<Vec<R>, E> {
+    pub async fn try_collect(mut self) -> Result<Vec<<R as Try>::Success>, <R as Try>::Error>
+    where
+        R: Try,
+    {
         drop(self.in_send);
         drop(self.in_recv);
         drop(self.out_send);
         let mut results = Vec::new();
         while let Some(result) = self.out_recv.recv().await {
-            results.push(result?);
+            results.push(result.as_result()?);
         }
         return Ok(results);
     }
@@ -89,23 +87,18 @@ impl<
 /// unnecessarily. If the output data is large, this is not the
 /// right abstraction.
 pub struct BackpressuredRayon<
-    F: Fn(D) -> Result<R, E> + Send + Sync + 'static,
+    F: Fn(D) -> R + Send + Sync + 'static,
     D: Send + 'static,
     R: Send + 'static,
-    E: Send + 'static,
 > {
     process_func: Arc<F>,
     in_send: smpsc::SyncSender<D>,
     in_recv: Arc<std::sync::Mutex<smpsc::Receiver<D>>>,
-    out_send: smpsc::Sender<Result<R, E>>,
-    out_recv: smpsc::Receiver<Result<R, E>>,
+    out_send: smpsc::Sender<R>,
+    out_recv: smpsc::Receiver<R>,
 }
-impl<
-    F: Fn(D) -> Result<R, E> + Send + Sync + 'static,
-    D: Send + 'static,
-    R: Send + 'static,
-    E: Send + 'static,
-> BackpressuredRayon<F, D, R, E>
+impl<F: Fn(D) -> R + Send + Sync + 'static, D: Send + 'static, R: Send + 'static>
+    BackpressuredRayon<F, D, R>
 {
     pub fn new(backfill_size: usize, process_func: F) -> Self {
         let (in_send, in_recv) = smpsc::sync_channel(backfill_size);
@@ -133,7 +126,7 @@ impl<
             }
         });
     }
-    pub fn collect(self) -> Vec<Result<R, E>> {
+    pub fn collect(self) -> Vec<R> {
         drop(self.in_send);
         drop(self.in_recv);
         drop(self.out_send);
@@ -143,14 +136,32 @@ impl<
         }
         return results;
     }
-    pub fn try_collect(self) -> Result<Vec<R>, E> {
+    pub fn try_collect(self) -> Result<Vec<<R as Try>::Success>, <R as Try>::Error>
+    where
+        R: Try,
+    {
         drop(self.in_send);
         drop(self.in_recv);
         drop(self.out_send);
         let mut results = Vec::new();
         while let Ok(result) = self.out_recv.recv() {
-            results.push(result?);
+            results.push(result.as_result()?);
         }
         return Ok(results);
+    }
+}
+
+/// Simple trait wrapper for results
+trait Try {
+    type Success;
+    type Error;
+    fn as_result(self) -> Result<Self::Success, Self::Error>;
+}
+impl<S, E> Try for Result<S, E> {
+    type Success = S;
+    type Error = E;
+    #[inline(always)]
+    fn as_result(self) -> Result<Self::Success, Self::Error> {
+        return self;
     }
 }
