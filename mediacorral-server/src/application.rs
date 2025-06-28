@@ -253,6 +253,9 @@ impl Application {
             }
         }
 
+        // Try to delete rip directory
+        let _ = tokio::fs::remove_dir(self.rip_dir.join(job_id.to_string())).await;
+
         // 3. Mark rip job as imported
         db::mark_rip_job_imported(&self.db, job_id, true).await?;
 
