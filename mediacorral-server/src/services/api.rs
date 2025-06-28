@@ -230,11 +230,12 @@ impl CoordinatorApiService for ApiService {
         let request = request.into_inner();
 
         let application = Arc::clone(&self.application);
-        tokio::task::spawn(async move { application.import_tmdb_tv(request.tmdb_id).await })
-            .await
-            .unwrap()
-            .bubble()?;
-        return Ok(tonic::Response::new(proto::ImportTmdbTvResponse {}));
+        let tv_id =
+            tokio::task::spawn(async move { application.import_tmdb_tv(request.tmdb_id).await })
+                .await
+                .unwrap()
+                .bubble()?;
+        return Ok(tonic::Response::new(proto::ImportTmdbTvResponse { tv_id }));
     }
 
     /// Imports a Movie from TheMovieDatabase
@@ -245,11 +246,14 @@ impl CoordinatorApiService for ApiService {
         let request = request.into_inner();
 
         let application = Arc::clone(&self.application);
-        tokio::task::spawn(async move { application.import_tmdb_movie(request.tmdb_id).await })
-            .await
-            .unwrap()
-            .bubble()?;
-        return Ok(tonic::Response::new(proto::ImportTmdbMovieResponse {}));
+        let movie_id =
+            tokio::task::spawn(async move { application.import_tmdb_movie(request.tmdb_id).await })
+                .await
+                .unwrap()
+                .bubble()?;
+        return Ok(tonic::Response::new(proto::ImportTmdbMovieResponse {
+            movie_id,
+        }));
     }
 
     /// Rebuild exports directory

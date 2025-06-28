@@ -148,12 +148,18 @@ message SearchTmdbMovieResponse {
 message ImportTmdbTvRequest {
   int32 tmdb_id = 1;
 }
-message ImportTmdbTvResponse {}
+message ImportTmdbTvResponse {
+  // The internal ID of the tv show in our database
+  int64 tv_id = 1;
+}
 
 message ImportTmdbMovieRequest {
   int32 tmdb_id = 1;
 }
-message ImportTmdbMovieResponse {}
+message ImportTmdbMovieResponse {
+  // The internal ID of the movie in our database
+  int64 movie_id = 1;
+}
 
 message RebuildExportsDirRequest {
   string exports_dir = 1;

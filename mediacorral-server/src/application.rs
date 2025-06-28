@@ -131,14 +131,14 @@ impl Application {
         });
     }
 
-    pub async fn import_tmdb_tv(&self, tmdb_id: i32) -> Result<(), ApplicationError> {
+    pub async fn import_tmdb_tv(&self, tmdb_id: i32) -> Result<i64, ApplicationError> {
         return Ok(self
             .tmdb_importer
             .import_tv(tmdb_id, Some(&self.blob_storage))
             .await?);
     }
 
-    pub async fn import_tmdb_movie(&self, tmdb_id: i32) -> Result<(), ApplicationError> {
+    pub async fn import_tmdb_movie(&self, tmdb_id: i32) -> Result<i64, ApplicationError> {
         return Ok(self
             .tmdb_importer
             .import_movie(tmdb_id, Some(&self.blob_storage))

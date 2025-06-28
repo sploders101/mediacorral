@@ -174,7 +174,7 @@ impl TmdbImporter {
         &self,
         movie_id: i32,
         blob_storage: Option<&BlobStorageController>,
-    ) -> TmdbResult<()> {
+    ) -> TmdbResult<i64> {
         let response: TmdbMovieDetails = serde_json::from_slice(
             &self
                 .agent
@@ -194,26 +194,26 @@ impl TmdbImporter {
             _ => None,
         };
 
-        if let Some(title) = response.title.or(response.name) {
-            db::insert_tmdb_movie(
-                &self.db,
-                &MoviesItem {
-                    id: None,
-                    tmdb_id: Some(movie_id),
-                    poster_blob,
-                    title,
-                    release_year: response
-                        .release_date
-                        .and_then(|item| item.split('-').next().map(String::from)),
-                    description: response.overview,
-                },
-            )
-            .await?;
-        } else {
-            return Err(TmdbError::MissingField("name"));
-        }
+        let title = response
+            .title
+            .or(response.name)
+            .ok_or(TmdbError::MissingField("name"))?;
+        let movie_id = db::insert_tmdb_movie(
+            &self.db,
+            &MoviesItem {
+                id: None,
+                tmdb_id: Some(movie_id),
+                poster_blob,
+                title,
+                release_year: response
+                    .release_date
+                    .and_then(|item| item.split('-').next().map(String::from)),
+                description: response.overview,
+            },
+        )
+        .await?;
 
-        return Ok(());
+        return Ok(movie_id);
     }
 
     /// Imports TV metadata for the given ID into the local database.
@@ -223,7 +223,7 @@ impl TmdbImporter {
         &self,
         tv_id: i32,
         blob_storage: Option<&BlobStorageController>,
-    ) -> TmdbResult<()> {
+    ) -> TmdbResult<i64> {
         let response: TmdbTvSeriesDetails = serde_json::from_slice(
             &self
                 .agent
@@ -329,6 +329,6 @@ impl TmdbImporter {
             }
         }
 
-        return Ok(());
+        return Ok(series_id);
     }
 }
