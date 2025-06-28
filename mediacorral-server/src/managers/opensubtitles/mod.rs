@@ -205,95 +205,94 @@ impl OpenSubtitles {
         }
 
         let (ret_chan_sender, ret_chan_recv) = oneshot::channel::<OstResult<(String, String)>>();
-        tokio::task::spawn_blocking(move || {
-            rayon::spawn(move || match subtitles.len() {
-                0 => {
-                    let _ = ret_chan_sender.send(Err(OstError::NoSubtitlesFound));
+        tokio::task::spawn_blocking(move || match subtitles.len() {
+            0 => {
+                let _ = ret_chan_sender.send(Err(OstError::NoSubtitlesFound));
+                return;
+            }
+            1 => {
+                let _ = ret_chan_sender.send(Ok(subtitles.pop().unwrap()));
+                return;
+            }
+            2 => {
+                let file1 = subtitles.pop().unwrap();
+                let file2 = subtitles.pop().unwrap();
+                let mut distance = None;
+                rayon::scope(|s| {
+                    s.spawn(|_| distance = Some(levenshtein::levenshtein(&file1.1, &file2.1)));
+                });
+                let distance = distance.unwrap();
+                let max_distance = file1.1.len().max(file2.1.len());
+                if distance > max_distance / 2 {
+                    let _ = ret_chan_sender.send(Err(OstError::UnreliableSubtitles));
                     return;
                 }
-                1 => {
-                    let _ = ret_chan_sender.send(Ok(subtitles.pop().unwrap()));
-                    return;
-                }
-                2 => {
-                    let file1 = subtitles.pop().unwrap();
-                    let file2 = subtitles.pop().unwrap();
-                    let distance = levenshtein::levenshtein(&file1.1, &file2.1);
-                    let max_distance = file1.1.len().max(file2.1.len());
-                    if distance > max_distance / 2 {
-                        let _ = ret_chan_sender.send(Err(OstError::UnreliableSubtitles));
-                        return;
-                    }
-                    let _ = ret_chan_sender.send(Ok(file1));
-                    return;
-                }
-                3 => {
-                    let file1 = subtitles.pop().unwrap();
-                    let file2 = subtitles.pop().unwrap();
-                    let file3 = subtitles.pop().unwrap();
-                    let mut distance1: Option<usize> = None;
-                    let mut distance2: Option<usize> = None;
-                    let mut distance3: Option<usize> = None;
-                    let file1_stripped = strip_subtitles(&file1.1);
-                    let file2_stripped = strip_subtitles(&file2.1);
-                    let file3_stripped = strip_subtitles(&file3.1);
-                    rayon::scope(|s| {
-                        s.spawn(|_| {
-                            distance1 =
-                                Some(levenshtein::levenshtein(&file1_stripped, &file2_stripped))
-                        });
-                        s.spawn(|_| {
-                            distance2 =
-                                Some(levenshtein::levenshtein(&file2_stripped, &file3_stripped))
-                        });
-                        s.spawn(|_| {
-                            distance3 =
-                                Some(levenshtein::levenshtein(&file3_stripped, &file1_stripped))
-                        });
+                let _ = ret_chan_sender.send(Ok(file1));
+                return;
+            }
+            3 => {
+                let file1 = subtitles.pop().unwrap();
+                let file2 = subtitles.pop().unwrap();
+                let file3 = subtitles.pop().unwrap();
+                let mut distance1: Option<usize> = None;
+                let mut distance2: Option<usize> = None;
+                let mut distance3: Option<usize> = None;
+                let file1_stripped = strip_subtitles(&file1.1);
+                let file2_stripped = strip_subtitles(&file2.1);
+                let file3_stripped = strip_subtitles(&file3.1);
+                rayon::scope(|s| {
+                    s.spawn(|_| {
+                        distance1 = Some(levenshtein::levenshtein(&file1_stripped, &file2_stripped))
                     });
-                    let distance1 = distance1.unwrap();
-                    let distance2 = distance2.unwrap();
-                    let distance3 = distance3.unwrap();
-                    let max_distance = file1.1.len().max(file2.1.len()).max(file3.1.len());
+                    s.spawn(|_| {
+                        distance2 = Some(levenshtein::levenshtein(&file2_stripped, &file3_stripped))
+                    });
+                    s.spawn(|_| {
+                        distance3 = Some(levenshtein::levenshtein(&file3_stripped, &file1_stripped))
+                    });
+                });
+                let distance1 = distance1.unwrap();
+                let distance2 = distance2.unwrap();
+                let distance3 = distance3.unwrap();
+                let max_distance = file1.1.len().max(file2.1.len()).max(file3.1.len());
 
-                    let mut distances = vec![(1, distance1), (2, distance2), (3, distance3)];
-                    distances.sort_by_key(|item| item.1);
+                let mut distances = vec![(1, distance1), (2, distance2), (3, distance3)];
+                distances.sort_by_key(|item| item.1);
 
-                    if distances[0].0 > max_distance / 2 {
-                        let _ = ret_chan_sender.send(Err(OstError::UnreliableSubtitles));
+                if distances[0].0 > max_distance / 2 {
+                    let _ = ret_chan_sender.send(Err(OstError::UnreliableSubtitles));
+                    return;
+                }
+
+                if distances[0].0 == 1 {
+                    if distances[1].0 == 2 {
+                        let _ = ret_chan_sender.send(Ok(file2));
+                        return;
+                    } else {
+                        let _ = ret_chan_sender.send(Ok(file1));
                         return;
                     }
-
-                    if distances[0].0 == 1 {
-                        if distances[1].0 == 2 {
-                            let _ = ret_chan_sender.send(Ok(file2));
-                            return;
-                        } else {
-                            let _ = ret_chan_sender.send(Ok(file1));
-                            return;
-                        }
-                    } else if distances[0].0 == 2 {
-                        if distances[1].0 == 1 {
-                            let _ = ret_chan_sender.send(Ok(file2));
-                            return;
-                        } else {
-                            let _ = ret_chan_sender.send(Ok(file3));
-                            return;
-                        }
-                    } else if distances[0].0 == 3 {
-                        if distances[1].0 == 1 {
-                            let _ = ret_chan_sender.send(Ok(file1));
-                            return;
-                        } else {
-                            let _ = ret_chan_sender.send(Ok(file3));
-                            return;
-                        }
+                } else if distances[0].0 == 2 {
+                    if distances[1].0 == 1 {
+                        let _ = ret_chan_sender.send(Ok(file2));
+                        return;
+                    } else {
+                        let _ = ret_chan_sender.send(Ok(file3));
+                        return;
                     }
-
-                    unreachable!();
+                } else if distances[0].0 == 3 {
+                    if distances[1].0 == 1 {
+                        let _ = ret_chan_sender.send(Ok(file1));
+                        return;
+                    } else {
+                        let _ = ret_chan_sender.send(Ok(file3));
+                        return;
+                    }
                 }
-                _ => unreachable!(),
-            })
+
+                unreachable!();
+            }
+            _ => unreachable!(),
         });
         let thing = ret_chan_recv.await.unwrap()?;
         return Ok(thing);

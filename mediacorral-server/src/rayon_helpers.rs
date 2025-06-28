@@ -49,7 +49,9 @@ impl<F: Fn(D) -> R + Send + Sync + 'static, D: Send + 'static, R: Send + 'static
         let process_func = Arc::clone(&self.process_func);
         rayon::spawn_fifo(move || {
             let mut receiver = receiver.lock().unwrap();
-            if let Some(data) = receiver.blocking_recv() {
+            let data = receiver.blocking_recv();
+            drop(receiver);
+            if let Some(data) = data {
                 let result = process_func(data);
                 let _ = result_sender.send(result);
             }
@@ -136,7 +138,9 @@ impl<F: Fn(D) -> R + Send + Sync + 'static, D: Send + 'static, R: Send + 'static
         let process_func = Arc::clone(&self.process_func);
         rayon::spawn_fifo(move || {
             let receiver = receiver.lock().unwrap();
-            if let Ok(data) = receiver.recv() {
+            let data = receiver.recv();
+            drop(receiver);
+            if let Ok(data) = data {
                 let result = process_func(data);
                 let _ = result_sender.send(result);
             }
