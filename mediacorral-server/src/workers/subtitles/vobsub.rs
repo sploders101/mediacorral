@@ -14,7 +14,7 @@ use thiserror::Error;
 
 use crate::rayon_helpers::BackpressuredRayon;
 
-use super::{ExtractDetailsError, ocr::Partess, process_image};
+use super::{ExtractDetailsError, Subtitle, ocr::Partess, process_image};
 
 #[derive(Error, Debug, Clone)]
 pub enum VobsubError {
@@ -47,16 +47,17 @@ impl Clone for PartessCache {
 }
 
 pub struct VobsubProcessor {
-    partess: Partess,
     rayon_pool: BackpressuredRayon<
         Box<
-            dyn Fn((u64, Vec<u8>)) -> Result<(u64, String), ExtractDetailsError>
+            dyn Fn(
+                    (u64, Option<u64>, Vec<u8>),
+                ) -> Result<(u64, Option<u64>, String), ExtractDetailsError>
                 + Send
                 + Sync
                 + 'static,
         >,
-        (u64, Vec<u8>),
-        Result<(u64, String), ExtractDetailsError>,
+        (u64, Option<u64>, Vec<u8>),
+        Result<(u64, Option<u64>, String), ExtractDetailsError>,
     >,
 }
 impl VobsubProcessor {
@@ -72,7 +73,8 @@ impl VobsubProcessor {
                 let partess = Partess::new(
                     String::from(language),
                     vec![
-                        (Variable::ClassifyEnableLearning, String::from("1")),
+                        // We want deterministic OCR for cross-referential analysis
+                        (Variable::ClassifyEnableLearning, String::from("0")),
                         (Variable::TesseditPagesegMode, String::from("6")),
                         (Variable::TesseditDoInvert, String::from("0")),
                         (Variable::TesseditCharBlacklist, String::from("|\\/`_~{}")),
@@ -85,26 +87,32 @@ impl VobsubProcessor {
         drop(cache);
         let idx_data = parse_idx(codec_data)?;
         return Ok(Self {
-            partess: partess.clone(),
             rayon_pool: BackpressuredRayon::new(
                 5,
-                Box::new(move |(timestamp, data)| {
+                Box::new(move |(timestamp, duration, data)| {
                     let frame = parse_frame(&idx_data, &data)?;
                     let image: GrayImage = process_image(frame);
                     let mut partess = partess.get()?;
                     let sub = partess.ocr_image(image)?;
-                    return Ok((timestamp, sub));
+                    return Ok((timestamp, duration, sub));
                 }),
             ),
         });
     }
-    pub fn push_frame(&self, timestamp: u64, data: Vec<u8>) {
-        self.rayon_pool.push_data((timestamp, data))
+    pub fn push_frame(&self, timestamp: u64, duration: Option<u64>, data: Vec<u8>) {
+        self.rayon_pool.push_data((timestamp, duration, data))
     }
-    pub fn collect(self) -> Result<Vec<String>, ExtractDetailsError> {
+    pub fn collect(self) -> Result<Vec<Subtitle>, ExtractDetailsError> {
         let mut subs = self.rayon_pool.try_collect()?;
-        subs.sort_by_key(|(timestamp, _sub)| *timestamp);
-        return Ok(subs.into_iter().map(|(_timestamp, sub)| sub).collect());
+        subs.sort_by_key(|(timestamp, _duration, _sub)| *timestamp);
+        return Ok(subs
+            .into_iter()
+            .map(|(timestamp, duration, data)| Subtitle {
+                timestamp,
+                duration,
+                data,
+            })
+            .collect());
     }
 }
 

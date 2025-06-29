@@ -68,23 +68,39 @@ fn get_subtitle_track(tracks: &[TrackEntry]) -> Result<Option<&TrackEntry>, Extr
     });
 }
 
+pub struct Subtitle {
+    timestamp: u64,
+    duration: Option<u64>,
+    data: String,
+}
+
 enum StContext {
-    Subrip(Vec<String>),
+    Subrip(Vec<Subtitle>),
     Vobsub(VobsubProcessor),
 }
 impl StContext {
-    fn process_frame(&mut self, frame: &mut Frame) -> Result<(), ExtractDetailsError> {
+    fn process_frame(
+        &mut self,
+        timestamp_scale: u64,
+        frame: &mut Frame,
+    ) -> Result<(), ExtractDetailsError> {
         match self {
-            Self::Subrip(subs) => subs.push(
-                String::from_utf8(std::mem::take(&mut frame.data))
+            Self::Subrip(subs) => subs.push(Subtitle {
+                timestamp: frame.timestamp * timestamp_scale,
+                duration: frame.duration.map(|duration| duration * timestamp_scale),
+                data: String::from_utf8(std::mem::take(&mut frame.data))
                     .map_err(|_| ExtractDetailsError::SubripInvalidUtf8)?,
+            }),
+            Self::Vobsub(vobs) => vobs.push_frame(
+                frame.timestamp * timestamp_scale,
+                frame.duration.map(|duration| duration * timestamp_scale),
+                std::mem::take(&mut frame.data),
             ),
-            Self::Vobsub(vobs) => vobs.push_frame(frame.timestamp, std::mem::take(&mut frame.data)),
         }
         return Ok(());
     }
 
-    fn collect(self) -> Result<Vec<String>, ExtractDetailsError> {
+    fn collect(self) -> Result<Vec<Subtitle>, ExtractDetailsError> {
         match self {
             Self::Subrip(subs) => Ok(subs),
             StContext::Vobsub(vobs) => vobs.collect(),
@@ -138,9 +154,12 @@ where
         .get() as _;
 
     let info = mkv_file.info();
-    let timestamp_scale = info.timestamp_scale().get() as f64 / 1_000_000_000.0;
-    let duration = info.duration().map(|duration| duration * timestamp_scale);
-    let progress_duration = duration.unwrap_or(f64::INFINITY);
+    let timestamp_scale = info.timestamp_scale().get();
+    let duration: u64 = match info.duration() {
+        Some(duration) => duration.round() as u64 * timestamp_scale,
+        None => return Err(ExtractDetailsError::MissingRequiredProps),
+    };
+    let duration_secs = duration / 1_000_000_000;
     if let Some(ref mut progress) = progress {
         let _ = progress.send(0.0);
     }
@@ -155,13 +174,13 @@ where
         } else if Some(frame.track) == st_track_number {
             // Process subtitles
             if let Some(ref mut st_ctx) = st_ctx {
-                st_ctx.process_frame(&mut frame)?;
+                st_ctx.process_frame(timestamp_scale, &mut frame)?;
             }
         }
 
         // Update progress
         if let Some(ref mut progress) = progress.as_mut() {
-            let progress_value = (frame.timestamp as f64 / progress_duration * 100.0).round();
+            let progress_value = (frame.timestamp as f64 / duration as f64 * 100.0).round();
             let _ = progress.send_if_modified(|old_val| {
                 if *old_val != progress_value {
                     *old_val = progress_value;
@@ -176,13 +195,54 @@ where
     return Ok(MediaDetails {
         resolution_width,
         resolution_height,
-        duration: duration.map(|i| i.round() as _).unwrap_or(duration_tracker),
+        duration: duration_secs as u32,
         video_hash: vid_hasher.compute().to_vec(),
         subtitles: match st_ctx {
-            Some(st_ctx) => Some(st_ctx.collect()?.join("\n")),
+            Some(st_ctx) => Some(format_subtitles_srt(st_ctx.collect()?, duration)),
             None => None,
         },
     });
+}
+
+/// Formats an iterator of subtitles as SRT text
+pub fn format_subtitles_srt(
+    subtitles: impl IntoIterator<Item = Subtitle>,
+    duration: u64,
+) -> String {
+    let mut subtitles = subtitles.into_iter().enumerate().peekable();
+    let mut formatted = String::new();
+    while let Some((seq, subtitle)) = subtitles.next() {
+        if seq != 0 {
+            formatted.push_str("\n\n");
+        }
+        formatted.push_str(&(seq + 1).to_string());
+        let start_time = subtitle.timestamp;
+        let end_time = match subtitle.duration {
+            Some(duration) => start_time + duration,
+            None => match subtitles.peek() {
+                Some((_i, subtitle)) => subtitle.timestamp,
+                None => duration,
+            },
+        };
+        formatted.push_str(&format!(
+            "\n{} --> {}\n",
+            format_srt_timestamp(start_time),
+            format_srt_timestamp(end_time)
+        ));
+        formatted.push_str(&subtitle.data);
+    }
+    return formatted + "\n";
+}
+
+fn format_srt_timestamp(timestamp: u64) -> String {
+    let timestamp_ms = timestamp / 1000;
+    let ms = timestamp_ms % 1000;
+    let timestamp_s = timestamp_ms / 1000;
+    let s = timestamp_s % 60;
+    let timestamp_m = timestamp_s / 60;
+    let m = timestamp_m % 60;
+    let timestamp_h = timestamp_m / 60;
+    format!("{timestamp_h:02}:{m:02}:{s:02},{ms:03}")
 }
 
 pub fn process_image(image: RgbaImage) -> GrayImage {
