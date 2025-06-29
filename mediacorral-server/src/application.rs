@@ -35,7 +35,7 @@ use crate::{
     },
     managers::{
         exports::{ExportsDirError, ExportsManager},
-        opensubtitles::{OpenSubtitles, OstError},
+        opensubtitles::{OpenSubtitles, OstError, strip_subtitles},
         tmdb::{TmdbError, TmdbImporter},
     },
     rayon_helpers::BackpressuredAsyncRayon,
@@ -325,7 +325,10 @@ impl Application {
                     id: None,
                     video_file_id: subs.video_file_id,
                     ost_download_id: subs.ost_download_id,
-                    distance: levenshtein::levenshtein(&subs.ost_subs, &subs.disc_subs) as _,
+                    distance: levenshtein::levenshtein(
+                        &strip_subtitles(&subs.ost_subs),
+                        &strip_subtitles(&subs.disc_subs),
+                    ) as _,
                     max_distance: subs.ost_subs.len().max(subs.disc_subs.len()) as _,
                 });
                 for episode_id in episode_ids.episode_tmdb_ids {
