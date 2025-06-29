@@ -1,13 +1,26 @@
+<script lang="ts">
+export interface ProcessedVideoItem {
+	id: bigint;
+	runtime: string;
+	resolution: string;
+	matches: MatchInfoItem[];
+	likelyMatch: MatchInfoItem | undefined;
+}
+</script>
+
 <script lang="ts" setup>
 import type { SubmitData as MatchSubmitData } from "@/components/MatchSelector.vue";
-import type {
-	GetJobCatalogueInfoResponse,
-	Movie,
-	RipJob,
-	TvEpisode,
-	TvSeason,
-	TvShow,
-	VideoFile,
+import {
+	VideoType,
+	type GetJobCatalogueInfoResponse,
+	type MatchInfoItem,
+	type Movie,
+	type OstDownloadsItem,
+	type RipJob,
+	type TvEpisode,
+	type TvSeason,
+	type TvShow,
+	type VideoFile,
 } from "@/generated/mediacorral/server/v1/api";
 import { SearchType } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
@@ -21,6 +34,8 @@ interface MetaCache {
 	tvEpisodes: Map<bigint, TvEpisode>;
 }
 
+const matchThreshold = ref(25);
+
 const loading = ref(false);
 const route = useRoute("/catalogue/[id]");
 const rpc = inject(injectKeys.rpc)!;
@@ -31,6 +46,14 @@ const cache = reactive<MetaCache>({
 	tvShows: new Map(),
 	tvSeasons: new Map(),
 	tvEpisodes: new Map(),
+});
+const ostFilesCache = computed(() => {
+	const ostFiles = new Map<bigint, OstDownloadsItem>();
+	if (catInfo.value === undefined) return ostFiles;
+	for (const file of catInfo.value.ostSubtitleFiles) {
+		ostFiles.set(file.id, file);
+	}
+	return ostFiles;
 });
 
 watch(() => route.params.id, refreshData, { immediate: true });
@@ -89,16 +112,55 @@ async function refreshData() {
 	loading.value = false;
 }
 
-const tableItems = computed(() => {
+const tableItems = computed<ProcessedVideoItem[]>(() => {
 	if (jobInfo.value === undefined || catInfo.value === undefined) return [];
 
-	return catInfo.value.videoFiles.map((videoFile) => ({
-		id: videoFile.id,
-		runtime:
-			videoFile.length === undefined ? "?" : formatRuntime(videoFile.length),
-		resolution: formatResolution(videoFile),
-	}));
+	return catInfo.value.videoFiles.map((videoFile) => {
+		const runtime =
+			videoFile.length === undefined ? "?" : formatRuntime(videoFile.length);
+
+		const matches = catInfo.value!.matches.filter(
+			(match) => match.videoFileId === videoFile.id
+		);
+		matches.sort(
+			(a, b) => a.distance / a.maxDistance - b.distance / b.maxDistance
+		);
+
+		const likelyMatches = matches.filter(
+			(match) => match.distance / match.maxDistance < matchThreshold.value / 100
+		);
+
+		return {
+			id: videoFile.id,
+			runtime,
+			resolution: formatResolution(videoFile),
+			matches,
+			likelyMatch: likelyMatches.length === 1 ? likelyMatches[0] : undefined,
+		};
+	});
 });
+
+function formatMatch(match: MatchInfoItem | undefined) {
+	if (match === undefined) return "";
+	const similarity =
+		Math.round((1 - match.distance / match.maxDistance) * 1000) / 10;
+	const ostFile = ostFilesCache.value.get(match.ostDownloadId);
+	if (ostFile === undefined) return "???";
+	switch (ostFile.videoType) {
+		case VideoType.MOVIE:
+			const movie = cache.movies.get(ostFile.matchId);
+			if (movie === undefined) return "???";
+			return movie.title;
+		case VideoType.TV_EPISODE:
+			const tvEpisode = cache.tvEpisodes.get(ostFile.matchId);
+			if (tvEpisode === undefined) return "???";
+			const season = cache.tvSeasons.get(tvEpisode.tvSeasonId);
+			if (season === undefined) return "???";
+			return `(${similarity}%) [S${season.seasonNumber}E${tvEpisode.episodeNumber}] ${tvEpisode.title}`;
+			break;
+	}
+	return "???";
+}
 
 async function renameJob() {
 	if (jobInfo.value === undefined) return;
@@ -200,14 +262,34 @@ async function suspectContents(data: MatchSubmitData) {
 						{ title: 'ID', value: 'id', sortable: false },
 						{ title: 'Runtime', value: 'runtime', sortable: false },
 						{ title: 'Resolution', value: 'resolution', sortable: false },
+						{
+							title: 'Likely Match',
+							key: 'likelyMatch',
+							value: (item) => formatMatch(item.likelyMatch),
+							sortable: false,
+						},
 					]"
 					hide-default-footer
 				/>
 			</v-card-text>
 			<v-card-actions>
-				<v-btn :disabled="loading" @click="suspectingContents = true"
-					>Add suspicion</v-btn
-				>
+				<v-btn :disabled="loading" @click="suspectingContents = true">
+					Add suspicion
+				</v-btn>
+				<v-spacer />
+				<v-number-input
+					:reverse="false"
+					density="compact"
+					controlVariant="split"
+					label="Match Threshold"
+					inset
+					variant="solo-filled"
+					:min="0"
+					:max="100"
+					max-width="13rem"
+					hide-details
+					v-model="matchThreshold"
+				/>
 			</v-card-actions>
 		</v-card>
 	</div>
