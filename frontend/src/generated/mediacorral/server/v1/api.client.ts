@@ -8,6 +8,8 @@ import type { GetJobCatalogueInfoResponse } from "./api";
 import type { GetJobCatalogueInfoRequest } from "./api";
 import type { GetUntaggedJobsResponse } from "./api";
 import type { GetUntaggedJobsRequest } from "./api";
+import type { SuspectJobResponse } from "./api";
+import type { SuspectJobRequest } from "./api";
 import type { RenameJobResponse } from "./api";
 import type { RenameJobRequest } from "./api";
 import type { GetJobInfoResponse } from "./api";
@@ -241,6 +243,12 @@ export interface ICoordinatorApiServiceClient {
      * @generated from protobuf rpc: RenameJob
      */
     renameJob(input: RenameJobRequest, options?: RpcOptions): UnaryCall<RenameJobRequest, RenameJobResponse>;
+    /**
+     * Adds a suspicion to a job
+     *
+     * @generated from protobuf rpc: SuspectJob
+     */
+    suspectJob(input: SuspectJobRequest, options?: RpcOptions): UnaryCall<SuspectJobRequest, SuspectJobResponse>;
     /**
      * Gets a list of jobs containing untagged files
      *
@@ -517,12 +525,21 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
         return stackIntercept<RenameJobRequest, RenameJobResponse>("unary", this._transport, method, opt, input);
     }
     /**
+     * Adds a suspicion to a job
+     *
+     * @generated from protobuf rpc: SuspectJob
+     */
+    suspectJob(input: SuspectJobRequest, options?: RpcOptions): UnaryCall<SuspectJobRequest, SuspectJobResponse> {
+        const method = this.methods[28], opt = this._transport.mergeOptions(options);
+        return stackIntercept<SuspectJobRequest, SuspectJobResponse>("unary", this._transport, method, opt, input);
+    }
+    /**
      * Gets a list of jobs containing untagged files
      *
      * @generated from protobuf rpc: GetUntaggedJobs
      */
     getUntaggedJobs(input: GetUntaggedJobsRequest, options?: RpcOptions): UnaryCall<GetUntaggedJobsRequest, GetUntaggedJobsResponse> {
-        const method = this.methods[28], opt = this._transport.mergeOptions(options);
+        const method = this.methods[29], opt = this._transport.mergeOptions(options);
         return stackIntercept<GetUntaggedJobsRequest, GetUntaggedJobsResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -531,7 +548,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: GetJobCatalogueInfo
      */
     getJobCatalogueInfo(input: GetJobCatalogueInfoRequest, options?: RpcOptions): UnaryCall<GetJobCatalogueInfoRequest, GetJobCatalogueInfoResponse> {
-        const method = this.methods[29], opt = this._transport.mergeOptions(options);
+        const method = this.methods[30], opt = this._transport.mergeOptions(options);
         return stackIntercept<GetJobCatalogueInfoRequest, GetJobCatalogueInfoResponse>("unary", this._transport, method, opt, input);
     }
 }

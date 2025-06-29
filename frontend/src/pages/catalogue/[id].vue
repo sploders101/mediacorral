@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import type { SubmitData as MatchSubmitData } from "@/components/MatchSelector.vue";
 import type {
 	GetJobCatalogueInfoResponse,
 	Movie,
@@ -8,8 +9,10 @@ import type {
 	TvShow,
 	VideoFile,
 } from "@/generated/mediacorral/server/v1/api";
+import { SearchType } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
 import { formatRuntime } from "@/scripts/utils";
+import type { RefSymbol } from "@vue/reactivity";
 
 interface MetaCache {
 	movies: Map<bigint, Movie>;
@@ -21,7 +24,6 @@ interface MetaCache {
 const loading = ref(false);
 const route = useRoute("/catalogue/[id]");
 const rpc = inject(injectKeys.rpc)!;
-const data = ref("");
 const jobInfo = ref<RipJob | undefined>();
 const catInfo = ref<GetJobCatalogueInfoResponse>();
 const cache = reactive<MetaCache>({
@@ -125,6 +127,48 @@ function formatResolution(file: VideoFile) {
 			return formatted;
 	}
 }
+
+// TODO: mdi-cog-play: reprocess
+
+const suspectingContents = ref(false);
+async function suspectContents(data: MatchSubmitData) {
+	if (jobInfo.value === undefined) return;
+	suspectingContents.value = false;
+	loading.value = true;
+	switch (data.type) {
+		case SearchType.Movie:
+			if (data.movie.tmdbId === undefined)
+				throw new Error("Cannot suspect movie that was created manually");
+			await rpc.suspectJob({
+				jobId: jobInfo.value.id,
+				suspicion: {
+					suspectedContents: {
+						oneofKind: "movie",
+						movie: {
+							tmdbId: data.movie.tmdbId,
+						},
+					},
+				},
+			});
+			break;
+		case SearchType.TvSeries:
+			if (data.episodes.some((episode) => episode.tmdbId === undefined))
+				throw new Error("Cannot suspect tv show that was created manually");
+			await rpc.suspectJob({
+				jobId: jobInfo.value.id,
+				suspicion: {
+					suspectedContents: {
+						oneofKind: "tvEpisodes",
+						tvEpisodes: {
+							episodeTmdbIds: data.episodes.map((episode) => episode.tmdbId!),
+						},
+					},
+				},
+			});
+	}
+	await refreshData();
+	loading.value = false;
+}
 </script>
 
 <template>
@@ -160,9 +204,20 @@ function formatResolution(file: VideoFile) {
 					hide-default-footer
 				/>
 			</v-card-text>
+			<v-card-actions>
+				<v-btn :disabled="loading" @click="suspectingContents = true"
+					>Add suspicion</v-btn
+				>
+			</v-card-actions>
 		</v-card>
 	</div>
-	<pre>{{ data }}</pre>
+	<v-dialog v-model="suspectingContents">
+		<MatchSelector
+			multiple-episodes
+			@cancel="suspectingContents = false"
+			@submit="suspectContents"
+		/>
+	</v-dialog>
 </template>
 
 <style lang="scss"></style>
