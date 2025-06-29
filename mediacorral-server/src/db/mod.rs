@@ -922,6 +922,24 @@ pub async fn get_ost_download_items_by_match(
     return Ok(results);
 }
 
+pub async fn clear_match_info_for_job(db: &Db, job_id: i64) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "
+            DELETE FROM match_info
+            WHERE video_file_id IN (
+                SELECT id
+                FROM video_files
+                WHERE
+                    rip_job = ?
+            )
+        ",
+    )
+    .bind(job_id)
+    .execute(db)
+    .await?;
+    return Ok(());
+}
+
 pub async fn insert_match_info_item(
     db: &Db,
     match_info_item: &MatchInfoItem,

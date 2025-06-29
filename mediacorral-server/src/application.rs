@@ -363,6 +363,7 @@ impl Application {
                     }
                 }
                 let mut reader_stream = work_queue.to_stream();
+                db::clear_match_info_for_job(&self.db, job_id).await?;
                 while let Some(item) = reader_stream.next().await {
                     db::insert_match_info_item(&self.db, &item).await?;
                 }
