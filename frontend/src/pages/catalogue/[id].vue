@@ -197,7 +197,9 @@ async function renameJob() {
 function formatResolution(file: VideoFile) {
 	const formatted = `${file.resolutionWidth}x${file.resolutionHeight}`;
 	switch (formatted) {
-		case "720x480":
+		case "853x480":
+			return "480p";
+		case "1280x720":
 			return "720p";
 		case "1920x1080":
 			return "1080p";
