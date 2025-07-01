@@ -22,6 +22,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
 	cancel: [];
+	input: [SubmitData];
 	submit: [SubmitData];
 }>();
 
@@ -219,17 +220,22 @@ function cancel() {
 	tvEpisodeSelection.value = undefined;
 	emit("cancel");
 }
-function submit() {
+watch(
+	[() => movieSelection.value, () => tvEpisodeSelection.value],
+	() => submit("input"),
+	{ deep: true }
+);
+function submit(event: "submit" | "input") {
 	if (!isValid.value) return;
 	switch (mediaType.value) {
 		case SearchType.Movie:
-			emit("submit", {
+			emit(event as any, {
 				type: SearchType.Movie,
 				movie: movieSelection.value!,
 			});
 			break;
 		case SearchType.TvSeries:
-			emit("submit", {
+			emit(event as any, {
 				type: SearchType.TvSeries,
 				episodes: tvEpisodeSelection.value!,
 			});
@@ -365,7 +371,9 @@ function submit() {
 		<v-card-actions>
 			<v-btn color="red" @click="cancel()">Cancel</v-btn>
 			<v-spacer />
-			<v-btn color="green" @click="submit()" :disabled="!isValid">Submit</v-btn>
+			<v-btn color="green" @click="submit('submit')" :disabled="!isValid">
+				Submit
+			</v-btn>
 		</v-card-actions>
 	</v-card>
 	<v-dialog v-model="importDialog" eager>
