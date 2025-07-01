@@ -70,7 +70,7 @@ watch(
 		videoSubtitles.value = response.subtitles;
 		console.log({
 			...toRaw(props.videoFile),
-			likelyMatch: toRaw(props.videoFile.likelyMatch),
+			likelyMatch: toRaw(props.videoFile.likelyOstMatch),
 			matches: props.videoFile.matches.map(toRaw),
 		});
 	},
@@ -120,11 +120,11 @@ watch(
 	}
 );
 watch(
-	[() => props.videoFile.id, props.videoFile.likelyMatch],
+	[() => props.videoFile.id, props.videoFile.likelyOstMatch],
 	() => {
-		if (props.videoFile.likelyMatch === undefined) return;
-		console.log(props.videoFile.likelyMatch.videoFileId);
-		const likelyOstId = props.videoFile.likelyMatch.ostDownloadId;
+		if (props.videoFile.likelyOstMatch === undefined) return;
+		console.log(props.videoFile.likelyOstMatch.videoFileId);
+		const likelyOstId = props.videoFile.likelyOstMatch.ostDownloadId;
 		const likelyOst = props.catInfo.ostSubtitleFiles.find(
 			(subtitle) => subtitle.id === likelyOstId
 		);

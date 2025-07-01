@@ -4,8 +4,8 @@ export interface ProcessedVideoItem {
 	runtime: string;
 	resolution: string;
 	matches: MatchInfoItem[];
-	likelyMatchCount: number;
-	likelyMatch: MatchInfoItem | undefined;
+	likelyOstMatchCount: number;
+	likelyOstMatch: MatchInfoItem | undefined;
 }
 </script>
 
@@ -267,7 +267,7 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 							title: 'Likely Match',
 							key: 'likelyMatch',
 							value: (item) =>
-								formatMatch(item.likelyMatchCount, item.likelyMatch),
+								formatMatch(item.likelyOstMatchCount, item.likelyOstMatch),
 							sortable: false,
 						},
 						{ title: 'Actions', key: 'actions', sortable: false },
