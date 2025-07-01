@@ -16,18 +16,13 @@ import {
 	VideoType,
 	type GetJobCatalogueInfoResponse,
 	type MatchInfoItem,
-	type Movie,
 	type OstDownloadsItem,
 	type RipJob,
-	type TvEpisode,
-	type TvSeason,
-	type TvShow,
 	type VideoFile,
 } from "@/generated/mediacorral/server/v1/api";
 import { SearchType, type MetaCache } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
 import { formatRuntime } from "@/scripts/utils";
-import type { RefSymbol } from "@vue/reactivity";
 
 const matchThreshold = ref(75);
 
@@ -175,7 +170,6 @@ function formatMatch(matchCount: number, match: MatchInfoItem | undefined) {
 			const season = cache.tvSeasons.get(tvEpisode.tvSeasonId);
 			if (season === undefined) return "???";
 			return `(${similarity}%) [S${season.seasonNumber}E${tvEpisode.episodeNumber}] ${tvEpisode.title}`;
-			break;
 	}
 	return "???";
 }
