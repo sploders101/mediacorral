@@ -127,13 +127,32 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 				match.distance / match.maxDistance < 1 - matchThreshold.value / 100
 		);
 
+		let currentMatch = "";
+		switch (videoFile.videoType) {
+			case VideoType.MOVIE:
+				const movie = cache.movies.get(videoFile.matchId!);
+				if (movie === undefined) break;
+				currentMatch = movie.title;
+				if (movie.releaseYear !== undefined)
+					currentMatch += ` (${movie.releaseYear})`;
+				break;
+			case VideoType.TV_EPISODE:
+				const tvEpisode = cache.tvEpisodes.get(videoFile.matchId!);
+				if (tvEpisode === undefined) break;
+				const tvSeason = cache.tvSeasons.get(tvEpisode.tvSeasonId);
+				if (tvSeason === undefined) break;
+				currentMatch = `S${tvSeason.seasonNumber}E${tvEpisode.episodeNumber} - ${tvEpisode.title}`;
+				break;
+		}
+
 		return {
 			id: videoFile.id,
 			runtime,
 			resolution: formatResolution(videoFile),
 			matches,
-			likelyMatchCount: likelyMatches.length,
-			likelyMatch: likelyMatches.length === 1 ? likelyMatches[0] : undefined,
+			currentMatch,
+			likelyOstMatchCount: likelyMatches.length,
+			likelyOstMatch: likelyMatches.length === 1 ? likelyMatches[0] : undefined,
 		};
 	});
 });
@@ -188,8 +207,6 @@ function formatResolution(file: VideoFile) {
 			return formatted;
 	}
 }
-
-// TODO: mdi-cog-play: reprocess
 
 const suspectingContents = ref(false);
 async function suspectContents(data: MatchSubmitData) {
@@ -270,6 +287,11 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 								formatMatch(item.likelyOstMatchCount, item.likelyOstMatch),
 							sortable: false,
 						},
+						{
+							title: 'Current Match',
+							key: 'currentMatch',
+							sortable: false,
+						},
 						{ title: 'Actions', key: 'actions', sortable: false },
 					]"
 					hide-default-footer
@@ -314,10 +336,14 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 		<ManualMatch
 			v-if="manualMatchItem && catInfo"
 			@cancel="manualMatchItem = undefined"
+			@submitted="
+				manualMatchItem = undefined;
+				refreshData();
+			"
 			:catInfo="catInfo"
 			:videoFile="manualMatchItem"
 		/>
-		<v-skeleton-loader v-else type="card"/>
+		<v-skeleton-loader v-else type="card" />
 	</v-dialog>
 </template>
 

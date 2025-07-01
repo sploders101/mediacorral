@@ -4,7 +4,6 @@ import {
 	Movie,
 	TvEpisode,
 	VideoType,
-	type VideoFile,
 } from "@/generated/mediacorral/server/v1/api";
 import MatchSelector, { type SubmitData } from "./MatchSelector.vue";
 import { SearchType } from "@/scripts/commonTypes";
@@ -33,10 +32,12 @@ const props = defineProps<{
 	videoFile: ProcessedVideoItem;
 }>();
 const emits = defineEmits<{
-	cancel: [],
+	cancel: [];
+	submitted: [];
 }>();
 
 async function matchItem(details: SubmitData) {
+	matchManually.value = false;
 	switch (details.type) {
 		case SearchType.Movie:
 			await rpc.tagFile({
@@ -44,6 +45,7 @@ async function matchItem(details: SubmitData) {
 				videoType: VideoType.MOVIE,
 				matchId: details.movie.id,
 			});
+			emits("submitted");
 			break;
 		case SearchType.TvSeries:
 			await rpc.tagFile({
@@ -51,6 +53,7 @@ async function matchItem(details: SubmitData) {
 				videoType: VideoType.TV_EPISODE,
 				matchId: details.episodes[0].id,
 			});
+			emits("submitted");
 			break;
 	}
 }
@@ -136,6 +139,27 @@ watch(
 	},
 	{ immediate: true }
 );
+async function selectMatch() {
+	if (matchSelection.value === undefined) return;
+	switch (props.catInfo.suspectedContents?.suspectedContents.oneofKind) {
+		case "movie":
+			await rpc.tagFile({
+				file: props.videoFile.id,
+				matchId: matchSelection.value,
+				videoType: VideoType.MOVIE,
+			});
+			emits("submitted");
+			break;
+		case "tvEpisodes":
+			await rpc.tagFile({
+				file: props.videoFile.id,
+				matchId: matchSelection.value,
+				videoType: VideoType.TV_EPISODE,
+			});
+			emits("submitted");
+			break;
+	}
+}
 
 const matchManually = ref(false);
 </script>
@@ -197,7 +221,7 @@ const matchManually = ref(false);
 		<v-card-actions>
 			<v-btn color="red" @click="emits('cancel')">Cancel</v-btn>
 			<v-spacer />
-			<v-btn color="green">Confirm</v-btn>
+			<v-btn color="green" @click="selectMatch">Confirm</v-btn>
 		</v-card-actions>
 	</v-card>
 	<v-dialog v-model="matchManually">
