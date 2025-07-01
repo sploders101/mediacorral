@@ -313,9 +313,11 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 	>
 		<ManualMatch
 			v-if="manualMatchItem && catInfo"
+			@cancel="manualMatchItem = undefined"
 			:catInfo="catInfo"
 			:videoFile="manualMatchItem"
 		/>
+		<v-skeleton-loader v-else type="card"/>
 	</v-dialog>
 </template>
 

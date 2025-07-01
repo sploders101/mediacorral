@@ -32,6 +32,9 @@ const props = defineProps<{
 	catInfo: GetJobCatalogueInfoResponse;
 	videoFile: ProcessedVideoItem;
 }>();
+const emits = defineEmits<{
+	cancel: [],
+}>();
 
 async function matchItem(details: SubmitData) {
 	switch (details.type) {
@@ -192,7 +195,7 @@ const matchManually = ref(false);
 		</v-card-text>
 		<v-divider />
 		<v-card-actions>
-			<v-btn color="red">Cancel</v-btn>
+			<v-btn color="red" @click="emits('cancel')">Cancel</v-btn>
 			<v-spacer />
 			<v-btn color="green">Confirm</v-btn>
 		</v-card-actions>
