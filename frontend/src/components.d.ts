@@ -8,6 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     DriveMonitor: typeof import('./components/DriveMonitor.vue')['default']
+    ManualMatch: typeof import('./components/ManualMatch.vue')['default']
     MatchSelector: typeof import('./components/MatchSelector.vue')['default']
     MetadataImport: typeof import('./components/MetadataImport.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

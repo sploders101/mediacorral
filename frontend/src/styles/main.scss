@@ -25,6 +25,10 @@ div.v-overlay__scrim {
 	align-items: center;
 }
 
+.of-auto {
+	overflow: auto;
+}
+
 .flex {
 	display: flex;
 }
@@ -34,4 +38,8 @@ div.v-overlay__scrim {
 
 .padding-small {
 	padding: 1rem;
+}
+
+.pre-wrap {
+	white-space: pre-wrap;
 }

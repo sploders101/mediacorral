@@ -4,11 +4,13 @@ export interface ProcessedVideoItem {
 	runtime: string;
 	resolution: string;
 	matches: MatchInfoItem[];
+	likelyMatchCount: number;
 	likelyMatch: MatchInfoItem | undefined;
 }
 </script>
 
 <script lang="ts" setup>
+import ManualMatch from "@/components/ManualMatch.vue";
 import type { SubmitData as MatchSubmitData } from "@/components/MatchSelector.vue";
 import {
 	VideoType,
@@ -22,19 +24,12 @@ import {
 	type TvShow,
 	type VideoFile,
 } from "@/generated/mediacorral/server/v1/api";
-import { SearchType } from "@/scripts/commonTypes";
+import { SearchType, type MetaCache } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
 import { formatRuntime } from "@/scripts/utils";
 import type { RefSymbol } from "@vue/reactivity";
 
-interface MetaCache {
-	movies: Map<bigint, Movie>;
-	tvShows: Map<bigint, TvShow>;
-	tvSeasons: Map<bigint, TvSeason>;
-	tvEpisodes: Map<bigint, TvEpisode>;
-}
-
-const matchThreshold = ref(25);
+const matchThreshold = ref(75);
 
 const loading = ref(false);
 const route = useRoute("/catalogue/[id]");
@@ -47,6 +42,7 @@ const cache = reactive<MetaCache>({
 	tvSeasons: new Map(),
 	tvEpisodes: new Map(),
 });
+provide(injectKeys.metaCache, cache);
 const ostFilesCache = computed(() => {
 	const ostFiles = new Map<bigint, OstDownloadsItem>();
 	if (catInfo.value === undefined) return ostFiles;
@@ -127,7 +123,8 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 		);
 
 		const likelyMatches = matches.filter(
-			(match) => match.distance / match.maxDistance < matchThreshold.value / 100
+			(match) =>
+				match.distance / match.maxDistance < 1 - matchThreshold.value / 100
 		);
 
 		return {
@@ -135,12 +132,14 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 			runtime,
 			resolution: formatResolution(videoFile),
 			matches,
+			likelyMatchCount: likelyMatches.length,
 			likelyMatch: likelyMatches.length === 1 ? likelyMatches[0] : undefined,
 		};
 	});
 });
 
-function formatMatch(match: MatchInfoItem | undefined) {
+function formatMatch(matchCount: number, match: MatchInfoItem | undefined) {
+	if (matchCount > 1) return "Multiple matches";
 	if (match === undefined) return "";
 	const similarity =
 		Math.round((1 - match.distance / match.maxDistance) * 1000) / 10;
@@ -231,6 +230,8 @@ async function suspectContents(data: MatchSubmitData) {
 	await refreshData();
 	loading.value = false;
 }
+
+const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 </script>
 
 <template>
@@ -265,12 +266,18 @@ async function suspectContents(data: MatchSubmitData) {
 						{
 							title: 'Likely Match',
 							key: 'likelyMatch',
-							value: (item) => formatMatch(item.likelyMatch),
+							value: (item) =>
+								formatMatch(item.likelyMatchCount, item.likelyMatch),
 							sortable: false,
 						},
+						{ title: 'Actions', key: 'actions', sortable: false },
 					]"
 					hide-default-footer
-				/>
+				>
+					<template v-slot:item.actions="{ item }">
+						<v-btn @click="manualMatchItem = item" flat>Match</v-btn>
+					</template>
+				</v-data-table>
 			</v-card-text>
 			<v-card-actions>
 				<v-btn :disabled="loading" @click="suspectingContents = true">
@@ -298,6 +305,16 @@ async function suspectContents(data: MatchSubmitData) {
 			multiple-episodes
 			@cancel="suspectingContents = false"
 			@submit="suspectContents"
+		/>
+	</v-dialog>
+	<v-dialog
+		:modelValue="!!manualMatchItem"
+		@update:modelValue="if ($event === false) manualMatchItem = undefined;"
+	>
+		<ManualMatch
+			v-if="manualMatchItem && catInfo"
+			:catInfo="catInfo"
+			:videoFile="manualMatchItem"
 		/>
 	</v-dialog>
 </template>
