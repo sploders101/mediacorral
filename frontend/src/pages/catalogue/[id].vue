@@ -122,7 +122,7 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 			(a, b) => a.distance / a.maxDistance - b.distance / b.maxDistance
 		);
 
-		const likelyMatches = matches.filter(
+		const likelyOstMatches = matches.filter(
 			(match) =>
 				match.distance / match.maxDistance < 1 - matchThreshold.value / 100
 		);
@@ -151,8 +151,8 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 			resolution: formatResolution(videoFile),
 			matches,
 			currentMatch,
-			likelyOstMatchCount: likelyMatches.length,
-			likelyOstMatch: likelyMatches.length === 1 ? likelyMatches[0] : undefined,
+			likelyOstMatchCount: likelyOstMatches.length,
+			likelyOstMatch: likelyOstMatches.length === 1 ? likelyOstMatches[0] : undefined,
 		};
 	});
 });
@@ -283,8 +283,8 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 						{ title: 'Runtime', value: 'runtime', sortable: false },
 						{ title: 'Resolution', value: 'resolution', sortable: false },
 						{
-							title: 'Likely Match',
-							key: 'likelyMatch',
+							title: 'Suggested Match',
+							key: 'likelyOstMatch',
 							value: (item) =>
 								formatMatch(item.likelyOstMatchCount, item.likelyOstMatch),
 							sortable: false,
