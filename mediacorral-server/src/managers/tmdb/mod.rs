@@ -209,6 +209,7 @@ impl TmdbImporter {
                     .release_date
                     .and_then(|item| item.split('-').next().map(String::from)),
                 description: response.overview,
+                runtime: response.runtime,
             },
         )
         .await?;
@@ -323,6 +324,7 @@ impl TmdbImporter {
                         thumbnail_blob,
                         title: episode.name,
                         description: episode.overview,
+                        runtime: episode.runtime,
                     },
                 )
                 .await?;

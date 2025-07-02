@@ -162,7 +162,7 @@ pub struct TmdbMovieDetails {
     pub overview: Option<String>,
     pub poster_path: Option<String>,
     pub release_date: Option<String>,
-    pub runtime: u32,
+    pub runtime: Option<u32>,
     pub title: Option<String>,
     pub name: Option<String>,
 }

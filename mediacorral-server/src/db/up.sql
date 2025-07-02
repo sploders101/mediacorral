@@ -5,7 +5,8 @@ CREATE TABLE `movies`(
 	`poster_blob` INTEGER,
 	`title` TEXT NOT NULL,
 	`release_year` TEXT,
-	`description` TEXT
+	`description` TEXT,
+	`runtime` INTEGER
 );
 
 -- Contains information about a special feature from a movie
@@ -14,7 +15,8 @@ CREATE TABLE `movies_special_features`(
 	`movie_id` INTEGER NOT NULL,
 	`thumbnail_blob` INTEGER,
 	`title` TEXT NOT NULL,
-	`description` TEXT
+	`description` TEXT,
+	`runtime` INTEGER
 );
 
 -- Contains a cache of TMDB data for a TV show
@@ -48,7 +50,8 @@ CREATE TABLE `tv_episodes`(
 	`episode_number` INTEGER NOT NULL,
 	`thumbnail_blob` INTEGER,
 	`title` TEXT NOT NULL,
-	`description` TEXT
+	`description` TEXT,
+	`runtime` INTEGER
 );
 CREATE UNIQUE INDEX tv_episode_unique ON tv_episodes (tv_season_id, episode_number);
 

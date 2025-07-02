@@ -13,6 +13,7 @@ pub struct MoviesItem {
     pub title: String,
     pub release_year: Option<String>,
     pub description: Option<String>,
+    pub runtime: Option<u32>,
 }
 impl Into<proto::Movie> for MoviesItem {
     fn into(self) -> proto::Movie {
@@ -23,6 +24,7 @@ impl Into<proto::Movie> for MoviesItem {
             title: self.title,
             release_year: self.release_year,
             description: self.description,
+            runtime: self.runtime,
         };
     }
 }
@@ -34,6 +36,7 @@ pub struct MoviesSpecialFeaturesItem {
     pub thumbnail_blob: Option<i64>,
     pub title: String,
     pub description: Option<String>,
+    pub runtime: Option<u32>,
 }
 
 // TV Show Metadata
@@ -94,6 +97,7 @@ pub struct TvEpisodesItem {
     pub thumbnail_blob: Option<i64>,
     pub title: String,
     pub description: Option<String>,
+    pub runtime: Option<u32>,
 }
 impl Into<proto::TvEpisode> for TvEpisodesItem {
     fn into(self) -> proto::TvEpisode {
@@ -106,6 +110,7 @@ impl Into<proto::TvEpisode> for TvEpisodesItem {
             thumbnail_blob: self.thumbnail_blob,
             title: self.title,
             description: self.description,
+            runtime: self.runtime,
         };
     }
 }

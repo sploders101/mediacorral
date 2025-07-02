@@ -253,6 +253,7 @@ message Movie {
   string title = 4;
   optional string release_year = 5;
   optional string description = 6;
+  optional uint32 runtime = 7;
 }
 
 message GetMovieRequest {
@@ -315,6 +316,7 @@ message TvEpisode {
   optional int64 thumbnail_blob = 6;
   string title = 7;
   optional string description = 8;
+  optional uint32 runtime = 9;
 }
 
 message GetTvShowRequest {

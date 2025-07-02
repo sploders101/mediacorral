@@ -59,7 +59,7 @@ message TmdbMovieDetails {
   optional string poster_path = 4;
   optional string release_date = 5;
   optional string overview = 6;
-  uint32 runtime = 7;
+  optional uint32 runtime = 7;
 }
 
 message TmdbTvCreator {
