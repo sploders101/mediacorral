@@ -26,6 +26,7 @@ function getRipStatus(job: RipJob) {
 <template>
 	<v-data-table-virtual
 		:items="rows"
+		items-per-page="-1"
 		:headers="[
 			{ title: 'ID', value: 'id' },
 			{

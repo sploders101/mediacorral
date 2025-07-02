@@ -272,6 +272,7 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 				<v-data-table
 					:loading="loading"
 					:items="tableItems"
+					items-per-page="-1"
 					:headers="[
 						{ title: 'ID', value: 'id', sortable: false },
 						{ title: 'Runtime', value: 'runtime', sortable: false },
