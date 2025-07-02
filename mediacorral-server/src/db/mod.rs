@@ -297,7 +297,8 @@ pub async fn get_tv_episodes(db: &Db, season_id: i64) -> Result<Vec<TvEpisodesIt
                 episode_number,
                 thumbnail_blob,
                 title,
-                description
+                description,
+                runtime
             FROM tv_episodes
             WHERE tv_season_id = ?
             LIMIT 1000
@@ -360,7 +361,8 @@ pub async fn get_tv_episode_by_id(db: &Db, episode_id: i64) -> Result<TvEpisodes
                 episode_number,
                 thumbnail_blob,
                 title,
-                description
+                description,
+                runtime
             FROM tv_episodes
             WHERE id = ?
             LIMIT 1
@@ -385,7 +387,8 @@ pub async fn get_tv_episode_by_tmdb_id(
                 episode_number,
                 thumbnail_blob,
                 title,
-                description
+                description,
+                runtime
             FROM tv_episodes
             WHERE tmdb_id = ?
             LIMIT 1
@@ -481,8 +484,9 @@ pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
                 episode_number,
                 thumbnail_blob,
                 title,
-                description
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                description,
+                runtime
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (id) DO UPDATE SET
                 tmdb_id = ?,
                 tv_show_id = ?,
@@ -491,6 +495,7 @@ pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
                 thumbnail_blob = ?,
                 title = ?,
                 description = ?
+                runtime = ?
             RETURNING id
         ",
     )
@@ -502,6 +507,7 @@ pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
     .bind(tv_episode.thumbnail_blob)
     .bind(&tv_episode.title)
     .bind(&tv_episode.description)
+        .bind(tv_episode.runtime)
     .bind(tv_episode.tmdb_id)
     .bind(tv_episode.tv_show_id)
     .bind(tv_episode.tv_season_id)
@@ -509,6 +515,7 @@ pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
     .bind(tv_episode.thumbnail_blob)
     .bind(&tv_episode.title)
     .bind(&tv_episode.description)
+        .bind(tv_episode.runtime)
     .fetch_one(db)
     .await?;
 
@@ -525,8 +532,9 @@ pub async fn upsert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
                 episode_number,
                 thumbnail_blob,
                 title,
-                description
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                description,
+                runtime
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (tmdb_id) DO UPDATE SET
                 thumbnail_blob = ?,
                 title = ?,
@@ -541,9 +549,11 @@ pub async fn upsert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
     .bind(tv_episode.thumbnail_blob)
     .bind(&tv_episode.title)
     .bind(&tv_episode.description)
+    .bind(tv_episode.runtime)
     .bind(tv_episode.thumbnail_blob)
     .bind(&tv_episode.title)
     .bind(&tv_episode.description)
+    .bind(tv_episode.runtime)
     .fetch_one(db)
     .await?;
 
