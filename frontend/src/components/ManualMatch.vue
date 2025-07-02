@@ -139,6 +139,31 @@ watch(
 	},
 	{ immediate: true }
 );
+
+const matchInfo = computed(() => {
+	const points: string[] = [];
+
+	const ostDownload = props.catInfo.ostSubtitleFiles.find(
+		(file) => file.matchId === matchSelection.value
+	);
+	const matchInfo = props.catInfo.matches.find(
+		(match) =>
+			match.videoFileId === props.videoFile.id &&
+			match.ostDownloadId === ostDownload?.id
+	);
+	if (matchInfo !== undefined) {
+		points.push(`Subtitle Distance: ${matchInfo.distance}`);
+		points.push(`Max Distance:      ${matchInfo.maxDistance}`);
+		points.push(
+			`Rank:              ${100 - Math.round((matchInfo.distance / matchInfo.maxDistance) * 1000) / 10}%`
+		);
+	} else {
+		points.push("Match info not found.");
+	}
+
+	return points.join("\n");
+});
+
 async function selectMatch() {
 	if (matchSelection.value === undefined) return;
 	switch (props.catInfo.suspectedContents?.suspectedContents.oneofKind) {
@@ -182,6 +207,9 @@ const matchManually = ref(false);
 							<v-list-item @click="matchManually = true"> Other </v-list-item>
 						</template>
 					</v-select>
+				</v-col>
+				<v-col cols="6">
+					<pre>{{ matchInfo }}</pre>
 				</v-col>
 			</v-row>
 			<v-row>
