@@ -14,7 +14,6 @@ onMounted(async () => {
 
 function formatTime(time: number) {
 	const result = new Date(time * 1000).toLocaleString();
-	console.log(time);
 	return result;
 }
 function getRipStatus(job: RipJob) {

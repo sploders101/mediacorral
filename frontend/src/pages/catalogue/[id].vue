@@ -56,9 +56,9 @@ async function refreshData() {
 	const catInfoResponse = await rpc.getJobCatalogueInfo({ jobId });
 	jobInfo.value = jobInfoResponse.response.details;
 	catInfo.value = catInfoResponse.response;
-	console.log(jobInfoResponse.response.details, catInfoResponse.response);
 
-	// Fetch relevant media
+	// Fetch relevant media for suspectedContents
+	// TODO: Fetch manual matches, too
 	if (jobInfoResponse.response.details?.suspectedContents !== undefined) {
 		const suspectedContents =
 			jobInfoResponse.response.details.suspectedContents.suspectedContents;

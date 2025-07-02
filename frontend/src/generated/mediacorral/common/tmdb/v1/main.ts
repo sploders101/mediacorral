@@ -194,9 +194,9 @@ export interface TmdbMovieDetails {
      */
     overview?: string;
     /**
-     * @generated from protobuf field: uint32 runtime = 7
+     * @generated from protobuf field: optional uint32 runtime = 7
      */
-    runtime: number;
+    runtime?: number;
 }
 /**
  * @generated from protobuf message mediacorral.common.tmdb.v1.TmdbTvCreator
@@ -939,14 +939,13 @@ class TmdbMovieDetails$Type extends MessageType<TmdbMovieDetails> {
             { no: 4, name: "poster_path", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 5, name: "release_date", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 6, name: "overview", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 7, name: "runtime", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+            { no: 7, name: "runtime", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ }
         ]);
     }
     create(value?: PartialMessage<TmdbMovieDetails>): TmdbMovieDetails {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.id = 0;
         message.genres = [];
-        message.runtime = 0;
         if (value !== undefined)
             reflectionMergePartial<TmdbMovieDetails>(this, message, value);
         return message;
@@ -974,7 +973,7 @@ class TmdbMovieDetails$Type extends MessageType<TmdbMovieDetails> {
                 case /* optional string overview */ 6:
                     message.overview = reader.string();
                     break;
-                case /* uint32 runtime */ 7:
+                case /* optional uint32 runtime */ 7:
                     message.runtime = reader.uint32();
                     break;
                 default:
@@ -1007,8 +1006,8 @@ class TmdbMovieDetails$Type extends MessageType<TmdbMovieDetails> {
         /* optional string overview = 6; */
         if (message.overview !== undefined)
             writer.tag(6, WireType.LengthDelimited).string(message.overview);
-        /* uint32 runtime = 7; */
-        if (message.runtime !== 0)
+        /* optional uint32 runtime = 7; */
+        if (message.runtime !== undefined)
             writer.tag(7, WireType.Varint).uint32(message.runtime);
         let u = options.writeUnknownFields;
         if (u !== false)

@@ -456,6 +456,10 @@ export interface Movie {
      * @generated from protobuf field: optional string description = 6
      */
     description?: string;
+    /**
+     * @generated from protobuf field: optional uint32 runtime = 7
+     */
+    runtime?: number;
 }
 /**
  * @generated from protobuf message mediacorral.server.v1.GetMovieRequest
@@ -649,6 +653,10 @@ export interface TvEpisode {
      * @generated from protobuf field: optional string description = 8
      */
     description?: string;
+    /**
+     * @generated from protobuf field: optional uint32 runtime = 9
+     */
+    runtime?: number;
 }
 /**
  * @generated from protobuf message mediacorral.server.v1.GetTvShowRequest
@@ -2821,7 +2829,8 @@ class Movie$Type extends MessageType<Movie> {
             { no: 3, name: "poster_blob", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 4, name: "title", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 5, name: "release_year", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 6, name: "description", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
+            { no: 6, name: "description", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 7, name: "runtime", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ }
         ]);
     }
     create(value?: PartialMessage<Movie>): Movie {
@@ -2855,6 +2864,9 @@ class Movie$Type extends MessageType<Movie> {
                 case /* optional string description */ 6:
                     message.description = reader.string();
                     break;
+                case /* optional uint32 runtime */ 7:
+                    message.runtime = reader.uint32();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -2885,6 +2897,9 @@ class Movie$Type extends MessageType<Movie> {
         /* optional string description = 6; */
         if (message.description !== undefined)
             writer.tag(6, WireType.LengthDelimited).string(message.description);
+        /* optional uint32 runtime = 7; */
+        if (message.runtime !== undefined)
+            writer.tag(7, WireType.Varint).uint32(message.runtime);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -3556,7 +3571,8 @@ class TvEpisode$Type extends MessageType<TvEpisode> {
             { no: 5, name: "episode_number", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
             { no: 6, name: "thumbnail_blob", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 7, name: "title", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 8, name: "description", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
+            { no: 8, name: "description", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 9, name: "runtime", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ }
         ]);
     }
     create(value?: PartialMessage<TvEpisode>): TvEpisode {
@@ -3599,6 +3615,9 @@ class TvEpisode$Type extends MessageType<TvEpisode> {
                 case /* optional string description */ 8:
                     message.description = reader.string();
                     break;
+                case /* optional uint32 runtime */ 9:
+                    message.runtime = reader.uint32();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -3635,6 +3654,9 @@ class TvEpisode$Type extends MessageType<TvEpisode> {
         /* optional string description = 8; */
         if (message.description !== undefined)
             writer.tag(8, WireType.LengthDelimited).string(message.description);
+        /* optional uint32 runtime = 9; */
+        if (message.runtime !== undefined)
+            writer.tag(9, WireType.Varint).uint32(message.runtime);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

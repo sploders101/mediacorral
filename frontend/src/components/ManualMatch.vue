@@ -9,6 +9,7 @@ import MatchSelector, { type SubmitData } from "./MatchSelector.vue";
 import { SearchType } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
 import type { ProcessedVideoItem } from "@/pages/catalogue/[id].vue";
+import { formatRuntime } from "@/scripts/utils";
 
 const rpc = inject(injectKeys.rpc)!;
 const metaCache = inject(injectKeys.metaCache);
@@ -74,11 +75,6 @@ watch(
 			blobId: subtitles.subtitleBlob,
 		});
 		videoSubtitles.value = response.subtitles;
-		console.log({
-			...toRaw(props.videoFile),
-			likelyMatch: toRaw(props.videoFile.likelyOstMatch),
-			matches: props.videoFile.matches.map(toRaw),
-		});
 	},
 	{ immediate: true }
 );
@@ -129,7 +125,6 @@ watch(
 	[() => props.videoFile.id, props.videoFile.likelyOstMatch],
 	() => {
 		if (props.videoFile.likelyOstMatch === undefined) return;
-		console.log(props.videoFile.likelyOstMatch.videoFileId);
 		const likelyOstId = props.videoFile.likelyOstMatch.ostDownloadId;
 		const likelyOst = props.catInfo.ostSubtitleFiles.find(
 			(subtitle) => subtitle.id === likelyOstId
@@ -142,6 +137,24 @@ watch(
 
 const matchInfo = computed(() => {
 	const points: string[] = [];
+	if (matchSelection.value === undefined) return [];
+
+	points.push(`File runtime:      ${props.videoFile.runtime}`);
+	const suspectedContents = props.catInfo.suspectedContents?.suspectedContents;
+	switch (suspectedContents?.oneofKind) {
+		case "movie":
+			const movie = metaCache.movies.get(matchSelection.value);
+			if (movie?.runtime !== undefined) {
+				points.push(`Movie runtime:     ${formatRuntime(movie.runtime * 60)}`)
+			}
+			break;
+		case "tvEpisodes":
+			const tvEpisode = metaCache.tvEpisodes.get(matchSelection.value);
+			if (tvEpisode?.runtime !== undefined) {
+				points.push(`Episode runtime:   ${formatRuntime(tvEpisode.runtime * 60)}`);
+			}
+			break;
+	}
 
 	const ostDownload = props.catInfo.ostSubtitleFiles.find(
 		(file) => file.matchId === matchSelection.value
@@ -152,10 +165,7 @@ const matchInfo = computed(() => {
 			match.ostDownloadId === ostDownload?.id
 	);
 	if (matchInfo !== undefined) {
-		points.push(`Subtitle Distance: ${matchInfo.distance}`);
-		points.push(`Max Distance:      ${matchInfo.maxDistance}`);
-		points.push(
-			`Rank:              ${100 - Math.round((matchInfo.distance / matchInfo.maxDistance) * 1000) / 10}%`
+		points.push(`Subtitle Distance: ${matchInfo.distance}/${matchInfo.maxDistance} (${100 - Math.round((matchInfo.distance / matchInfo.maxDistance) * 1000) / 10}% match)`
 		);
 	} else {
 		points.push("Match info not found.");
