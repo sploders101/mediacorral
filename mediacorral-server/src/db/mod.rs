@@ -17,14 +17,16 @@ pub async fn insert_movie(db: &Db, movie: &MoviesItem) -> Result<i64, sqlx::Erro
                 poster_blob,
                 title,
                 release_year,
-                description
-            ) VALUES (?, ?, ?, ?, ?, ?)
+                description,
+                runtime
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (id) DO UPDATE SET
                 tmdb_id = ?,
                 poster_blob = ?,
                 title = ?,
                 release_year = ?,
-                description = ?
+                description = ?,
+                runtime = ?
             RETURNING id
         ",
     )
@@ -34,11 +36,13 @@ pub async fn insert_movie(db: &Db, movie: &MoviesItem) -> Result<i64, sqlx::Erro
     .bind(&movie.title)
     .bind(&movie.release_year)
     .bind(&movie.description)
+    .bind(movie.runtime)
     .bind(movie.tmdb_id)
     .bind(movie.poster_blob)
     .bind(&movie.title)
     .bind(&movie.release_year)
     .bind(&movie.description)
+    .bind(movie.runtime)
     .fetch_one(db)
     .await?;
 
@@ -53,13 +57,15 @@ pub async fn insert_tmdb_movie(db: &Db, movie: &MoviesItem) -> Result<i64, sqlx:
                 poster_blob,
                 title,
                 release_year,
-                description
-            ) VALUES (?, ?, ?, ?, ?)
+                description,
+                runtime
+            ) VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT (tmdb_id) DO UPDATE SET
                 poster_blob = ?,
                 title = ?,
                 release_year = ?,
-                description = ?
+                description = ?,
+                runtime = ?
             RETURNING id
         ",
     )
@@ -68,10 +74,12 @@ pub async fn insert_tmdb_movie(db: &Db, movie: &MoviesItem) -> Result<i64, sqlx:
     .bind(&movie.title)
     .bind(&movie.release_year)
     .bind(&movie.description)
+    .bind(movie.runtime)
     .bind(movie.poster_blob)
     .bind(&movie.title)
     .bind(&movie.release_year)
     .bind(&movie.description)
+    .bind(movie.runtime)
     .fetch_one(db)
     .await?;
 
@@ -87,7 +95,8 @@ pub async fn get_movies(db: &Db) -> Result<Vec<MoviesItem>, sqlx::Error> {
                 poster_blob,
                 title,
                 release_year,
-                description
+                description,
+                runtime
             FROM movies
         ",
     )
@@ -105,7 +114,8 @@ pub async fn get_movie_by_id(db: &Db, movie_id: i64) -> Result<MoviesItem, sqlx:
                 poster_blob,
                 title,
                 release_year,
-                description
+                description,
+                runtime
             FROM movies
             WHERE
                 id = ?
@@ -127,7 +137,8 @@ pub async fn get_movie_by_tmdb_id(db: &Db, tmdb_id: i32) -> Result<MoviesItem, s
                 poster_blob,
                 title,
                 release_year,
-                description
+                description,
+                runtime
             FROM movies
             WHERE
                 tmdb_id = ?
@@ -507,7 +518,7 @@ pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
     .bind(tv_episode.thumbnail_blob)
     .bind(&tv_episode.title)
     .bind(&tv_episode.description)
-        .bind(tv_episode.runtime)
+    .bind(tv_episode.runtime)
     .bind(tv_episode.tmdb_id)
     .bind(tv_episode.tv_show_id)
     .bind(tv_episode.tv_season_id)
@@ -515,7 +526,7 @@ pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
     .bind(tv_episode.thumbnail_blob)
     .bind(&tv_episode.title)
     .bind(&tv_episode.description)
-        .bind(tv_episode.runtime)
+    .bind(tv_episode.runtime)
     .fetch_one(db)
     .await?;
 
@@ -538,7 +549,8 @@ pub async fn upsert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i
             ON CONFLICT (tmdb_id) DO UPDATE SET
                 thumbnail_blob = ?,
                 title = ?,
-                description = ?
+                description = ?,
+                runtime = ?
             RETURNING id
         ",
     )
