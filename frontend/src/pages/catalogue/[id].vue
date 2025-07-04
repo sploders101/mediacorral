@@ -8,6 +8,7 @@ export interface ProcessedVideoItem {
 	likelyOstMatch: MatchInfoItem | undefined;
 	existingMatchType: VideoType;
 	existingMatch: bigint | undefined;
+	featureIcons: string[];
 }
 </script>
 
@@ -201,6 +202,15 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 				break;
 		}
 
+		const featureIcons: string[] = [];
+		if (
+			catInfo.value?.subtitleMaps.find(
+				(subtitle) => subtitle.id === videoFile.id
+			)?.subtitleBlob !== undefined
+		) {
+			featureIcons.push("mdi-subtitles");
+		}
+
 		return {
 			id: videoFile.id,
 			runtime,
@@ -212,6 +222,7 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 				likelyOstMatches.length === 1 ? likelyOstMatches[0] : undefined,
 			existingMatchType: videoFile.videoType,
 			existingMatch: videoFile.matchId,
+			featureIcons,
 		};
 	});
 });
@@ -341,6 +352,7 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 						{ title: 'ID', value: 'id', sortable: false },
 						{ title: 'Runtime', value: 'runtime', sortable: false },
 						{ title: 'Resolution', value: 'resolution', sortable: false },
+						{ title: 'Features', key: 'features', sortable: false },
 						{
 							title: 'Suggested Match',
 							key: 'likelyOstMatch',
@@ -357,6 +369,11 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 					]"
 					hide-default-footer
 				>
+					<template v-slot:item.features="{ item }">
+						<v-icon v-for="feature in item.featureIcons">
+							{{ feature }}
+						</v-icon>
+					</template>
 					<template v-slot:item.actions="{ item }">
 						<v-btn
 							v-if="
