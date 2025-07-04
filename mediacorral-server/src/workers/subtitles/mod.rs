@@ -92,7 +92,7 @@ impl StContext {
                     .map_err(|_| ExtractDetailsError::SubripInvalidUtf8)?,
             }),
             Self::Vobsub(vobs) => vobs.push_frame(
-                frame.timestamp * timestamp_scale,
+                frame.timestamp * timestamp_scale / 1000,
                 frame.duration.map(|duration| duration * timestamp_scale),
                 std::mem::take(&mut frame.data),
             ),
