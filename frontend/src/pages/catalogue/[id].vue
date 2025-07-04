@@ -128,7 +128,7 @@ async function refreshData() {
 	// Fetch pending content
 	const finalFetchers = [];
 	for (const movieId of movies) {
-		if (cache.movies.has(movieId)) return;
+		if (cache.movies.has(movieId)) continue;
 		finalFetchers.push(
 			rpc.getMovie({ movieId }).then(({ response }) => {
 				if (response.movie === undefined) throw new Error("Movie missing");
@@ -137,7 +137,7 @@ async function refreshData() {
 		);
 	}
 	for (const showId of tvShows) {
-		if (cache.tvShows.has(showId)) return;
+		if (cache.tvShows.has(showId)) continue;
 		finalFetchers.push(
 			rpc.getTvShow({ showId }).then(({ response }) => {
 				if (response.tvShow === undefined) throw new Error("TV show missing");
@@ -146,7 +146,7 @@ async function refreshData() {
 		);
 	}
 	for (const seasonId of tvSeasons) {
-		if (cache.tvSeasons.has(seasonId)) return;
+		if (cache.tvSeasons.has(seasonId)) continue;
 		finalFetchers.push(
 			rpc.getTvSeason({ seasonId }).then(({ response }) => {
 				if (response.tvSeason === undefined)

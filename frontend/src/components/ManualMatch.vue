@@ -125,7 +125,7 @@ watch(
 	{ immediate: true }
 );
 watch(
-	[() => props.videoFile.id, props.videoFile.likelyOstMatch],
+	[() => props.videoFile.id, () => props.videoFile.likelyOstMatch],
 	() => {
 		if (props.videoFile.likelyOstMatch === undefined) return;
 		const likelyOstId = props.videoFile.likelyOstMatch.ostDownloadId;
