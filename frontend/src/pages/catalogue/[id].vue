@@ -8,7 +8,9 @@ export interface ProcessedVideoItem {
 	likelyOstMatch: MatchInfoItem | undefined;
 	existingMatchType: VideoType;
 	existingMatch: bigint | undefined;
-	featureIcons: string[];
+	features: {
+		subtitles: boolean;
+	};
 }
 </script>
 
@@ -202,15 +204,6 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 				break;
 		}
 
-		const featureIcons: string[] = [];
-		if (
-			catInfo.value?.subtitleMaps.find(
-				(subtitle) => subtitle.id === videoFile.id
-			)?.subtitleBlob !== undefined
-		) {
-			featureIcons.push("mdi-subtitles");
-		}
-
 		return {
 			id: videoFile.id,
 			runtime,
@@ -222,7 +215,12 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 				likelyOstMatches.length === 1 ? likelyOstMatches[0] : undefined,
 			existingMatchType: videoFile.videoType,
 			existingMatch: videoFile.matchId,
-			featureIcons,
+			features: {
+				subtitles:
+					catInfo.value?.subtitleMaps.find(
+						(subtitle) => subtitle.id === videoFile.id
+					)?.subtitleBlob !== undefined,
+			},
 		};
 	});
 });
@@ -370,9 +368,13 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 					hide-default-footer
 				>
 					<template v-slot:item.features="{ item }">
-						<v-icon v-for="feature in item.featureIcons">
-							{{ feature }}
-						</v-icon>
+						<template v-if="item.features.subtitles">
+							<v-tooltip text="Subtitles">
+								<template v-slot:activator="{ props }">
+									<v-icon v-bind="props">mdi-subtitles</v-icon>
+								</template>
+							</v-tooltip>
+						</template>
 					</template>
 					<template v-slot:item.actions="{ item }">
 						<v-btn
