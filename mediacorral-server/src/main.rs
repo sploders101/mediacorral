@@ -30,7 +30,8 @@ pub struct CoordinatorConfig {
     data_directory: PathBuf,
     tmdb_api_key: String,
     ost_login: OstCreds,
-    serve_address: String,
+    web_serve_address: String,
+    grpc_serve_address: String,
     exports_dirs: HashMap<String, export_settings::ExportSettings>,
     enable_autorip: bool,
     drive_controllers: HashMap<String, String>,
@@ -73,10 +74,14 @@ async fn main() {
     let config: CoordinatorConfig =
         serde_yaml::from_reader(config_file).expect("Couldn't read config");
 
-    let address = config
-        .serve_address
+    let grpc_address = config
+        .grpc_serve_address
         .parse()
-        .expect("Invalid serve address.");
+        .expect("Invalid grpc serve address.");
+    let web_address = config
+        .web_serve_address
+        .parse()
+        .expect("Invalid web serve address.");
 
     let application = Arc::new(
         Application::new(config)
@@ -91,17 +96,26 @@ async fn main() {
         .build_v1()
         .unwrap();
 
-    Server::builder()
-        .accept_http1(true)
-        .layer(GrpcWebLayer::new())
+    let grpc_server = Server::builder()
         .add_service(CoordinatorNotificationServiceServer::new(
             NotificationService::new(Arc::clone(&application)),
         ))
         .add_service(CoordinatorApiServiceServer::new(ApiService::new(
-            application,
+            Arc::clone(&application),
         )))
         .add_service(reflection)
-        .serve(address)
-        .await
-        .unwrap();
+        .serve(grpc_address);
+
+    let web_server = Server::builder()
+        .accept_http1(true)
+        .layer(GrpcWebLayer::new())
+        .add_service(CoordinatorApiServiceServer::new(ApiService::new(
+            application,
+        )))
+        .serve(web_address);
+
+    tokio::select! {
+        result = grpc_server => result.unwrap(),
+        result = web_server => result.unwrap(),
+    }
 }
