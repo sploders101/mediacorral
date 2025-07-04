@@ -57,67 +57,108 @@ async function refreshData() {
 	jobInfo.value = jobInfoResponse.response.details;
 	catInfo.value = catInfoResponse.response;
 
+	const movies = new Set<bigint>();
+	const tvShows = new Set<bigint>();
+	const tvSeasons = new Set<bigint>();
+
+	const firstFetchers: Array<Promise<void>> = [];
+
 	// Fetch relevant media for suspectedContents
-	// TODO: Fetch manual matches, too
 	if (jobInfoResponse.response.details?.suspectedContents !== undefined) {
 		const suspectedContents =
 			jobInfoResponse.response.details.suspectedContents.suspectedContents;
 		switch (suspectedContents.oneofKind) {
 			case "movie":
-				const { response: movie } = await rpc.getMovieByTmdbId({
-					tmdbId: suspectedContents.movie.tmdbId,
-				});
-				if (movie.movie === undefined) throw new Error("Movie missing");
-				if (cache.movies.get(movie.movie.id) === undefined) {
-					cache.movies.set(movie.movie.id, movie.movie);
-				}
+				firstFetchers.push(
+					rpc
+						.getMovieByTmdbId({
+							tmdbId: suspectedContents.movie.tmdbId,
+						})
+						.then(({ response }) => {
+							if (response.movie === undefined)
+								throw new Error("Movie missing");
+							if (cache.movies.get(response.movie.id) === undefined) {
+								cache.movies.set(response.movie.id, response.movie);
+							}
+						})
+				);
 				break;
 			case "tvEpisodes":
-				const tvShows = new Set<bigint>();
-				const tvSeasons = new Set<bigint>();
-				await Promise.all(
-					suspectedContents.tvEpisodes.episodeTmdbIds.map(async (tmdbId) => {
-						const { response: tvEpisode } = await rpc.getTvEpisodeByTmdbId({
+				firstFetchers.push(
+					...suspectedContents.tvEpisodes.episodeTmdbIds.map(async (tmdbId) => {
+						const { response } = await rpc.getTvEpisodeByTmdbId({
 							tmdbId: tmdbId,
 						});
-						if (tvEpisode.episode === undefined)
+						if (response.episode === undefined)
 							throw new Error("TV episode missing");
-						cache.tvEpisodes.set(tvEpisode.episode.id, tvEpisode.episode);
-						tvShows.add(tvEpisode.episode.tvShowId);
-						tvSeasons.add(tvEpisode.episode.tvSeasonId);
+						cache.tvEpisodes.set(response.episode.id, response.episode);
+						tvShows.add(response.episode.tvShowId);
+						tvSeasons.add(response.episode.tvSeasonId);
 					})
 				);
-
-				const fetchers = [];
-				for (const tvId of tvShows) {
-					fetchers.push(
-						(async () => {
-							if (cache.tvShows.has(tvId)) return;
-							const { response: tvShow } = await rpc.getTvShow({
-								showId: tvId,
-							});
-							if (tvShow.tvShow === undefined)
-								throw new Error("TV show missing");
-							cache.tvShows.set(tvShow.tvShow.id, tvShow.tvShow);
-						})()
-					);
-				}
-				for (const seasonId of tvSeasons) {
-					fetchers.push(
-						(async () => {
-							if (cache.tvSeasons.has(seasonId)) return;
-							const { response: tvSeason } = await rpc.getTvSeason({
-								seasonId,
-							});
-							if (tvSeason.tvSeason === undefined)
-								throw new Error("TV season missing");
-							cache.tvSeasons.set(tvSeason.tvSeason.id, tvSeason.tvSeason);
-						})()
-					);
-				}
-				await Promise.all(fetchers);
 		}
 	}
+
+	firstFetchers.push(
+		...catInfo.value.videoFiles.map(async (file) => {
+			switch (file.videoType) {
+				case VideoType.MOVIE:
+					if (file.matchId !== undefined) movies.add(file.matchId);
+					break;
+				case VideoType.TV_EPISODE:
+					if (file.matchId !== undefined) {
+						const { response } = await rpc.getTvEpisode({
+							episodeId: file.matchId,
+						});
+						if (response.episode === undefined)
+							throw new Error("TV episode missing");
+						cache.tvEpisodes.set(response.episode.id, response.episode);
+						tvShows.add(response.episode.tvShowId);
+						tvSeasons.add(response.episode.tvShowId);
+					}
+					break;
+			}
+		})
+	);
+
+	// Wait for all the data we've started collecting so far.
+	// Some of it will feed the next set of queries.
+	await Promise.all(firstFetchers);
+
+	// Fetch pending content
+	const finalFetchers = [];
+	for (const movieId of movies) {
+		if (cache.movies.has(movieId)) return;
+		finalFetchers.push(
+			rpc.getMovie({ movieId }).then(({ response }) => {
+				if (response.movie === undefined) throw new Error("Movie missing");
+				cache.movies.set(movieId, response.movie);
+			})
+		);
+	}
+	for (const showId of tvShows) {
+		if (cache.tvShows.has(showId)) return;
+		finalFetchers.push(
+			rpc.getTvShow({ showId }).then(({ response }) => {
+				if (response.tvShow === undefined) throw new Error("TV show missing");
+				cache.tvShows.set(response.tvShow.id, response.tvShow);
+			})
+		);
+	}
+	for (const seasonId of tvSeasons) {
+		if (cache.tvSeasons.has(seasonId)) return;
+		finalFetchers.push(
+			rpc.getTvSeason({ seasonId }).then(({ response }) => {
+				if (response.tvSeason === undefined)
+					throw new Error("TV season missing");
+				cache.tvSeasons.set(response.tvSeason.id, response.tvSeason!);
+			})
+		);
+	}
+
+	// Wait for second-stage content to return
+	await Promise.all(finalFetchers);
+
 	loading.value = false;
 }
 
