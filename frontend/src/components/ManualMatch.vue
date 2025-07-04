@@ -112,14 +112,17 @@ watch(
 	() => matchSelection.value,
 	async () => {
 		matchSubtitles.value = undefined;
-		if (matchSelection.value === undefined) return;
+		if (matchSelection.value === undefined) {
+			matchSubtitles.value = "[No selection]";
+		}
 		let subs = props.catInfo.ostSubtitleFiles.find(
 			(subtitle) => matchSelection.value === subtitle.matchId
 		);
 		if (subs === undefined) return;
 		const { response } = await rpc.getSubtitles({ blobId: subs.blobId });
 		matchSubtitles.value = response.subtitles;
-	}
+	},
+	{ immediate: true }
 );
 watch(
 	[() => props.videoFile.id, props.videoFile.likelyOstMatch],
@@ -137,7 +140,7 @@ watch(
 
 const matchInfo = computed(() => {
 	const points: string[] = [];
-	if (matchSelection.value === undefined) return [];
+	if (matchSelection.value === undefined) return "";
 
 	points.push(`File runtime:      ${props.videoFile.runtime}`);
 	const suspectedContents = props.catInfo.suspectedContents?.suspectedContents;
@@ -145,13 +148,15 @@ const matchInfo = computed(() => {
 		case "movie":
 			const movie = metaCache.movies.get(matchSelection.value);
 			if (movie?.runtime !== undefined) {
-				points.push(`Movie runtime:     ${formatRuntime(movie.runtime * 60)}`)
+				points.push(`Movie runtime:     ${formatRuntime(movie.runtime * 60)}`);
 			}
 			break;
 		case "tvEpisodes":
 			const tvEpisode = metaCache.tvEpisodes.get(matchSelection.value);
 			if (tvEpisode?.runtime !== undefined) {
-				points.push(`Episode runtime:   ${formatRuntime(tvEpisode.runtime * 60)}`);
+				points.push(
+					`Episode runtime:   ${formatRuntime(tvEpisode.runtime * 60)}`
+				);
 			}
 			break;
 	}
@@ -165,7 +170,8 @@ const matchInfo = computed(() => {
 			match.ostDownloadId === ostDownload?.id
 	);
 	if (matchInfo !== undefined) {
-		points.push(`Subtitle Distance: ${matchInfo.distance}/${matchInfo.maxDistance} (${100 - Math.round((matchInfo.distance / matchInfo.maxDistance) * 1000) / 10}% match)`
+		points.push(
+			`Subtitle Distance: ${matchInfo.distance}/${matchInfo.maxDistance} (${100 - Math.round((matchInfo.distance / matchInfo.maxDistance) * 1000) / 10}% match)`
 		);
 	} else {
 		points.push("Match info not found.");
