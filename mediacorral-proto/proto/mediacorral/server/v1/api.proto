@@ -350,7 +350,7 @@ message GetTvEpisodeByTmdbIdResponse {
 message TagFileRequest {
   int64 file = 1;
   VideoType video_type = 2;
-  int64 match_id = 3;
+  optional int64 match_id = 3;
 }
 message TagFileResponse {}
 enum VideoType {

@@ -743,9 +743,9 @@ export interface TagFileRequest {
      */
     videoType: VideoType;
     /**
-     * @generated from protobuf field: int64 match_id = 3
+     * @generated from protobuf field: optional int64 match_id = 3
      */
-    matchId: bigint;
+    matchId?: bigint;
 }
 /**
  * @generated from protobuf message mediacorral.server.v1.TagFileResponse
@@ -4045,14 +4045,13 @@ class TagFileRequest$Type extends MessageType<TagFileRequest> {
         super("mediacorral.server.v1.TagFileRequest", [
             { no: 1, name: "file", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 2, name: "video_type", kind: "enum", T: () => ["mediacorral.server.v1.VideoType", VideoType, "VIDEO_TYPE_"] },
-            { no: 3, name: "match_id", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
+            { no: 3, name: "match_id", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
         ]);
     }
     create(value?: PartialMessage<TagFileRequest>): TagFileRequest {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.file = 0n;
         message.videoType = 0;
-        message.matchId = 0n;
         if (value !== undefined)
             reflectionMergePartial<TagFileRequest>(this, message, value);
         return message;
@@ -4068,7 +4067,7 @@ class TagFileRequest$Type extends MessageType<TagFileRequest> {
                 case /* mediacorral.server.v1.VideoType video_type */ 2:
                     message.videoType = reader.int32();
                     break;
-                case /* int64 match_id */ 3:
+                case /* optional int64 match_id */ 3:
                     message.matchId = reader.int64().toBigInt();
                     break;
                 default:
@@ -4089,8 +4088,8 @@ class TagFileRequest$Type extends MessageType<TagFileRequest> {
         /* mediacorral.server.v1.VideoType video_type = 2; */
         if (message.videoType !== 0)
             writer.tag(2, WireType.Varint).int32(message.videoType);
-        /* int64 match_id = 3; */
-        if (message.matchId !== 0n)
+        /* optional int64 match_id = 3; */
+        if (message.matchId !== undefined)
             writer.tag(3, WireType.Varint).int64(message.matchId);
         let u = options.writeUnknownFields;
         if (u !== false)

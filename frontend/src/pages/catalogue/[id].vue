@@ -6,6 +6,8 @@ export interface ProcessedVideoItem {
 	matches: MatchInfoItem[];
 	likelyOstMatchCount: number;
 	likelyOstMatch: MatchInfoItem | undefined;
+	existingMatchType: VideoType;
+	existingMatch: bigint | undefined;
 }
 </script>
 
@@ -208,6 +210,8 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 			likelyOstMatchCount: likelyOstMatches.length,
 			likelyOstMatch:
 				likelyOstMatches.length === 1 ? likelyOstMatches[0] : undefined,
+			existingMatchType: videoFile.videoType,
+			existingMatch: videoFile.matchId,
 		};
 	});
 });
@@ -354,7 +358,24 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 					hide-default-footer
 				>
 					<template v-slot:item.actions="{ item }">
-						<v-btn @click="manualMatchItem = item" flat>Match</v-btn>
+						<v-btn
+							v-if="
+								item.existingMatchType !== VideoType.UNSPECIFIED &&
+								item.existingMatch !== undefined
+							"
+							flat
+							@click="
+								rpc.tagFile({
+									file: item.id,
+									videoType: VideoType.UNSPECIFIED,
+									matchId: undefined,
+								});
+								refreshData();
+							"
+						>
+							Unmatch
+						</v-btn>
+						<v-btn v-else flat @click="manualMatchItem = item"> Match </v-btn>
 					</template>
 				</v-data-table>
 			</v-card-text>

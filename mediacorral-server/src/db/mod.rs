@@ -798,7 +798,7 @@ pub async fn tag_video_file(
     db: &Db,
     id: i64,
     video_type: VideoType,
-    match_id: i64,
+    match_id: Option<i64>,
 ) -> Result<(), sqlx::Error> {
     let result = sqlx::query(
         "
