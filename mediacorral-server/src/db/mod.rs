@@ -1142,6 +1142,32 @@ pub async fn delete_rip_job(db: &Db, rip_job: i64) -> Result<(), sqlx::Error> {
     return Ok(());
 }
 
+pub async fn get_untagged_videos_from_job(
+    db: &Db,
+    rip_job: i64,
+) -> Result<Vec<RipVideoBlobs>, sqlx::Error> {
+    return Ok(sqlx::query_as(
+        "
+            SELECT
+                video_files.id as id,
+                rip_jobs.id as job_id,
+                video_files.blob_id as video_blob,
+                subtitle_files.blob_id as subtitle_blob
+            FROM rip_jobs
+            INNER JOIN video_files ON
+                rip_jobs.id = video_files.rip_job
+            LEFT JOIN subtitle_files ON
+                subtitle_files.video_file = video_files.id
+            WHERE
+                rip_jobs.id = ?
+                AND video_files.match_id is null
+        ",
+    )
+    .bind(rip_job)
+    .fetch_all(db)
+    .await?);
+}
+
 pub async fn get_rip_jobs_with_untagged_videos(
     db: &Db,
     skip: u32,

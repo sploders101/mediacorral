@@ -4,6 +4,8 @@
 import type { RpcTransport } from "@protobuf-ts/runtime-rpc";
 import type { ServiceInfo } from "@protobuf-ts/runtime-rpc";
 import { CoordinatorApiService } from "./api";
+import type { PruneRipJobResponse } from "./api";
+import type { PruneRipJobRequest } from "./api";
 import type { GetJobCatalogueInfoResponse } from "./api";
 import type { GetJobCatalogueInfoRequest } from "./api";
 import type { GetUntaggedJobsResponse } from "./api";
@@ -261,6 +263,12 @@ export interface ICoordinatorApiServiceClient {
      * @generated from protobuf rpc: GetJobCatalogueInfo
      */
     getJobCatalogueInfo(input: GetJobCatalogueInfoRequest, options?: RpcOptions): UnaryCall<GetJobCatalogueInfoRequest, GetJobCatalogueInfoResponse>;
+    /**
+     * Prunes a rip job, removing all untagged content
+     *
+     * @generated from protobuf rpc: PruneRipJob
+     */
+    pruneRipJob(input: PruneRipJobRequest, options?: RpcOptions): UnaryCall<PruneRipJobRequest, PruneRipJobResponse>;
 }
 /**
  * @generated from protobuf service mediacorral.server.v1.CoordinatorApiService
@@ -550,5 +558,14 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
     getJobCatalogueInfo(input: GetJobCatalogueInfoRequest, options?: RpcOptions): UnaryCall<GetJobCatalogueInfoRequest, GetJobCatalogueInfoResponse> {
         const method = this.methods[30], opt = this._transport.mergeOptions(options);
         return stackIntercept<GetJobCatalogueInfoRequest, GetJobCatalogueInfoResponse>("unary", this._transport, method, opt, input);
+    }
+    /**
+     * Prunes a rip job, removing all untagged content
+     *
+     * @generated from protobuf rpc: PruneRipJob
+     */
+    pruneRipJob(input: PruneRipJobRequest, options?: RpcOptions): UnaryCall<PruneRipJobRequest, PruneRipJobResponse> {
+        const method = this.methods[31], opt = this._transport.mergeOptions(options);
+        return stackIntercept<PruneRipJobRequest, PruneRipJobResponse>("unary", this._transport, method, opt, input);
     }
 }

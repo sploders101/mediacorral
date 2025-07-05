@@ -762,4 +762,18 @@ impl CoordinatorApiService for ApiService {
             ost_subtitle_files: ost_subtitle_files.into_iter().map(Into::into).collect(),
         }));
     }
+
+    async fn prune_rip_job(
+        &self,
+        request: tonic::Request<proto::PruneRipJobRequest>,
+    ) -> Result<tonic::Response<proto::PruneRipJobResponse>, tonic::Status> {
+        let request = request.into_inner();
+
+        let application = Arc::clone(&self.application);
+        tokio::spawn(async move { application.prune_rip_job(request.job_id).await })
+            .await
+            .unwrap()
+            .bubble()?;
+        return Ok(tonic::Response::new(proto::PruneRipJobResponse {}));
+    }
 }

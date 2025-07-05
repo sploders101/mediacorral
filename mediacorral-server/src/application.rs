@@ -28,7 +28,7 @@ use tonic::transport::{Channel, Endpoint};
 
 use crate::{
     CoordinatorConfig,
-    blob_storage::BlobStorageController,
+    blob_storage::{BlobError, BlobStorageController},
     db::{
         self,
         schemas::{MatchInfoItem, MoviesItem, VideoType},
@@ -376,6 +376,17 @@ impl Application {
 
         return Ok(());
     }
+
+    pub async fn prune_rip_job(&self, job_id: i64) -> Result<(), ApplicationError> {
+        let untagged_blobs = db::get_untagged_videos_from_job(&self.db, job_id).await?;
+        for blob in untagged_blobs {
+            self.blob_storage.delete_blob(&blob.video_blob).await?;
+            if let Some(subtitle_blob) = blob.subtitle_blob {
+                self.blob_storage.delete_blob(&subtitle_blob).await?;
+            }
+        }
+        return Ok(());
+    }
 }
 
 #[derive(Error, Debug)]
@@ -392,6 +403,8 @@ pub enum ApplicationError {
     DecodeFailed(&'static str, prost::DecodeError),
     #[error("An unknown OST error occurred:\n{0}")]
     Ost(#[from] OstError),
+    #[error("An blob error occurred:\n{0}")]
+    BlobError(#[from] BlobError),
     #[error("A TMDB error occurred:\n{0}")]
     TmdbError(#[from] TmdbError),
     #[error("An unknown error occurred upstream: {0}")]

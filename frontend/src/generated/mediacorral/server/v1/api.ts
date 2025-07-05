@@ -1018,6 +1018,20 @@ export interface OstDownloadsItem {
     blobId: string;
 }
 /**
+ * @generated from protobuf message mediacorral.server.v1.PruneRipJobRequest
+ */
+export interface PruneRipJobRequest {
+    /**
+     * @generated from protobuf field: int64 job_id = 1
+     */
+    jobId: bigint;
+}
+/**
+ * @generated from protobuf message mediacorral.server.v1.PruneRipJobResponse
+ */
+export interface PruneRipJobResponse {
+}
+/**
  * @generated from protobuf enum mediacorral.server.v1.AutoripStatus
  */
 export enum AutoripStatus {
@@ -5085,6 +5099,91 @@ class OstDownloadsItem$Type extends MessageType<OstDownloadsItem> {
  * @generated MessageType for protobuf message mediacorral.server.v1.OstDownloadsItem
  */
 export const OstDownloadsItem = new OstDownloadsItem$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class PruneRipJobRequest$Type extends MessageType<PruneRipJobRequest> {
+    constructor() {
+        super("mediacorral.server.v1.PruneRipJobRequest", [
+            { no: 1, name: "job_id", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
+        ]);
+    }
+    create(value?: PartialMessage<PruneRipJobRequest>): PruneRipJobRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.jobId = 0n;
+        if (value !== undefined)
+            reflectionMergePartial<PruneRipJobRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: PruneRipJobRequest): PruneRipJobRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* int64 job_id */ 1:
+                    message.jobId = reader.int64().toBigInt();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: PruneRipJobRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* int64 job_id = 1; */
+        if (message.jobId !== 0n)
+            writer.tag(1, WireType.Varint).int64(message.jobId);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.PruneRipJobRequest
+ */
+export const PruneRipJobRequest = new PruneRipJobRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class PruneRipJobResponse$Type extends MessageType<PruneRipJobResponse> {
+    constructor() {
+        super("mediacorral.server.v1.PruneRipJobResponse", []);
+    }
+    create(value?: PartialMessage<PruneRipJobResponse>): PruneRipJobResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<PruneRipJobResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: PruneRipJobResponse): PruneRipJobResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: PruneRipJobResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.PruneRipJobResponse
+ */
+export const PruneRipJobResponse = new PruneRipJobResponse$Type();
 /**
  * @generated ServiceType for protobuf service mediacorral.server.v1.CoordinatorApiService
  */
@@ -5119,5 +5218,6 @@ export const CoordinatorApiService = new ServiceType("mediacorral.server.v1.Coor
     { name: "RenameJob", options: {}, I: RenameJobRequest, O: RenameJobResponse },
     { name: "SuspectJob", options: {}, I: SuspectJobRequest, O: SuspectJobResponse },
     { name: "GetUntaggedJobs", options: {}, I: GetUntaggedJobsRequest, O: GetUntaggedJobsResponse },
-    { name: "GetJobCatalogueInfo", options: {}, I: GetJobCatalogueInfoRequest, O: GetJobCatalogueInfoResponse }
+    { name: "GetJobCatalogueInfo", options: {}, I: GetJobCatalogueInfoRequest, O: GetJobCatalogueInfoResponse },
+    { name: "PruneRipJob", options: {}, I: PruneRipJobRequest, O: PruneRipJobResponse }
 ]);

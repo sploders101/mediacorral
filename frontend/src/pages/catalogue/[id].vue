@@ -27,6 +27,7 @@ import {
 	type RipJob,
 	type VideoFile,
 } from "@/generated/mediacorral/server/v1/api";
+import router from "@/router";
 import { SearchType, type MetaCache } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
 import { formatRuntime } from "@/scripts/utils";
@@ -341,7 +342,7 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 	<div class="padding-small">
 		<v-card>
 			<v-card-title>
-				<div class="flex row">
+				<div class="flex row gap-1rem">
 					{{ jobInfo?.discTitle }}
 					<v-btn
 						density="compact"
@@ -350,12 +351,32 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 						@click="renameJob()"
 					/>
 					<v-spacer />
-					<v-btn
-						density="compact"
-						flat
-						icon="mdi-reload"
-						@click="refreshData()"
-					/>
+					<v-tooltip text="Delete unmatched videos">
+						<template v-slot:activator="{ props }">
+							<v-btn
+								v-bind="props"
+								density="compact"
+								flat
+								icon="mdi-delete-empty"
+								@click="
+									rpc
+										.pruneRipJob({ jobId: route.params.id })
+										.then(() => $router.push('/catalogue'))
+								"
+							/>
+						</template>
+					</v-tooltip>
+					<v-tooltip text="Reload Content">
+						<template v-slot:activator="{ props }">
+							<v-btn
+								v-bind="props"
+								density="compact"
+								flat
+								icon="mdi-reload"
+								@click="refreshData()"
+							/>
+						</template>
+					</v-tooltip>
 				</div>
 			</v-card-title>
 			<v-card-text>
