@@ -4,6 +4,7 @@ export interface ProcessedVideoItem {
 	runtime: string;
 	resolution: string;
 	matches: MatchInfoItem[];
+	suggestedMatch: TagFileRequest | undefined;
 	likelyOstMatchCount: number;
 	likelyOstMatch: MatchInfoItem | undefined;
 	existingMatchType: VideoType;
@@ -18,6 +19,7 @@ export interface ProcessedVideoItem {
 import ManualMatch from "@/components/ManualMatch.vue";
 import type { SubmitData as MatchSubmitData } from "@/components/MatchSelector.vue";
 import {
+	TagFileRequest,
 	VideoType,
 	type GetJobCatalogueInfoResponse,
 	type MatchInfoItem,
@@ -170,7 +172,7 @@ async function refreshData() {
 const tableItems = computed<ProcessedVideoItem[]>(() => {
 	if (jobInfo.value === undefined || catInfo.value === undefined) return [];
 
-	return catInfo.value.videoFiles.map((videoFile) => {
+	return catInfo.value.videoFiles.map<ProcessedVideoItem>((videoFile) => {
 		const runtime =
 			videoFile.length === undefined ? "?" : formatRuntime(videoFile.length);
 
@@ -204,12 +206,27 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 				break;
 		}
 
+		let suggestedMatch: TagFileRequest | undefined = undefined;
+		if (likelyOstMatches.length === 1) {
+			const ostMatch = catInfo.value?.ostSubtitleFiles.find(
+				(subtitle) => subtitle.id === likelyOstMatches[0].ostDownloadId
+			);
+			if (ostMatch !== undefined) {
+				suggestedMatch = {
+					file: videoFile.id,
+					videoType: ostMatch.videoType,
+					matchId: ostMatch.matchId,
+				};
+			}
+		}
+
 		return {
 			id: videoFile.id,
 			runtime,
 			resolution: formatResolution(videoFile),
 			matches,
 			currentMatch,
+			suggestedMatch,
 			likelyOstMatchCount: likelyOstMatches.length,
 			likelyOstMatch:
 				likelyOstMatches.length === 1 ? likelyOstMatches[0] : undefined,
@@ -352,7 +369,7 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 						{ title: 'Resolution', value: 'resolution', sortable: false },
 						{ title: 'Features', key: 'features', sortable: false },
 						{
-							title: 'Suggested Match',
+							title: 'Subtitle Match',
 							key: 'likelyOstMatch',
 							value: (item) =>
 								formatMatch(item.likelyOstMatchCount, item.likelyOstMatch),
@@ -394,7 +411,22 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 						>
 							Unmatch
 						</v-btn>
-						<v-btn v-else flat @click="manualMatchItem = item"> Match </v-btn>
+						<template v-else>
+							<v-btn flat @click="manualMatchItem = item"> Match </v-btn>
+							<v-tooltip
+								v-if="item.suggestedMatch !== undefined"
+								text="Approve Suggested Match"
+							>
+								<template v-slot:activator="{ props }">
+									<v-btn
+										flat
+										icon="mdi-check"
+										v-bind="props"
+										@click="rpc.tagFile(item.suggestedMatch!).then(refreshData)"
+									/>
+								</template>
+							</v-tooltip>
+						</template>
 					</template>
 				</v-data-table>
 			</v-card-text>
