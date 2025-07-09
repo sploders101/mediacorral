@@ -1,13 +1,14 @@
 use std::io::{Read, Seek};
 
-use image::{GrayImage, Pixel, RgbaImage};
+use image::{GrayAlphaImage, GrayImage, Pixel, RgbaImage};
 use matroska_demuxer::{Frame, MatroskaFile, TrackEntry, TrackType};
 use ocr::PartessError;
+use pgs::{PgsError, processor::PgsProcessor};
 use tokio::sync::watch;
-use utils::crop_image;
 use vobsub::{PartessCache, VobsubError, VobsubProcessor};
 
 pub mod ocr;
+pub mod pgs;
 pub mod utils;
 pub mod vobsub;
 
@@ -21,6 +22,8 @@ pub enum ExtractDetailsError {
     MissingRequiredProps,
     #[error("The subrip subtitles are not valid UTF-8")]
     SubripInvalidUtf8,
+    #[error("An error occurred while reading PGS subtitles:\n{0}")]
+    PgsError(#[from] PgsError),
     #[error("An error occurred while reading VobSub subtitles:\n{0}")]
     VobsubError(#[from] VobsubError),
     #[error("An error occurred while demuxing:\n{0}")]
@@ -77,25 +80,23 @@ pub struct Subtitle {
 enum StContext {
     Subrip(Vec<Subtitle>),
     Vobsub(VobsubProcessor),
+    Pgs(PgsProcessor),
 }
 impl StContext {
-    fn process_frame(
-        &mut self,
-        timestamp_scale: u64,
-        frame: &mut Frame,
-    ) -> Result<(), ExtractDetailsError> {
+    fn process_frame(&mut self, frame: &mut Frame) -> Result<(), ExtractDetailsError> {
         match self {
             Self::Subrip(subs) => subs.push(Subtitle {
-                timestamp: frame.timestamp * timestamp_scale,
-                duration: frame.duration.map(|duration| duration * timestamp_scale),
+                timestamp: frame.timestamp,
+                duration: frame.duration.map(|duration| duration),
                 data: String::from_utf8(std::mem::take(&mut frame.data))
                     .map_err(|_| ExtractDetailsError::SubripInvalidUtf8)?,
             }),
             Self::Vobsub(vobs) => vobs.push_frame(
-                frame.timestamp * timestamp_scale / 1000,
-                frame.duration.map(|duration| duration * timestamp_scale),
+                frame.timestamp / 1000,
+                frame.duration.map(|duration| duration),
                 std::mem::take(&mut frame.data),
             ),
+            Self::Pgs(processor) => processor.push_frame(&frame)?,
         }
         return Ok(());
     }
@@ -103,7 +104,8 @@ impl StContext {
     fn collect(self) -> Result<Vec<Subtitle>, ExtractDetailsError> {
         match self {
             Self::Subrip(subs) => Ok(subs),
-            StContext::Vobsub(vobs) => vobs.collect(),
+            Self::Vobsub(vobs) => vobs.collect(),
+            Self::Pgs(processor) => processor.collect(),
         }
     }
 }
@@ -138,6 +140,7 @@ where
                 "eng",
                 st_track.codec_private().unwrap_or(&[]),
             )?),
+            "S_HDMV/PGS" => StContext::Pgs(PgsProcessor::new(partess_cache, "eng")?),
             // Other codecs should be filtered out above
             _ => unreachable!(),
         }),
@@ -164,17 +167,17 @@ where
         let _ = progress.send(0.0);
     }
 
-    let mut duration_tracker: u32 = 0;
     let mut frame = Frame::default();
     while mkv_file.next_frame(&mut frame)? {
-        duration_tracker = duration_tracker.max(frame.timestamp as _);
+        frame.timestamp = frame.timestamp * timestamp_scale;
+        frame.duration = frame.duration.map(|duration| duration * timestamp_scale);
         if frame.track == vid_track_number {
             // Process video
             vid_hasher.consume(&frame.data);
         } else if Some(frame.track) == st_track_number {
             // Process subtitles
             if let Some(ref mut st_ctx) = st_ctx {
-                st_ctx.process_frame(timestamp_scale, &mut frame)?;
+                st_ctx.process_frame(&mut frame)?;
             }
         }
 
@@ -245,11 +248,21 @@ fn format_srt_timestamp(timestamp: u64) -> String {
     format!("{timestamp_h:02}:{m:02}:{s:02},{ms:03}")
 }
 
-pub fn process_image(image: RgbaImage) -> GrayImage {
-    let cropped_image = crop_image(&image);
-    drop(image);
-    let mut gray_image: GrayImage = GrayImage::new(cropped_image.width(), cropped_image.height());
-    for (src_pixel, dest_pixel) in cropped_image.pixels().zip(gray_image.pixels_mut()) {
+pub fn process_graya_image(image: GrayAlphaImage) -> GrayImage {
+    let mut gray_image: GrayImage = GrayImage::new(image.width(), image.height());
+    for (src_pixel, dest_pixel) in image.pixels().zip(gray_image.pixels_mut()) {
+        if src_pixel.0[1] == 0 {
+            dest_pixel.0 = [255];
+            continue;
+        }
+        dest_pixel.0 = [255 - src_pixel.0[0]];
+    }
+    return gray_image;
+}
+
+pub fn process_rgba_image(image: RgbaImage) -> GrayImage {
+    let mut gray_image: GrayImage = GrayImage::new(image.width(), image.height());
+    for (src_pixel, dest_pixel) in image.pixels().zip(gray_image.pixels_mut()) {
         if src_pixel.0[3] == 0 {
             dest_pixel.0 = [255];
             continue;

@@ -14,7 +14,7 @@ use thiserror::Error;
 
 use crate::rayon_helpers::BackpressuredRayon;
 
-use super::{ExtractDetailsError, Subtitle, ocr::Partess, process_image};
+use super::{ExtractDetailsError, Subtitle, ocr::Partess, process_rgba_image};
 
 #[derive(Error, Debug, Clone)]
 pub enum VobsubError {
@@ -29,7 +29,7 @@ pub enum VobsubError {
 }
 
 pub struct PartessCache {
-    cache: Arc<Mutex<HashMap<String, Partess>>>,
+    pub cache: Arc<Mutex<HashMap<String, Partess>>>,
 }
 impl PartessCache {
     pub fn new() -> Self {
@@ -91,7 +91,7 @@ impl VobsubProcessor {
                 5,
                 Box::new(move |(timestamp, duration, data)| {
                     let frame = parse_frame(&idx_data, &data)?;
-                    let image: GrayImage = process_image(frame);
+                    let image: GrayImage = process_rgba_image(frame);
                     let mut partess = partess.get()?;
                     let sub = partess.ocr_image(image)?;
                     return Ok((timestamp, duration, sub));
