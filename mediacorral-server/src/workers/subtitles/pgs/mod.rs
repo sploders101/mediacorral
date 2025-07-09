@@ -258,7 +258,7 @@ impl PgsParser {
                     pcs.composition_number,
                     palette,
                     &object_def.rle_data,
-                );
+                )?;
             }
             return Ok(Some(image));
         }

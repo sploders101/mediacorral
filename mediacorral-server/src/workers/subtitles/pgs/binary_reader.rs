@@ -1,7 +1,9 @@
+#![allow(dead_code)]
+
 extern crate alloc;
 extern crate core;
 use alloc::vec::Vec;
-use core::str::{self, Utf8Error};
+use core::str;
 
 #[derive(Debug, Clone)]
 pub enum PacketWriteError {

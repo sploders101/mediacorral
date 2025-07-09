@@ -9,18 +9,6 @@ pub struct ImageWindow<'a> {
     crop_origin: Option<(u32, u32)>,
 }
 impl<'a> ImageWindow<'a> {
-    pub fn new(image: &'a mut image::GrayAlphaImage) -> Self {
-        return Self {
-            x_cursor: 0,
-            y_cursor: 0,
-            x: 0,
-            y: 0,
-            width: image.width(),
-            height: image.height(),
-            image,
-            crop_origin: None,
-        };
-    }
     pub fn with_window(
         image: &'a mut image::GrayAlphaImage,
         x: u32,
@@ -58,12 +46,6 @@ impl<'a> ImageWindow<'a> {
             height,
             crop_origin: Some((crop_x, crop_y)),
         };
-    }
-    pub fn get_width(&self) -> u32 {
-        return self.width;
-    }
-    pub fn get_height(&self) -> u32 {
-        return self.height;
     }
     pub fn put_pixel(&mut self, mut x: u32, mut y: u32, pixel: image::LumaA<u8>) {
         if let Some((crop_x, crop_y)) = self.crop_origin {
