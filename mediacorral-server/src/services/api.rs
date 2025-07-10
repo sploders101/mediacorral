@@ -1,4 +1,3 @@
-use std::any::Any;
 use std::fs::File;
 use std::io::{ErrorKind, Read};
 use std::sync::Arc;
@@ -769,6 +768,11 @@ impl CoordinatorApiService for ApiService {
         request: tonic::Request<proto::ReprocessJobRequest>,
     ) -> Result<tonic::Response<proto::ReprocessJobResponse>, tonic::Status> {
         let request = request.into_inner();
+        self.application
+            .reprocess_rip_job(request.job_id)
+            .await
+            .bubble()?;
+        return Ok(tonic::Response::new(proto::ReprocessJobResponse {}));
     }
 
     async fn prune_rip_job(
