@@ -45,7 +45,7 @@ fn get_subtitle_track(tracks: &[TrackEntry]) -> Result<Option<&TrackEntry>, Extr
         .into_iter()
         .filter(|track| track.track_type() == TrackType::Subtitle)
         .filter(|track| track.flag_enabled())
-        .filter(|track| matches!(track.codec_id(), "S_VOBSUB" | "S_SUBRIP"))
+        .filter(|track| matches!(track.codec_id(), "S_VOBSUB" | "S_SUBRIP" | "S_HDMV/PGS"))
         .filter(|track| {
             track
                 .language()
