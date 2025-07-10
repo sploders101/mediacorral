@@ -36,14 +36,6 @@ pub enum PgsError {
         palette_id: u8,
         composition_number: u16,
     },
-    #[error(
-        "Color {color_id} missing from palette {palette_id}, referenced in composition {composition_number}."
-    )]
-    MissingColor {
-        color_id: u8,
-        palette_id: u8,
-        composition_number: u16,
-    },
     #[error("Object {object_id} missing in composition {composition_number}.")]
     MissingObject {
         object_id: u16,
@@ -62,8 +54,6 @@ pub enum PgsError {
 
 fn render_into_image<'a>(
     image: &mut ImageWindow<'a>,
-    palette_id: u8,
-    composition_number: u16,
     palette: &HashMap<u8, image::LumaA<u8>>,
     data: &[u8],
 ) -> Result<(), PgsError> {
@@ -98,11 +88,7 @@ fn render_into_image<'a>(
                         // L pixels in color C (L: 1-byte, C: 1-byte)
                         let l = follower_value;
                         let c = data.read_u8().ok_or(PgsError::RleFormatError)?;
-                        let color = palette.get(&c).ok_or(PgsError::MissingColor {
-                            color_id: c,
-                            palette_id,
-                            composition_number,
-                        })?;
+                        let color = palette.get(&c).unwrap_or(&LumaA([0, 0]));
                         for _ in 0..l {
                             image.push_pixel(color.clone());
                         }
@@ -112,11 +98,7 @@ fn render_into_image<'a>(
                         let l_cont = data.read_u8().ok_or(PgsError::RleFormatError)?;
                         let l = u16::from_be_bytes([follower_value, l_cont]);
                         let c = data.read_u8().ok_or(PgsError::RleFormatError)?;
-                        let color = palette.get(&c).ok_or(PgsError::MissingColor {
-                            color_id: c,
-                            palette_id,
-                            composition_number,
-                        })?;
+                        let color = palette.get(&c).unwrap_or(&LumaA([0, 0]));
                         for _ in 0..l {
                             image.push_pixel(color.clone());
                         }
@@ -126,11 +108,7 @@ fn render_into_image<'a>(
             }
             c => {
                 // One pixel in color
-                let color = palette.get(&c).ok_or(PgsError::MissingColor {
-                    color_id: c,
-                    palette_id,
-                    composition_number,
-                })?;
+                let color = palette.get(&c).unwrap_or(&LumaA([0, 0]));
                 image.push_pixel(color.clone());
             }
         }
@@ -234,31 +212,41 @@ impl PgsParser {
                             composition_number: pcs.composition_number,
                         })?;
                 let mut image_window = if object.object_cropped_flag {
+                    let horizontal_offset = object
+                        .object_horizontal_pos
+                        .saturating_sub(window_def.horizontal_pos)
+                        as u32;
+                    let vertical_offset = object
+                        .object_vertical_pos
+                        .saturating_sub(window_def.vertical_pos)
+                        as u32;
                     ImageWindow::with_window_cropped(
                         &mut image,
-                        window_def.horizontal_pos as u32 + object.object_horizontal_pos as u32,
-                        window_def.vertical_pos as u32 + object.object_vertical_pos as u32,
+                        window_def.horizontal_pos as u32 + horizontal_offset,
+                        window_def.vertical_pos as u32 + vertical_offset,
                         object.object_cropping_width as u32,
                         object.object_cropping_height as u32,
                         object.object_cropping_horizontal_pos as u32,
                         object.object_cropping_vertical_pos as u32,
                     )
                 } else {
+                    let horizontal_offset = object
+                        .object_horizontal_pos
+                        .saturating_sub(window_def.horizontal_pos)
+                        as u32;
+                    let vertical_offset = object
+                        .object_vertical_pos
+                        .saturating_sub(window_def.vertical_pos)
+                        as u32;
                     ImageWindow::with_window(
                         &mut image,
-                        window_def.horizontal_pos as u32 + object.object_horizontal_pos as u32,
-                        window_def.vertical_pos as u32 + object.object_vertical_pos as u32,
-                        window_def.width as u32,
-                        window_def.height as u32,
+                        window_def.horizontal_pos as u32 + horizontal_offset,
+                        window_def.vertical_pos as u32 + horizontal_offset,
+                        window_def.width as u32 - horizontal_offset,
+                        window_def.height as u32 - vertical_offset,
                     )
                 };
-                render_into_image(
-                    &mut image_window,
-                    pcs.palette_id,
-                    pcs.composition_number,
-                    palette,
-                    &object_def.rle_data,
-                )?;
+                render_into_image(&mut image_window, palette, &object_def.rle_data)?;
             }
             return Ok(Some(image));
         }

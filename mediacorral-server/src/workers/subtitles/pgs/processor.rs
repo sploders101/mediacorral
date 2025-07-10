@@ -4,7 +4,8 @@ use leptess::Variable;
 use crate::{
     rayon_helpers::BackpressuredRayon,
     workers::subtitles::{
-        ExtractDetailsError, Subtitle, ocr::Partess, process_graya_image, vobsub::PartessCache,
+        ExtractDetailsError, Subtitle, ocr::Partess, process_graya_image, utils::crop_gray_image,
+        vobsub::PartessCache,
     },
 };
 
@@ -16,13 +17,14 @@ pub struct PgsProcessor {
         Box<
             dyn Fn(
                     (u64, Option<u64>, GrayAlphaImage),
-                ) -> Result<(u64, Option<u64>, String), ExtractDetailsError>
+                )
+                    -> Result<Option<(u64, Option<u64>, String)>, ExtractDetailsError>
                 + Send
                 + Sync
                 + 'static,
         >,
         (u64, Option<u64>, GrayAlphaImage),
-        Result<(u64, Option<u64>, String), ExtractDetailsError>,
+        Result<Option<(u64, Option<u64>, String)>, ExtractDetailsError>,
     >,
 }
 impl PgsProcessor {
@@ -51,23 +53,35 @@ impl PgsProcessor {
             rayon_pool: BackpressuredRayon::new(
                 5,
                 Box::new(move |(timestamp, duration, image)| {
+                    let image = crop_gray_image(&image);
+                    if image.width() == 0 || image.height() == 0 {
+                        return Ok(None);
+                    }
                     let image: GrayImage = process_graya_image(image);
                     let mut partess = partess.get()?;
                     let sub = partess.ocr_image(image)?;
-                    return Ok((timestamp, duration, sub));
+                    return Ok(Some((timestamp, duration, sub)));
                 }),
             ),
         });
     }
     pub fn push_frame(&mut self, frame: &matroska_demuxer::Frame) -> Result<(), PgsError> {
         if let Some(image) = self.pgs_parser.process_mkv_frame(frame)? {
-            self.rayon_pool
-                .push_data((frame.timestamp, frame.duration, image));
+            self.rayon_pool.push_data((
+                frame.timestamp / 1000,
+                frame.duration.map(|duration| duration / 1000),
+                image,
+            ));
         }
         return Ok(());
     }
     pub fn collect(self) -> Result<Vec<Subtitle>, ExtractDetailsError> {
-        let mut subs = self.rayon_pool.try_collect()?;
+        let mut subs: Vec<_> = self
+            .rayon_pool
+            .try_collect()?
+            .into_iter()
+            .filter_map(|item| item)
+            .collect();
         subs.sort_by_key(|(timestamp, _duration, _sub)| *timestamp);
         return Ok(subs
             .into_iter()

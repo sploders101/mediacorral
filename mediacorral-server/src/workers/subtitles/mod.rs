@@ -86,14 +86,14 @@ impl StContext {
     fn process_frame(&mut self, frame: &mut Frame) -> Result<(), ExtractDetailsError> {
         match self {
             Self::Subrip(subs) => subs.push(Subtitle {
-                timestamp: frame.timestamp,
-                duration: frame.duration.map(|duration| duration),
+                timestamp: frame.timestamp / 1000,
+                duration: frame.duration.map(|duration| duration / 1000),
                 data: String::from_utf8(std::mem::take(&mut frame.data))
                     .map_err(|_| ExtractDetailsError::SubripInvalidUtf8)?,
             }),
             Self::Vobsub(vobs) => vobs.push_frame(
                 frame.timestamp / 1000,
-                frame.duration.map(|duration| duration),
+                frame.duration.map(|duration| duration / 1000),
                 std::mem::take(&mut frame.data),
             ),
             Self::Pgs(processor) => processor.push_frame(&frame)?,
