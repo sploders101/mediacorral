@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::fs::File;
 use std::io::{ErrorKind, Read};
 use std::sync::Arc;
@@ -761,6 +762,13 @@ impl CoordinatorApiService for ApiService {
             subtitle_maps: subtitle_maps.into_iter().map(Into::into).collect(),
             ost_subtitle_files: ost_subtitle_files.into_iter().map(Into::into).collect(),
         }));
+    }
+
+    async fn reprocess_job(
+        &self,
+        request: tonic::Request<proto::ReprocessJobRequest>,
+    ) -> Result<tonic::Response<proto::ReprocessJobResponse>, tonic::Status> {
+        let request = request.into_inner();
     }
 
     async fn prune_rip_job(

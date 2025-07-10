@@ -30,6 +30,14 @@ pub struct BlobStorageController {
     blob_dir: PathBuf,
     db_connection: Arc<sqlx::SqlitePool>,
 }
+impl Clone for BlobStorageController {
+    fn clone(&self) -> Self {
+        return Self {
+            blob_dir: self.blob_dir.clone(),
+            db_connection: Arc::clone(&self.db_connection),
+        };
+    }
+}
 impl BlobStorageController {
     pub async fn new(
         db_connection: Arc<sqlx::SqlitePool>,
@@ -116,6 +124,56 @@ impl BlobStorageController {
                     id: None,
                     blob_id: subs_uuid,
                     video_file: id,
+                },
+            )
+            .await?;
+        }
+
+        return Ok(());
+    }
+
+    pub async fn reprocess_video_file(
+        &self,
+        video_file_id: i64,
+        partess_cache: &PartessCache,
+    ) -> BlobResult<()> {
+        let video_file = db::get_video_file(&self.db_connection, video_file_id).await?;
+        let subtitle_files =
+            db::get_subtitles_for_video(&self.db_connection, video_file_id).await?;
+        for subtitle_file in subtitle_files {
+            self.delete_blob(&subtitle_file.blob_id).await?;
+        }
+        let result = {
+            let new_path = self.blob_dir.join(video_file.blob_id);
+            let partess_cache = partess_cache.clone();
+            tokio::task::spawn_blocking(move || {
+                let file = std::fs::File::open(new_path)?;
+                extract_details(file, None, &partess_cache)
+            })
+            .await
+            .unwrap()
+        }?;
+
+        db::add_video_metadata(
+            &self.db_connection,
+            video_file_id,
+            result.resolution_width,
+            result.resolution_height,
+            result.duration,
+            &result.video_hash,
+        )
+        .await?;
+
+        if let Some(subtitles) = result.subtitles {
+            let subs_uuid = Uuid::new_v4().to_string();
+            let mut file = tokio::fs::File::create(self.blob_dir.join(&subs_uuid)).await?;
+            file.write_all(subtitles.as_bytes()).await?;
+            db::insert_subtitle_file(
+                &self.db_connection,
+                &SubtitleFilesItem {
+                    id: None,
+                    blob_id: subs_uuid,
+                    video_file: video_file_id,
                 },
             )
             .await?;

@@ -22,7 +22,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 use thiserror::Error;
-use tokio::{fs::File, io::AsyncReadExt, sync::Mutex};
+use tokio::{fs::File, io::AsyncReadExt, sync::Mutex, task::JoinSet};
 use tokio_stream::wrappers::ReadDirStream;
 use tonic::transport::{Channel, Endpoint};
 
@@ -372,6 +372,28 @@ impl Application {
                 }
             }
             None => {}
+        }
+
+        return Ok(());
+    }
+
+    pub async fn reprocess_rip_job(&self, job_id: i64) -> Result<(), ApplicationError> {
+        let files = db::get_videos_from_rip(&self.db, job_id).await?;
+        let mut join_set = JoinSet::new();
+        for file in files {
+            let blob_storage = self.blob_storage.clone();
+            let partess_cache = self.partess_cache.clone();
+            join_set.spawn(async move {
+                blob_storage
+                    .reprocess_video_file(
+                        file.id.expect("Query result missing primary key"),
+                        &partess_cache,
+                    )
+                    .await
+            });
+        }
+        for item in join_set.join_all().await {
+            item?;
         }
 
         return Ok(());

@@ -99,6 +99,9 @@ service CoordinatorApiService {
   // Gets all info needed to catalog a job
   rpc GetJobCatalogueInfo (GetJobCatalogueInfoRequest) returns (GetJobCatalogueInfoResponse);
 
+  // Re-processes all video files in a rip job
+  rpc ReprocessJob (ReprocessJobRequest) returns (ReprocessJobResponse);
+
   // Prunes a rip job, removing all untagged content
   rpc PruneRipJob (PruneRipJobRequest) returns (PruneRipJobResponse);
 }
@@ -443,6 +446,11 @@ message OstDownloadsItem {
   string filename = 4;
   string blob_id = 5;
 }
+
+message ReprocessJobRequest {
+  int64 job_id = 1;
+}
+message ReprocessJobResponse {}
 
 message PruneRipJobRequest {
   int64 job_id = 1;

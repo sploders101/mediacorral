@@ -763,6 +763,29 @@ pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i
     return Ok(result.get(0));
 }
 
+pub async fn get_video_file(db: &Db, id: i64) -> sqlx::Result<VideoFilesItem> {
+    return sqlx::query_as(
+        "
+            SELECT
+                id,
+                video_type,
+                match_id,
+                blob_id,
+                resolution_width,
+                resolution_height,
+                length,
+                original_video_hash,
+                rip_job
+            FROM video_files
+            WHERE
+                id = ?
+        ",
+    )
+    .bind(id)
+    .fetch_one(db)
+    .await;
+}
+
 pub async fn add_video_metadata(
     db: &Db,
     id: i64,
@@ -849,6 +872,28 @@ pub async fn insert_subtitle_file(
     .await?;
 
     return Ok(result.get(0));
+}
+
+pub async fn get_subtitles_for_video(
+    db: &Db,
+    video_file: i64,
+) -> Result<Vec<SubtitleFilesItem>, sqlx::Error> {
+    let result = sqlx::query_as(
+        "
+            SELECT
+                id,
+                blob_id,
+                video_file
+            FROM subtitle_files
+            WHERE
+                video_file = ?
+        ",
+    )
+    .bind(video_file)
+    .fetch_all(db)
+    .await?;
+
+    return Ok(result);
 }
 
 pub async fn insert_ost_download_item(
