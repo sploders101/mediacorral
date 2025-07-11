@@ -236,8 +236,8 @@ impl DriveControllerService for DriveController {
         }
         // Check for jobs already running on the drive
         for job in jobs.values() {
-            if job.drive_id == request.drive_id as _
-                && job.job_status.borrow().status == JobStatus::Running.into()
+            if job.drive_id == request.drive_id as usize
+                && job.job_status.borrow().status() == JobStatus::Running
             {
                 return Err(tonic::Status::resource_exhausted(
                     "The requested drive is already undergoing a rip job.",
