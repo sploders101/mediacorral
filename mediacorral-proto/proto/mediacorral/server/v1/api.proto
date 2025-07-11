@@ -90,6 +90,9 @@ service CoordinatorApiService {
   // Renames a job
   rpc RenameJob (RenameJobRequest) returns (RenameJobResponse);
 
+  // Deletes a job
+  rpc DeleteJob (DeleteJobRequest) returns (DeleteJobResponse);
+
   // Adds a suspicion to a job
   rpc SuspectJob (SuspectJobRequest) returns (SuspectJobResponse);
 
@@ -378,6 +381,11 @@ message RenameJobRequest {
   string new_name = 2;
 }
 message RenameJobResponse {}
+
+message DeleteJobRequest {
+  int64 job_id = 1;
+}
+message DeleteJobResponse {}
 
 message SuspectJobRequest {
   int64 job_id = 1;

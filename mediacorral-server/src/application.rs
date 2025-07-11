@@ -39,7 +39,7 @@ use crate::{
         tmdb::{TmdbError, TmdbImporter},
     },
     rayon_helpers::BackpressuredAsyncRayon,
-    workers::subtitles::vobsub::PartessCache,
+    workers::subtitles::{ExtractDetailsError, extract_details, vobsub::PartessCache},
 };
 
 pub struct Application {
@@ -381,19 +381,51 @@ impl Application {
         let files = db::get_videos_from_rip(&self.db, job_id).await?;
         let mut join_set = JoinSet::new();
         for file in files {
-            let blob_storage = self.blob_storage.clone();
+            let subtitle_files = db::get_subtitles_for_video(
+                &self.db,
+                file.id.expect("Query result missing primary key"),
+            )
+            .await?;
+            for subtitle_file in subtitle_files {
+                self.blob_storage
+                    .delete_blob(&subtitle_file.blob_id)
+                    .await?;
+            }
+            let new_path = self.blob_storage.get_file_path(&file.blob_id.to_string());
             let partess_cache = self.partess_cache.clone();
             join_set.spawn(async move {
-                blob_storage
-                    .reprocess_video_file(
-                        file.id.expect("Query result missing primary key"),
-                        &partess_cache,
-                    )
-                    .await
+                tokio::task::spawn_blocking(move || {
+                    let io_file = std::fs::File::open(new_path)?;
+                    Result::<_, ExtractDetailsError>::Ok((
+                        file,
+                        extract_details(io_file, None, &partess_cache)?,
+                    ))
+                })
+                .await
+                .unwrap()
             });
         }
-        for item in join_set.join_all().await {
-            item?;
+
+        while let Some(result) = join_set.join_next().await {
+            let (video_file, result) = result.unwrap().map_err(BlobError::from)?;
+            db::add_video_metadata(
+                &self.db,
+                video_file.id.expect("Query result missing primary key"),
+                result.resolution_width,
+                result.resolution_height,
+                result.duration,
+                &result.video_hash,
+            )
+            .await?;
+
+            if let Some(subtitles) = result.subtitles {
+                self.blob_storage
+                    .add_subtitles_file(
+                        video_file.id.expect("Query result missing primary key"),
+                        subtitles,
+                    )
+                    .await?;
+            }
         }
 
         return Ok(());

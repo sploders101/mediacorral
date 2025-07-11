@@ -132,52 +132,38 @@ impl BlobStorageController {
         return Ok(());
     }
 
-    pub async fn reprocess_video_file(
+    pub async fn add_subtitles_file(
         &self,
         video_file_id: i64,
-        partess_cache: &PartessCache,
-    ) -> BlobResult<()> {
-        let video_file = db::get_video_file(&self.db_connection, video_file_id).await?;
-        let subtitle_files =
-            db::get_subtitles_for_video(&self.db_connection, video_file_id).await?;
-        for subtitle_file in subtitle_files {
-            self.delete_blob(&subtitle_file.blob_id).await?;
-        }
-        let result = {
-            let new_path = self.blob_dir.join(video_file.blob_id);
-            let partess_cache = partess_cache.clone();
-            tokio::task::spawn_blocking(move || {
-                let file = std::fs::File::open(new_path)?;
-                extract_details(file, None, &partess_cache)
-            })
-            .await
-            .unwrap()
-        }?;
-
-        db::add_video_metadata(
+        subtitles: String,
+    ) -> Result<(), BlobError> {
+        let subs_uuid = Uuid::new_v4().to_string();
+        let mut file = tokio::fs::File::create(self.blob_dir.join(&subs_uuid)).await?;
+        file.write_all(subtitles.as_bytes()).await?;
+        db::insert_subtitle_file(
             &self.db_connection,
-            video_file_id,
-            result.resolution_width,
-            result.resolution_height,
-            result.duration,
-            &result.video_hash,
+            &SubtitleFilesItem {
+                id: None,
+                blob_id: subs_uuid,
+                video_file: video_file_id,
+            },
         )
         .await?;
+        return Ok(());
+    }
 
-        if let Some(subtitles) = result.subtitles {
-            let subs_uuid = Uuid::new_v4().to_string();
-            let mut file = tokio::fs::File::create(self.blob_dir.join(&subs_uuid)).await?;
-            file.write_all(subtitles.as_bytes()).await?;
-            db::insert_subtitle_file(
-                &self.db_connection,
-                &SubtitleFilesItem {
-                    id: None,
-                    blob_id: subs_uuid,
-                    video_file: video_file_id,
-                },
-            )
-            .await?;
+    pub async fn delete_rip_job(&self, rip_job: i64) -> BlobResult<()> {
+        let videos = db::get_videos_from_rip(&self.db_connection, rip_job).await?;
+        for video in videos {
+            self.delete_blob(&video.blob_id).await?;
         }
+
+        let subtitles = db::get_disc_subs_from_rip(&self.db_connection, rip_job).await?;
+        for subtitle in subtitles {
+            self.delete_blob(&subtitle.subtitle_blob).await?;
+        }
+
+        db::delete_matches_from_rip(&self.db_connection, rip_job).await?;
 
         return Ok(());
     }

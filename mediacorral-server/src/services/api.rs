@@ -681,6 +681,20 @@ impl CoordinatorApiService for ApiService {
         return Ok(tonic::Response::new(proto::RenameJobResponse {}));
     }
 
+    async fn delete_job(
+        &self,
+        request: tonic::Request<proto::DeleteJobRequest>,
+    ) -> std::result::Result<tonic::Response<proto::DeleteJobResponse>, tonic::Status> {
+        let request = request.into_inner();
+        self.application
+            .blob_storage
+            .delete_rip_job(request.job_id)
+            .await
+            .map_err(ApplicationError::from)
+            .bubble()?;
+        return Ok(tonic::Response::new(proto::DeleteJobResponse {}));
+    }
+
     /// Adds a suspicion to a job
     async fn suspect_job(
         &self,

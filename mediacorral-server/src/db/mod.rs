@@ -1327,6 +1327,28 @@ pub async fn get_matches_from_rip(
     return Ok(results);
 }
 
+pub async fn delete_matches_from_rip(db: &Db, rip_job: i64) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "
+            DELETE
+            FROM video_files
+            WHERE
+                id IN (
+                    SELECT video_files.id
+                    FROM video_files
+                    INNER JOIN match_info ON
+                        video_files.id = match_info.video_file_id
+                    WHERE
+                        video_files.rip_job = ?
+                )
+        ",
+    )
+    .bind(rip_job)
+    .execute(db)
+    .await?;
+    return Ok(());
+}
+
 pub async fn get_ost_subtitles_from_rip(
     db: &Db,
     rip_job: i64,
