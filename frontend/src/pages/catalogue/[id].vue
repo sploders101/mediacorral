@@ -368,9 +368,13 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 										)
 										.then((result) => {
 											if (result === `Please delete job ${route.params.id}`) {
-												rpc.deleteJob({
+												return rpc.deleteJob({
 													jobId: BigInt(route.params.id),
 												});
+											}
+										})
+										.then((result) => {
+											if (result !== undefined) {
 												router.push('/catalogue');
 											}
 										})
