@@ -28,6 +28,14 @@ pub enum OstError {
     UnreliableSubtitles,
     #[error("An unknown blob storage error occurred:\n{0}")]
     BlobError(#[from] BlobError),
+    #[error(
+        "An error occurred while deserializing {tag:?} response:\n{inner}\nOriginal text:\n{original_text}"
+    )]
+    DeserializeError {
+        tag: &'static str,
+        inner: serde_json::Error,
+        original_text: String,
+    },
     #[error("An unknown reqwest error occurred:\n{0}")]
     ReqwestError(#[from] reqwest::Error),
     #[error("An unknown database error occurred:\n{0}")]
@@ -55,8 +63,8 @@ impl OpenSubtitles {
             auth_token: Mutex::new(None),
         };
     }
-    async fn login(&self, auth_token: &mut Option<(SystemTime, String)>) -> reqwest::Result<()> {
-        let response: LoginResponse = self
+    async fn login(&self, auth_token: &mut Option<(SystemTime, String)>) -> Result<(), OstError> {
+        let response = self
             .agent
             .post("https://api.opensubtitles.com/api/v1/login")
             .header("User-Agent", "Mediacorral v1.0.0")
@@ -67,8 +75,18 @@ impl OpenSubtitles {
             }))
             .send()
             .await?
-            .json()
+            .text()
             .await?;
+        let response: LoginResponse = match serde_json::from_str(&response) {
+            Ok(response) => response,
+            Err(err) => {
+                return Err(OstError::DeserializeError {
+                    tag: "login",
+                    inner: err,
+                    original_text: response,
+                });
+            }
+        };
 
         *auth_token = Some((SystemTime::now(), response.token));
 
@@ -78,7 +96,7 @@ impl OpenSubtitles {
     async fn authenticated(
         &self,
         req_fn: impl Fn() -> reqwest::RequestBuilder,
-    ) -> reqwest::Result<reqwest::Response> {
+    ) -> Result<reqwest::Response, OstError> {
         let query_start = SystemTime::now();
         loop {
             let mut auth_token = self.auth_token.lock().await;
@@ -94,7 +112,7 @@ impl OpenSubtitles {
                         self.login(&mut auth_token).await?;
                         continue;
                     } else {
-                        return Err(response.error_for_status().unwrap_err());
+                        return Err(response.error_for_status().unwrap_err().into());
                     }
                 } else {
                     return Ok(response);
@@ -107,29 +125,47 @@ impl OpenSubtitles {
     }
 
     pub async fn find_subtitles(&self, tmdb_id: i32) -> OstResult<Vec<SubtitleSummary>> {
-        let search_result: SearchResults = self
+        let search_result = self
             .authenticated(|| {
                 self.agent
                     .get("https://api.opensubtitles.com/api/v1/subtitles")
                     .query(&[("tmdb_id", &tmdb_id.to_string())])
             })
             .await?
-            .json()
+            .error_for_status()?
+            .text()
             .await?;
+        let search_result: SearchResults = match serde_json::from_str(&search_result) {
+            Ok(search_result) => search_result,
+            Err(err) => {
+                return Err(OstError::DeserializeError {
+                    tag: "find_subtitles",
+                    inner: err,
+                    original_text: search_result,
+                });
+            }
+        };
 
         let mut files: Vec<SubtitleSummary> = search_result
             .data
             .iter()
-            .filter(|subtitle| &subtitle.attributes.language == "en")
+            .filter(|subtitle| {
+                subtitle.attributes.language.as_ref().map(String::as_str) == Some("en")
+            })
             .flat_map(|subtitle| {
+                let lang = subtitle
+                    .attributes
+                    .language
+                    .as_ref()
+                    .expect("Language is null. This should have been filtered prior");
                 subtitle
                     .attributes
                     .files
                     .iter()
-                    .map(|file| SubtitleSummary {
+                    .map(move |file| SubtitleSummary {
                         name: format!(
                             "lang: {}, name: {}, uploader: {} ({})",
-                            subtitle.attributes.language,
+                            lang,
                             file.file_name,
                             subtitle.attributes.uploader.name,
                             subtitle.attributes.uploader.rank,
@@ -171,7 +207,7 @@ impl OpenSubtitles {
     }
 
     pub async fn download_subtitles(&self, file_id: u32) -> OstResult<String> {
-        let pointer: DownloadPointer = self
+        let pointer = self
             .authenticated(|| {
                 self.agent
                     .post("https://api.opensubtitles.com/api/v1/download")
@@ -180,12 +216,24 @@ impl OpenSubtitles {
                     }))
             })
             .await?
-            .json()
+            .error_for_status()?
+            .text()
             .await?;
+        let pointer: DownloadPointer = match serde_json::from_str(&pointer) {
+            Ok(pointer) => pointer,
+            Err(err) => {
+                return Err(OstError::DeserializeError {
+                    tag: "download_subtitles",
+                    inner: err,
+                    original_text: pointer,
+                });
+            }
+        };
 
         return Ok(self
             .authenticated(|| self.agent.get(&pointer.link))
             .await?
+            .error_for_status()?
             .text()
             .await?);
     }
@@ -379,7 +427,7 @@ struct SearchResult {
 #[derive(Debug, Deserialize, Clone)]
 struct STAttributes {
     // subtitle_id: String,
-    language: String,
+    language: Option<String>,
     download_count: u32,
     new_download_count: u32,
     // hearing_impaired: bool,
