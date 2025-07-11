@@ -5,6 +5,7 @@ import { createApp } from "vue";
 import { GrpcWebFetchTransport } from "@protobuf-ts/grpcweb-transport";
 import { CoordinatorApiServiceClient } from "./generated/mediacorral/server/v1/api.client";
 import { BASE_URL, injectKeys } from "./scripts/config";
+import { PromptService } from "./components/PromptService.vue";
 
 const app = createApp(App);
 registerPlugins(app);
@@ -15,5 +16,6 @@ const transport = new GrpcWebFetchTransport({
 });
 const rpc = new CoordinatorApiServiceClient(transport);
 app.provide(injectKeys.rpc, rpc);
+app.provide(injectKeys.promptService, new PromptService());
 
 app.mount("#app");

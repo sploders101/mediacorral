@@ -6,12 +6,16 @@ import type { ServiceInfo } from "@protobuf-ts/runtime-rpc";
 import { CoordinatorApiService } from "./api";
 import type { PruneRipJobResponse } from "./api";
 import type { PruneRipJobRequest } from "./api";
+import type { ReprocessJobResponse } from "./api";
+import type { ReprocessJobRequest } from "./api";
 import type { GetJobCatalogueInfoResponse } from "./api";
 import type { GetJobCatalogueInfoRequest } from "./api";
 import type { GetUntaggedJobsResponse } from "./api";
 import type { GetUntaggedJobsRequest } from "./api";
 import type { SuspectJobResponse } from "./api";
 import type { SuspectJobRequest } from "./api";
+import type { DeleteJobResponse } from "./api";
+import type { DeleteJobRequest } from "./api";
 import type { RenameJobResponse } from "./api";
 import type { RenameJobRequest } from "./api";
 import type { GetJobInfoResponse } from "./api";
@@ -246,6 +250,12 @@ export interface ICoordinatorApiServiceClient {
      */
     renameJob(input: RenameJobRequest, options?: RpcOptions): UnaryCall<RenameJobRequest, RenameJobResponse>;
     /**
+     * Deletes a job
+     *
+     * @generated from protobuf rpc: DeleteJob
+     */
+    deleteJob(input: DeleteJobRequest, options?: RpcOptions): UnaryCall<DeleteJobRequest, DeleteJobResponse>;
+    /**
      * Adds a suspicion to a job
      *
      * @generated from protobuf rpc: SuspectJob
@@ -263,6 +273,12 @@ export interface ICoordinatorApiServiceClient {
      * @generated from protobuf rpc: GetJobCatalogueInfo
      */
     getJobCatalogueInfo(input: GetJobCatalogueInfoRequest, options?: RpcOptions): UnaryCall<GetJobCatalogueInfoRequest, GetJobCatalogueInfoResponse>;
+    /**
+     * Re-processes all video files in a rip job
+     *
+     * @generated from protobuf rpc: ReprocessJob
+     */
+    reprocessJob(input: ReprocessJobRequest, options?: RpcOptions): UnaryCall<ReprocessJobRequest, ReprocessJobResponse>;
     /**
      * Prunes a rip job, removing all untagged content
      *
@@ -533,12 +549,21 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
         return stackIntercept<RenameJobRequest, RenameJobResponse>("unary", this._transport, method, opt, input);
     }
     /**
+     * Deletes a job
+     *
+     * @generated from protobuf rpc: DeleteJob
+     */
+    deleteJob(input: DeleteJobRequest, options?: RpcOptions): UnaryCall<DeleteJobRequest, DeleteJobResponse> {
+        const method = this.methods[28], opt = this._transport.mergeOptions(options);
+        return stackIntercept<DeleteJobRequest, DeleteJobResponse>("unary", this._transport, method, opt, input);
+    }
+    /**
      * Adds a suspicion to a job
      *
      * @generated from protobuf rpc: SuspectJob
      */
     suspectJob(input: SuspectJobRequest, options?: RpcOptions): UnaryCall<SuspectJobRequest, SuspectJobResponse> {
-        const method = this.methods[28], opt = this._transport.mergeOptions(options);
+        const method = this.methods[29], opt = this._transport.mergeOptions(options);
         return stackIntercept<SuspectJobRequest, SuspectJobResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -547,7 +572,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: GetUntaggedJobs
      */
     getUntaggedJobs(input: GetUntaggedJobsRequest, options?: RpcOptions): UnaryCall<GetUntaggedJobsRequest, GetUntaggedJobsResponse> {
-        const method = this.methods[29], opt = this._transport.mergeOptions(options);
+        const method = this.methods[30], opt = this._transport.mergeOptions(options);
         return stackIntercept<GetUntaggedJobsRequest, GetUntaggedJobsResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -556,8 +581,17 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: GetJobCatalogueInfo
      */
     getJobCatalogueInfo(input: GetJobCatalogueInfoRequest, options?: RpcOptions): UnaryCall<GetJobCatalogueInfoRequest, GetJobCatalogueInfoResponse> {
-        const method = this.methods[30], opt = this._transport.mergeOptions(options);
+        const method = this.methods[31], opt = this._transport.mergeOptions(options);
         return stackIntercept<GetJobCatalogueInfoRequest, GetJobCatalogueInfoResponse>("unary", this._transport, method, opt, input);
+    }
+    /**
+     * Re-processes all video files in a rip job
+     *
+     * @generated from protobuf rpc: ReprocessJob
+     */
+    reprocessJob(input: ReprocessJobRequest, options?: RpcOptions): UnaryCall<ReprocessJobRequest, ReprocessJobResponse> {
+        const method = this.methods[32], opt = this._transport.mergeOptions(options);
+        return stackIntercept<ReprocessJobRequest, ReprocessJobResponse>("unary", this._transport, method, opt, input);
     }
     /**
      * Prunes a rip job, removing all untagged content
@@ -565,7 +599,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: PruneRipJob
      */
     pruneRipJob(input: PruneRipJobRequest, options?: RpcOptions): UnaryCall<PruneRipJobRequest, PruneRipJobResponse> {
-        const method = this.methods[31], opt = this._transport.mergeOptions(options);
+        const method = this.methods[33], opt = this._transport.mergeOptions(options);
         return stackIntercept<PruneRipJobRequest, PruneRipJobResponse>("unary", this._transport, method, opt, input);
     }
 }

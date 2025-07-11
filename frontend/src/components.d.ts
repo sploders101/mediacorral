@@ -11,6 +11,7 @@ declare module 'vue' {
     ManualMatch: typeof import('./components/ManualMatch.vue')['default']
     MatchSelector: typeof import('./components/MatchSelector.vue')['default']
     MetadataImport: typeof import('./components/MetadataImport.vue')['default']
+    PromptService: typeof import('./components/PromptService.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }

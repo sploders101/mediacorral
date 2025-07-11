@@ -32,6 +32,8 @@ import { SearchType, type MetaCache } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
 import { formatRuntime } from "@/scripts/utils";
 
+const prompter = inject(injectKeys.promptService)!;
+
 const matchThreshold = ref(75);
 
 const loading = ref(false);
@@ -122,7 +124,7 @@ async function refreshData() {
 							throw new Error("TV episode missing");
 						cache.tvEpisodes.set(response.episode.id, response.episode);
 						tvShows.add(response.episode.tvShowId);
-						tvSeasons.add(response.episode.tvShowId);
+						tvSeasons.add(response.episode.tvSeasonId);
 					}
 					break;
 			}
@@ -351,6 +353,31 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 						@click="renameJob()"
 					/>
 					<v-spacer />
+					<v-tooltip text="Delete rip job">
+						<template v-slot:activator="{ props }">
+							<v-btn
+								v-bind="props"
+								density="compact"
+								flat
+								icon="mdi-delete"
+								@click="
+									prompter
+										.prompt(
+											'Delete rip job?',
+											`Enter the following to delete the rip job:\n'Please delete job ${route.params.id}'`
+										)
+										.then((result) => {
+											if (result === `Please delete job ${route.params.id}`) {
+												rpc.deleteJob({
+													jobId: BigInt(route.params.id),
+												});
+												router.push('/catalogue');
+											}
+										})
+								"
+							/>
+						</template>
+					</v-tooltip>
 					<v-tooltip text="Delete unmatched videos">
 						<template v-slot:activator="{ props }">
 							<v-btn
@@ -359,9 +386,22 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 								flat
 								icon="mdi-delete-empty"
 								@click="
-									rpc
-										.pruneRipJob({ jobId: route.params.id })
-										.then(() => $router.push('/catalogue'))
+									prompter
+										.confirm(
+											'Are you sure you want to delete all untagged media?',
+											'Prune rip job?'
+										)
+										.then((result) => {
+											if (result) {
+												loading = true;
+												rpc
+													.pruneRipJob({ jobId: BigInt(route.params.id) })
+													.then(() => {
+														$router.push('/catalogue');
+														loading = false;
+													});
+											}
+										})
 								"
 							/>
 						</template>
@@ -422,12 +462,20 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 							"
 							flat
 							@click="
-								rpc.tagFile({
-									file: item.id,
-									videoType: VideoType.UNSPECIFIED,
-									matchId: undefined,
-								});
-								refreshData();
+								rpc
+									.tagFile({
+										file: item.id,
+										videoType: VideoType.UNSPECIFIED,
+										matchId: undefined,
+									})
+									.then(() => {
+										let file = catInfo?.videoFiles.find(
+											(video) => video.id === item.id
+										);
+										if (file === undefined) return;
+										file.videoType = VideoType.UNSPECIFIED;
+										file.matchId = undefined;
+									})
 							"
 						>
 							Unmatch
@@ -443,7 +491,16 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 										flat
 										icon="mdi-check"
 										v-bind="props"
-										@click="rpc.tagFile(item.suggestedMatch!).then(refreshData)"
+										@click="
+											rpc.tagFile(item.suggestedMatch!).then(() => {
+												let file = catInfo?.videoFiles.find(
+													(video) => video.id === item.id
+												);
+												if (file === undefined) return;
+												file.videoType = item.suggestedMatch!.videoType;
+												file.matchId = item.suggestedMatch!.matchId;
+											})
+										"
 									/>
 								</template>
 							</v-tooltip>
