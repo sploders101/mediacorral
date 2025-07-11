@@ -1,6 +1,7 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use application::Application;
+use axum::Router;
 use clap::Parser;
 use mediacorral_proto::mediacorral::server::v1::{
     coordinator_api_service_server::CoordinatorApiServiceServer,
@@ -8,8 +9,11 @@ use mediacorral_proto::mediacorral::server::v1::{
 };
 use serde::Deserialize;
 use services::{api::ApiService, notifications::NotificationService};
-use tonic::transport::Server;
+use tokio::net::TcpListener;
+use tonic::{service::Routes, transport::Server};
 use tonic_web::GrpcWebLayer;
+use tower::Layer;
+use tower_http::services::ServeDir;
 
 mod application;
 mod blob_storage;
@@ -78,7 +82,7 @@ async fn main() {
         .grpc_serve_address
         .parse()
         .expect("Invalid grpc serve address.");
-    let web_address = config
+    let web_address: SocketAddr = config
         .web_serve_address
         .parse()
         .expect("Invalid web serve address.");
@@ -106,13 +110,21 @@ async fn main() {
         .add_service(reflection)
         .serve(grpc_address);
 
-    let web_server = Server::builder()
-        .accept_http1(true)
-        .layer(GrpcWebLayer::new())
-        .add_service(CoordinatorApiServiceServer::new(ApiService::new(
-            application,
-        )))
-        .serve(web_address);
+    let mut grpc_web_server = Routes::builder();
+    // .accept_http1(true)
+    grpc_web_server.add_service(CoordinatorApiServiceServer::new(ApiService::new(
+        application,
+    )));
+    let web_server = ServeDir::new("frontend/dist").append_index_html_on_directories(true);
+    let tcp_listener = TcpListener::bind(web_address)
+        .await
+        .expect("Failed to bind web port");
+    let web_server = axum::serve(
+        tcp_listener,
+        Router::new()
+            .nest_service("/api", GrpcWebLayer::new().layer(grpc_web_server.routes()))
+            .fallback_service(web_server),
+    );
 
     tokio::select! {
         result = grpc_server => result.unwrap(),

@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.98"
+axum = "0.8.4"
 bitflags = "2.9.1"
 clap = { version = "4.5.39", features = ["derive"] }
 futures = "0.3.31"
@@ -31,4 +32,6 @@ tokio-stream = { version = "0.1.17", features = ["sync"] }
 tonic = "0.13.1"
 tonic-reflection = "0.13.1"
 tonic-web = "0.13.1"
+tower = "0.5.2"
+tower-http = { version = "0.6.6", features = ["fs"] }
 uuid = { version = "1.17.0", features = ["v4"] }
