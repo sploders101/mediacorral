@@ -465,7 +465,7 @@ pub enum ApplicationError {
     TonicError(#[from] tonic::Status),
     #[error("There was an error querying the database:\n{0}")]
     DbError(#[from] sqlx::Error),
-    #[error("An I/O eeor occurred:\n{0}")]
+    #[error("An I/O error occurred:\n{0}")]
     Io(#[from] std::io::Error),
 }
 
