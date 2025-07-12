@@ -10,6 +10,7 @@ import { SearchType } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
 import type { ProcessedVideoItem } from "@/pages/catalogue/[id].vue";
 import { formatRuntime } from "@/scripts/utils";
+import sanitizeHtml from 'sanitize-html';
 
 const rpc = inject(injectKeys.rpc)!;
 const metaCache = inject(injectKeys.metaCache);
@@ -74,7 +75,7 @@ watch(
 		const { response } = await rpc.getSubtitles({
 			blobId: subtitles.subtitleBlob,
 		});
-		videoSubtitles.value = response.subtitles;
+		videoSubtitles.value = sanitizeHtml(response.subtitles);
 	},
 	{ immediate: true }
 );
@@ -120,7 +121,7 @@ watch(
 		);
 		if (subs === undefined) return;
 		const { response } = await rpc.getSubtitles({ blobId: subs.blobId });
-		matchSubtitles.value = response.subtitles;
+		matchSubtitles.value = sanitizeHtml(response.subtitles);
 	},
 	{ immediate: true }
 );
@@ -137,6 +138,21 @@ watch(
 	},
 	{ immediate: true }
 );
+
+const episodeDescription = computed(() => {
+	if (matchSelection.value === undefined) return undefined;
+	let contents = props.catInfo.suspectedContents?.suspectedContents;
+	let metadata: TvEpisode | Movie | undefined;
+	switch (contents?.oneofKind) {
+		case "movie":
+			metadata = metaCache.movies.get(matchSelection.value);
+			return metadata?.description;
+		case "tvEpisodes":
+			metadata = metaCache.tvEpisodes.get(matchSelection.value);
+			return metadata?.description;
+	}
+	return undefined;
+});
 
 const matchInfo = computed(() => {
 	const points: string[] = [];
@@ -228,35 +244,51 @@ const matchManually = ref(false);
 					<pre>{{ matchInfo }}</pre>
 				</v-col>
 			</v-row>
+			<v-row v-if="episodeDescription">
+				<v-col cols="12">
+					<div class="text-h6 ma-1">Description</div>
+				</v-col>
+			</v-row>
+			<v-row v-if="episodeDescription">
+				<v-col cols="12">
+					<v-sheet
+						color="#101010"
+						class="pre-wrap pa-2"
+						elevation="3"
+						rounded="lg"
+						>{{ episodeDescription }}</v-sheet
+					>
+				</v-col>
+			</v-row>
 			<v-row>
-				<v-col cols="6">
+				<v-col :cols="matchSelection === undefined ? 12 : 6">
 					<div class="text-h6 ma-1">Original Subtitles</div>
 				</v-col>
-				<v-col cols="6">
+				<v-col v-if="matchSelection !== undefined" cols="6">
 					<div class="text-h6 ma-1">OST Subtitles</div>
 				</v-col>
 			</v-row>
 			<v-row>
-				<v-col cols="6">
+				<v-col :cols="matchSelection === undefined ? 12 : 6">
 					<v-sheet
 						v-if="videoSubtitles !== undefined"
 						color="#101010"
 						class="pre-wrap pa-2"
 						elevation="3"
 						rounded="lg"
-						>{{ videoSubtitles }}</v-sheet
-					>
+						v-html="videoSubtitles"
+						/>
 					<v-skeleton-loader v-else type="paragraph" />
 				</v-col>
-				<v-col cols="6">
+				<v-col v-if="matchSelection !== undefined" cols="6">
 					<v-sheet
 						v-if="matchSubtitles !== undefined"
 						color="#101010"
 						class="pre-wrap pa-2"
 						elevation="3"
 						rounded="lg"
-						>{{ matchSubtitles }}</v-sheet
-					>
+						v-html="matchSubtitles"
+						/>
 					<v-skeleton-loader v-else type="paragraph" />
 				</v-col>
 			</v-row>
