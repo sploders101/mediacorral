@@ -10,7 +10,6 @@ import { SearchType } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
 import type { ProcessedVideoItem } from "@/pages/catalogue/[id].vue";
 import { formatRuntime } from "@/scripts/utils";
-import sanitizeHtml from 'sanitize-html';
 
 const rpc = inject(injectKeys.rpc)!;
 const metaCache = inject(injectKeys.metaCache);
@@ -75,7 +74,7 @@ watch(
 		const { response } = await rpc.getSubtitles({
 			blobId: subtitles.subtitleBlob,
 		});
-		videoSubtitles.value = sanitizeHtml(response.subtitles);
+		videoSubtitles.value = response.subtitles;
 	},
 	{ immediate: true }
 );
@@ -121,7 +120,7 @@ watch(
 		);
 		if (subs === undefined) return;
 		const { response } = await rpc.getSubtitles({ blobId: subs.blobId });
-		matchSubtitles.value = sanitizeHtml(response.subtitles);
+		matchSubtitles.value = response.subtitles;
 	},
 	{ immediate: true }
 );
@@ -276,8 +275,8 @@ const matchManually = ref(false);
 						class="pre-wrap pa-2"
 						elevation="3"
 						rounded="lg"
-						v-html="videoSubtitles"
-						/>
+						>{{ videoSubtitles }}</v-sheet
+					>
 					<v-skeleton-loader v-else type="paragraph" />
 				</v-col>
 				<v-col v-if="matchSelection !== undefined" cols="6">
@@ -287,8 +286,8 @@ const matchManually = ref(false);
 						class="pre-wrap pa-2"
 						elevation="3"
 						rounded="lg"
-						v-html="matchSubtitles"
-						/>
+						>{{ matchSubtitles }}</v-sheet
+					>
 					<v-skeleton-loader v-else type="paragraph" />
 				</v-col>
 			</v-row>
