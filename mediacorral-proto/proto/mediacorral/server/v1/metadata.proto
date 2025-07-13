@@ -11,10 +11,4 @@ message ChapterInfo {
   uint64 chapter_start = 3;
   uint64 chapter_end = 4;
   string chapter_name = 5;
-  ChapterHashes hashes = 6;
-}
-
-message ChapterHashes {
-  reserved 1, 2; // TODO: Video and audio tracks
-  bytes subtitles = 3;
 }
