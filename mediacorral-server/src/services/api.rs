@@ -782,9 +782,10 @@ impl CoordinatorApiService for ApiService {
         request: tonic::Request<proto::ReprocessJobRequest>,
     ) -> Result<tonic::Response<proto::ReprocessJobResponse>, tonic::Status> {
         let request = request.into_inner();
-        self.application
-            .reprocess_rip_job(request.job_id)
+        let application = Arc::clone(&self.application);
+        tokio::task::spawn(async move { application.reprocess_rip_job(request.job_id).await })
             .await
+            .unwrap()
             .bubble()?;
         return Ok(tonic::Response::new(proto::ReprocessJobResponse {}));
     }
