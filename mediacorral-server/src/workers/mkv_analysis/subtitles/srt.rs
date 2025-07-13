@@ -25,7 +25,7 @@ pub fn format_subtitles_srt(
             format_srt_timestamp(start_time),
             format_srt_timestamp(end_time)
         ));
-        formatted.push_str(&subtitle.data);
+        formatted.push_str(subtitle.data.trim_end_matches("\n"));
     }
     return formatted + "\n";
 }
