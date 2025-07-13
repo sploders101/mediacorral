@@ -31,7 +31,9 @@ import router from "@/router";
 import { SearchType, type MetaCache } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
 import { formatRuntime } from "@/scripts/utils";
+import { reportErrorsFactory } from "@/scripts/uiUtils";
 
+const reportErrors = reportErrorsFactory();
 const prompter = inject(injectKeys.promptService)!;
 
 const matchThreshold = ref(75);
@@ -39,6 +41,7 @@ const matchThreshold = ref(75);
 const loading = ref(false);
 const route = useRoute("/catalogue/[id]");
 const rpc = inject(injectKeys.rpc)!;
+
 const jobInfo = ref<RipJob | undefined>();
 const catInfo = ref<GetJobCatalogueInfoResponse>();
 const cache = reactive<MetaCache>({
@@ -62,8 +65,14 @@ watch(() => route.params.id, refreshData, { immediate: true });
 async function refreshData() {
 	loading.value = true;
 	let jobId = BigInt(route.params.id);
-	const jobInfoResponse = await rpc.getJobInfo({ jobId });
-	const catInfoResponse = await rpc.getJobCatalogueInfo({ jobId });
+	const jobInfoResponse = await reportErrors(
+		rpc.getJobInfo({ jobId }),
+		"Failed to fetch rip job info"
+	);
+	const catInfoResponse = await reportErrors(
+		rpc.getJobCatalogueInfo({ jobId }),
+		"Failed to get cataloging info"
+	);
 	jobInfo.value = jobInfoResponse.response.details;
 	catInfo.value = catInfoResponse.response;
 
@@ -133,7 +142,10 @@ async function refreshData() {
 
 	// Wait for all the data we've started collecting so far.
 	// Some of it will feed the next set of queries.
-	await Promise.all(firstFetchers);
+	await reportErrors(
+		Promise.all(firstFetchers),
+		"Could not get metadata for suspected titles"
+	);
 
 	// Fetch pending content
 	const finalFetchers = [];
@@ -167,7 +179,10 @@ async function refreshData() {
 	}
 
 	// Wait for second-stage content to return
-	await Promise.all(finalFetchers);
+	await reportErrors(
+		Promise.all(finalFetchers),
+		"Could not get metadata for suspected titles"
+	);
 
 	loading.value = false;
 }
@@ -272,11 +287,17 @@ async function renameJob() {
 	const newName = prompt("New name:", jobInfo.value.discTitle);
 	if (newName === null) return;
 	loading.value = true;
-	await rpc.renameJob({
-		jobId: jobInfo.value.id,
-		newName,
-	});
-	const { response } = await rpc.getJobInfo({ jobId: jobInfo.value.id });
+	await reportErrors(
+		rpc.renameJob({
+			jobId: jobInfo.value.id,
+			newName,
+		}),
+		"Error renaming job"
+	);
+	const { response } = await reportErrors(
+		rpc.getJobInfo({ jobId: jobInfo.value.id }),
+		"Error getting new job info"
+	);
 	jobInfo.value = response.details;
 	loading.value = false;
 }
@@ -306,32 +327,38 @@ async function suspectContents(data: MatchSubmitData) {
 		case SearchType.Movie:
 			if (data.movie.tmdbId === undefined)
 				throw new Error("Cannot suspect movie that was created manually");
-			await rpc.suspectJob({
-				jobId: jobInfo.value.id,
-				suspicion: {
-					suspectedContents: {
-						oneofKind: "movie",
-						movie: {
-							tmdbId: data.movie.tmdbId,
+			await reportErrors(
+				rpc.suspectJob({
+					jobId: jobInfo.value.id,
+					suspicion: {
+						suspectedContents: {
+							oneofKind: "movie",
+							movie: {
+								tmdbId: data.movie.tmdbId,
+							},
 						},
 					},
-				},
-			});
+				}),
+				"An error occurred while analyzing the content"
+			);
 			break;
 		case SearchType.TvSeries:
 			if (data.episodes.some((episode) => episode.tmdbId === undefined))
 				throw new Error("Cannot suspect tv show that was created manually");
-			await rpc.suspectJob({
-				jobId: jobInfo.value.id,
-				suspicion: {
-					suspectedContents: {
-						oneofKind: "tvEpisodes",
-						tvEpisodes: {
-							episodeTmdbIds: data.episodes.map((episode) => episode.tmdbId!),
+			await reportErrors(
+				rpc.suspectJob({
+					jobId: jobInfo.value.id,
+					suspicion: {
+						suspectedContents: {
+							oneofKind: "tvEpisodes",
+							tvEpisodes: {
+								episodeTmdbIds: data.episodes.map((episode) => episode.tmdbId!),
+							},
 						},
 					},
-				},
-			});
+				}),
+				"An error occurred while analyzing the content"
+			);
 	}
 	await refreshData();
 	loading.value = false;
@@ -368,9 +395,12 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 										)
 										.then((result) => {
 											if (result === `Please delete job ${route.params.id}`) {
-												return rpc.deleteJob({
-													jobId: BigInt(route.params.id),
-												});
+												return reportErrors(
+													rpc.deleteJob({
+														jobId: BigInt(route.params.id),
+													}),
+													'An error occurred while deleting the job'
+												);
 											}
 										})
 										.then((result) => {
@@ -496,14 +526,17 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 										icon="mdi-check"
 										v-bind="props"
 										@click="
-											rpc.tagFile(item.suggestedMatch!).then(() => {
-												let file = catInfo?.videoFiles.find(
-													(video) => video.id === item.id
-												);
-												if (file === undefined) return;
-												file.videoType = item.suggestedMatch!.videoType;
-												file.matchId = item.suggestedMatch!.matchId;
-											})
+											reportErrors(
+												rpc.tagFile(item.suggestedMatch!).then(() => {
+													let file = catInfo?.videoFiles.find(
+														(video) => video.id === item.id
+													);
+													if (file === undefined) return;
+													file.videoType = item.suggestedMatch!.videoType;
+													file.matchId = item.suggestedMatch!.matchId;
+												}),
+												'An error occurred while tagging the file'
+											)
 										"
 									/>
 								</template>

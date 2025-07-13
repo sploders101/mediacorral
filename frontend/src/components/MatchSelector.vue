@@ -14,8 +14,10 @@ import {
 import { SearchType } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
 import MetadataImport from "./MetadataImport.vue";
+import { reportErrorsFactory } from "@/scripts/uiUtils";
 
 const rpc = inject(injectKeys.rpc)!;
+const reportErrors = reportErrorsFactory();
 
 const props = defineProps<{
 	multipleEpisodes?: boolean;
@@ -38,7 +40,10 @@ async function useImport(event: {
 	switch (event.type) {
 		case "movie":
 			if (mediaType.value === SearchType.Movie) {
-				let { response } = await rpc.listMovies({});
+				let { response } = await reportErrors(
+					rpc.listMovies({}),
+					"Failed to list movies"
+				);
 				moviesList.value = response.movies;
 			}
 			mediaType.value = SearchType.Movie;
@@ -48,7 +53,10 @@ async function useImport(event: {
 			break;
 		case "tv":
 			if (mediaType.value === SearchType.TvSeries) {
-				let { response } = await rpc.listTvShows({});
+				let { response } = await reportErrors(
+					rpc.listTvShows({}),
+					"Failed to list TV shows"
+				);
 				tvShowsList.value = response.tvShows;
 			}
 			tvShowSelection.value = tvShowsList.value?.find(
@@ -68,7 +76,10 @@ watch(
 		moviesList.value = undefined;
 		if (mediaType.value !== SearchType.Movie) return;
 
-		let { response } = await rpc.listMovies({});
+		let { response } = await reportErrors(
+			rpc.listMovies({}),
+			"Failed to list movies"
+		);
 		moviesList.value = response.movies;
 	}
 );
@@ -96,7 +107,10 @@ watch(
 		tvShowsList.value = undefined;
 		if (mediaType.value !== SearchType.TvSeries) return;
 
-		let { response } = await rpc.listTvShows({});
+		let { response } = await reportErrors(
+			rpc.listTvShows({}),
+			"Failed to list TV shows"
+		);
 		tvShowsList.value = response.tvShows;
 	}
 );
@@ -124,9 +138,12 @@ watch(
 	async () => {
 		tvSeasonsList.value = undefined;
 		if (tvShowSelection.value === undefined) return;
-		let { response } = await rpc.listTvSeasons({
-			seriesId: tvShowSelection.value.id,
-		});
+		let { response } = await reportErrors(
+			rpc.listTvSeasons({
+				seriesId: tvShowSelection.value.id,
+			}),
+			"Failed to list TV seasons"
+		);
 		tvSeasonsList.value = response.tvSeasons;
 	}
 );
@@ -170,9 +187,12 @@ watch(
 		tvSeasonSelection.value.sort((a, b) => a.seasonNumber - b.seasonNumber);
 		for (const season of tvSeasonSelection.value) {
 			if (foundSeasons.has(season.id)) continue;
-			let { response } = await rpc.listTvEpisodes({
-				tvSeasonId: season.id,
-			});
+			let { response } = await reportErrors(
+				rpc.listTvEpisodes({
+					tvSeasonId: season.id,
+				}),
+				"Failed to list TV episodes"
+			);
 			newEpisodesList.push(...response.tvEpisodes);
 		}
 

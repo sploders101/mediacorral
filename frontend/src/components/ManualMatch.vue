@@ -10,8 +10,10 @@ import { SearchType } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
 import type { ProcessedVideoItem } from "@/pages/catalogue/[id].vue";
 import { formatRuntime } from "@/scripts/utils";
+import { reportErrorsFactory } from "@/scripts/uiUtils";
 
 const rpc = inject(injectKeys.rpc)!;
+const reportErrors = reportErrorsFactory();
 const metaCache = inject(injectKeys.metaCache);
 if (metaCache === undefined) throw new Error("metaCache not provided");
 const metaCacheByTmdbId = computed(() => {
@@ -41,19 +43,25 @@ async function matchItem(details: SubmitData) {
 	matchManually.value = false;
 	switch (details.type) {
 		case SearchType.Movie:
-			await rpc.tagFile({
-				file: props.videoFile.id,
-				videoType: VideoType.MOVIE,
-				matchId: details.movie.id,
-			});
+			await reportErrors(
+				rpc.tagFile({
+					file: props.videoFile.id,
+					videoType: VideoType.MOVIE,
+					matchId: details.movie.id,
+				}),
+				"Failed to tag file"
+			);
 			emits("submitted");
 			break;
 		case SearchType.TvSeries:
-			await rpc.tagFile({
-				file: props.videoFile.id,
-				videoType: VideoType.TV_EPISODE,
-				matchId: details.episodes[0].id,
-			});
+			await reportErrors(
+				rpc.tagFile({
+					file: props.videoFile.id,
+					videoType: VideoType.TV_EPISODE,
+					matchId: details.episodes[0].id,
+				}),
+				"Failed to tag file"
+			);
 			emits("submitted");
 			break;
 	}
@@ -71,9 +79,12 @@ watch(
 			videoSubtitles.value = "[No subtitles found]";
 			return;
 		}
-		const { response } = await rpc.getSubtitles({
-			blobId: subtitles.subtitleBlob,
-		});
+		const { response } = await reportErrors(
+			rpc.getSubtitles({
+				blobId: subtitles.subtitleBlob,
+			}),
+			"Failed to get subtitles for video file"
+		);
 		videoSubtitles.value = response.subtitles;
 	},
 	{ immediate: true }
@@ -119,7 +130,10 @@ watch(
 			(subtitle) => matchSelection.value === subtitle.matchId
 		);
 		if (subs === undefined) return;
-		const { response } = await rpc.getSubtitles({ blobId: subs.blobId });
+		const { response } = await reportErrors(
+			rpc.getSubtitles({ blobId: subs.blobId }),
+			"Failed to get subtitles for suspected episode"
+		);
 		matchSubtitles.value = response.subtitles;
 	},
 	{ immediate: true }
@@ -199,19 +213,25 @@ async function selectMatch() {
 	if (matchSelection.value === undefined) return;
 	switch (props.catInfo.suspectedContents?.suspectedContents.oneofKind) {
 		case "movie":
-			await rpc.tagFile({
-				file: props.videoFile.id,
-				matchId: matchSelection.value,
-				videoType: VideoType.MOVIE,
-			});
+			await reportErrors(
+				rpc.tagFile({
+					file: props.videoFile.id,
+					matchId: matchSelection.value,
+					videoType: VideoType.MOVIE,
+				}),
+				"Failed to tag file"
+			);
 			emits("submitted");
 			break;
 		case "tvEpisodes":
-			await rpc.tagFile({
-				file: props.videoFile.id,
-				matchId: matchSelection.value,
-				videoType: VideoType.TV_EPISODE,
-			});
+			await reportErrors(
+				rpc.tagFile({
+					file: props.videoFile.id,
+					matchId: matchSelection.value,
+					videoType: VideoType.TV_EPISODE,
+				}),
+				"Failed to tag file"
+			);
 			emits("submitted");
 			break;
 	}

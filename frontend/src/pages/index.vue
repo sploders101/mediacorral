@@ -1,14 +1,21 @@
 <script lang="ts" setup>
 import DriveMonitor from "@/components/DriveMonitor.vue";
-import { AutoripStatus, type DiscDrive } from "@/generated/mediacorral/server/v1/api";
+import {
+	AutoripStatus,
+	type DiscDrive,
+} from "@/generated/mediacorral/server/v1/api";
 import { injectKeys } from "@/scripts/config";
+import { reportErrorsFactory } from "@/scripts/uiUtils";
 
 const rpc = inject(injectKeys.rpc)!;
+const reportErrors = reportErrorsFactory();
 const driveSelection = ref<DiscDrive | null>(null);
 const drives = ref<DiscDrive[]>([]);
 
 onMounted(async () => {
-	drives.value = (await rpc.listDrives({})).response.drives;
+	drives.value = (
+		await reportErrors(rpc.listDrives({}), "Error listing drives")
+	).response.drives;
 	driveSelection.value = drives.value[0];
 });
 
@@ -19,15 +26,20 @@ function driveKey(drive: DiscDrive) {
 const appbar = inject(injectKeys.appbar);
 const autorip = ref<AutoripStatus>(AutoripStatus.UNSPECIFIED);
 onMounted(() => {
-	rpc
-		.autoripStatus({ status: AutoripStatus.UNSPECIFIED })
-		.then(({ response }) => (autorip.value = response.status));
+	reportErrors(
+		rpc
+			.autoripStatus({ status: AutoripStatus.UNSPECIFIED })
+			.then(({ response }) => (autorip.value = response.status))
+	);
 });
 async function changeAutorip(status: boolean) {
 	autorip.value = AutoripStatus.UNSPECIFIED;
-	await rpc.autoripStatus({
-		status: status ? AutoripStatus.ENABLED : AutoripStatus.DISABLED,
-	});
+	await reportErrors(
+		rpc.autoripStatus({
+			status: status ? AutoripStatus.ENABLED : AutoripStatus.DISABLED,
+		}),
+		"Error changing autorip status"
+	);
 	autorip.value = status ? AutoripStatus.ENABLED : AutoripStatus.DISABLED;
 }
 </script>

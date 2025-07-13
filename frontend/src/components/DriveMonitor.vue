@@ -7,9 +7,11 @@ import {
 } from "@/generated/mediacorral/drive_controller/v1/main";
 import type { DiscDrive, RipJob } from "@/generated/mediacorral/server/v1/api";
 import { injectKeys } from "@/scripts/config";
+import { reportErrorsFactory } from "@/scripts/uiUtils";
 import { RpcError } from "@protobuf-ts/runtime-rpc";
 
 const rpc = inject(injectKeys.rpc)!;
+const reportErrors = reportErrorsFactory();
 
 const props = defineProps<{
 	drive: DiscDrive;
@@ -78,20 +80,29 @@ const showTrayAction = computed(() => {
 });
 
 async function openTray() {
-	await rpc.eject({
-		drive: props.drive,
-	});
+	await reportErrors(
+		rpc.eject({
+			drive: props.drive,
+		}),
+		"Failed to eject the disc"
+	);
 }
 
 async function closeTray() {
-	await rpc.retract({ drive: props.drive });
+	await reportErrors(
+		rpc.retract({ drive: props.drive }),
+		"Failed to close the drive tray"
+	);
 }
 
 async function ripDisc() {
-	await rpc.startRipJob({
-		drive: props.drive,
-		autoeject: false,
-	});
+	await reportErrors(
+		rpc.startRipJob({
+			drive: props.drive,
+			autoeject: false,
+		}),
+		"Failed to rip disc"
+	);
 }
 
 let pollInterval: number | undefined = undefined;
@@ -114,6 +125,8 @@ onBeforeUnmount(() => {
 });
 
 async function pollDrive() {
+	// TODO: Add error handling for this. The current implementation will
+	//       get ***REALLY*** annoying if added here.
 	let result = await rpc.getDriveState({
 		controllerId: props.drive.controller,
 		driveId: props.drive.driveId,
@@ -130,9 +143,12 @@ watch(
 			jobInfo.value = undefined;
 			return;
 		}
-		let result = await rpc.getJobInfo({
-			jobId: jobId,
-		});
+		let result = await reportErrors(
+			rpc.getJobInfo({
+				jobId: jobId,
+			}),
+			"Failed to get info for the active job"
+		);
 		jobInfo.value = result.response.details;
 	}
 );
@@ -159,31 +175,30 @@ async function trackJob(jobId: bigint) {
 			maxValue: Infinity,
 		},
 	};
-	try {
-		for await (const update of response.responses) {
-			switch (update.ripUpdate.oneofKind) {
-				case "status":
-					jobStatus.value.status = update.ripUpdate.status;
-					break;
-				case "logMessage":
-					jobStatus.value.logs.push(update.ripUpdate.logMessage);
-					break;
-				case "cprogTitle":
-					jobStatus.value.cprogTitle = update.ripUpdate.cprogTitle;
-					break;
-				case "tprogTitle":
-					jobStatus.value.tprogTitle = update.ripUpdate.tprogTitle;
-					break;
-				case "progressValues":
-					jobStatus.value.progress = update.ripUpdate.progressValues;
-					break;
+	await reportErrors(
+		(async () => {
+			for await (const update of response.responses) {
+				switch (update.ripUpdate.oneofKind) {
+					case "status":
+						jobStatus.value!.status = update.ripUpdate.status;
+						break;
+					case "logMessage":
+						jobStatus.value!.logs.push(update.ripUpdate.logMessage);
+						break;
+					case "cprogTitle":
+						jobStatus.value!.cprogTitle = update.ripUpdate.cprogTitle;
+						break;
+					case "tprogTitle":
+						jobStatus.value!.tprogTitle = update.ripUpdate.tprogTitle;
+						break;
+					case "progressValues":
+						jobStatus.value!.progress = update.ripUpdate.progressValues;
+						break;
+				}
 			}
-		}
-	} catch (err) {
-		if (!(err instanceof RpcError)) {
-			throw err;
-		}
-	}
+		})(),
+		"Error while streaming job updates"
+	);
 }
 watch(
 	() => jobInfo.value?.id,
@@ -209,10 +224,13 @@ async function renameJob() {
 		jobInfo.value?.discTitle || ""
 	);
 	if (newName === null) return;
-	await rpc.renameJob({
-		jobId: jobInfo.value?.id,
-		newName,
-	});
+	await reportErrors(
+		rpc.renameJob({
+			jobId: jobInfo.value?.id,
+			newName,
+		}),
+		"Failed to rename job"
+	);
 	jobInfo.value.discTitle = newName;
 }
 </script>

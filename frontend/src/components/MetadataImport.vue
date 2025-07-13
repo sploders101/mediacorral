@@ -8,8 +8,10 @@ import type {
 } from "@/generated/mediacorral/server/v1/api";
 import { SearchType } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
+import { reportErrorsFactory } from "@/scripts/uiUtils";
 
 const rpc = inject(injectKeys.rpc)!;
+const reportErrors = reportErrorsFactory();
 
 const props = defineProps<{
 	searchType?: SearchType;
@@ -59,21 +61,30 @@ const resultsMapped = computed(() => {
 async function submit() {
 	switch (searchType.value) {
 		case SearchType.Unspecified:
-			const { response: responseMulti } = await rpc.searchTmdbMulti({
-				query: query.value,
-			});
+			const { response: responseMulti } = await reportErrors(
+				rpc.searchTmdbMulti({
+					query: query.value,
+				}),
+				"Error searching TMDB"
+			);
 			results.value = [SearchType.Unspecified, responseMulti];
 			break;
 		case SearchType.Movie:
-			const { response: responseMovie } = await rpc.searchTmdbMovie({
-				query: query.value,
-			});
+			const { response: responseMovie } = await reportErrors(
+				rpc.searchTmdbMovie({
+					query: query.value,
+				}),
+				"Error searching TMDB"
+			);
 			results.value = [SearchType.Movie, responseMovie];
 			break;
 		case SearchType.TvSeries:
-			const { response: responseTvSeries } = await rpc.searchTmdbTv({
-				query: query.value,
-			});
+			const { response: responseTvSeries } = await reportErrors(
+				rpc.searchTmdbTv({
+					query: query.value,
+				}),
+				"Error searching TMDB"
+			);
 			results.value = [SearchType.TvSeries, responseTvSeries];
 			break;
 	}
@@ -109,9 +120,12 @@ async function importItem() {
 					case "movie":
 						let {
 							response: { movieId },
-						} = await rpc.importTmdbMovie({
-							tmdbId: multiValue.id,
-						});
+						} = await reportErrors(
+							rpc.importTmdbMovie({
+								tmdbId: multiValue.id,
+							}),
+							"Error importing movie"
+						);
 						emit("dataImported", {
 							type: "movie",
 							tmdb_id: multiValue.id,
@@ -121,9 +135,12 @@ async function importItem() {
 					case "tv":
 						let {
 							response: { tvId },
-						} = await rpc.importTmdbTv({
-							tmdbId: multiValue.id,
-						});
+						} = await reportErrors(
+							rpc.importTmdbTv({
+								tmdbId: multiValue.id,
+							}),
+							"Error reporting TV series"
+						);
 						emit("dataImported", {
 							type: "tv",
 							tmdb_id: multiValue.id,
@@ -135,7 +152,10 @@ async function importItem() {
 			case SearchType.Movie:
 				let {
 					response: { movieId },
-				} = await rpc.importTmdbMovie({ tmdbId: selectedItemDetails.value.id });
+				} = await reportErrors(
+					rpc.importTmdbMovie({ tmdbId: selectedItemDetails.value.id }),
+					"Error importing movie"
+				);
 				emit("dataImported", {
 					type: "movie",
 					tmdb_id: selectedItemDetails.value.id,
@@ -145,7 +165,10 @@ async function importItem() {
 			case SearchType.TvSeries:
 				let {
 					response: { tvId },
-				} = await rpc.importTmdbTv({ tmdbId: selectedItemDetails.value.id });
+				} = await reportErrors(
+					rpc.importTmdbTv({ tmdbId: selectedItemDetails.value.id }),
+					"Error importing TV series"
+				);
 				emit("dataImported", {
 					type: "tv",
 					tmdb_id: selectedItemDetails.value.id,
@@ -153,8 +176,6 @@ async function importItem() {
 				});
 				break;
 		}
-	} catch (err) {
-		alert(err);
 	} finally {
 		importingItem.value = false;
 	}
