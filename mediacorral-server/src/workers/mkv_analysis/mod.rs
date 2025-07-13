@@ -3,9 +3,10 @@ use std::io::{Read, Seek};
 use matroska_demuxer::{Frame, MatroskaFile, TrackType};
 use mediacorral_proto::mediacorral::server::v1::{ChapterInfo, VideoExtendedMetadata};
 use subtitles::{
-    StContext, format_subtitles_srt, get_subtitle_track,
+    StContext, get_subtitle_track,
     ocr::PartessError,
     pgs::PgsError,
+    srt::format_subtitles_srt,
     vobsub::{PartessCache, VobsubError},
 };
 use tokio::sync::watch;
