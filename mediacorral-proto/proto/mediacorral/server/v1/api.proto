@@ -3,6 +3,7 @@ package mediacorral.server.v1;
 
 import "mediacorral/common/tmdb/v1/main.proto";
 import "mediacorral/drive_controller/v1/main.proto";
+import "mediacorral/server/v1/metadata.proto";
 
 service CoordinatorApiService {
   // Gets textual subtitles
@@ -433,6 +434,7 @@ message VideoFile {
   optional uint32 length = 7;
   optional bytes original_video_hash = 8;
   optional int64 rip_job = 9;
+  optional VideoExtendedMetadata extended_metadata = 10;
 }
 message MatchInfoItem {
   int64 id = 1;

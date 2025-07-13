@@ -726,8 +726,9 @@ pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i
                 resolution_height,
                 length,
                 original_video_hash,
-                rip_job
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                rip_job,
+                extended_metadata
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (id) DO UPDATE SET
                 video_type = ?,
                 match_id = ?,
@@ -736,7 +737,8 @@ pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i
                 resolution_height = ?,
                 length = ?,
                 original_video_hash = ?,
-                rip_job = ?
+                rip_job = ?,
+                extended_metadata = ?
             RETURNING id
         ",
     )
@@ -749,6 +751,7 @@ pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i
     .bind(video_file.length)
     .bind(mkv_hash)
     .bind(video_file.rip_job)
+    .bind(&video_file.extended_metadata)
     .bind(video_file.video_type)
     .bind(video_file.match_id)
     .bind(&video_file.blob_id)
@@ -757,6 +760,7 @@ pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i
     .bind(video_file.length)
     .bind(mkv_hash)
     .bind(video_file.rip_job)
+    .bind(&video_file.extended_metadata)
     .fetch_one(db)
     .await?;
 
@@ -775,7 +779,8 @@ pub async fn get_video_file(db: &Db, id: i64) -> sqlx::Result<VideoFilesItem> {
                 resolution_height,
                 length,
                 original_video_hash,
-                rip_job
+                rip_job,
+                extended_metadata
             FROM video_files
             WHERE
                 id = ?
@@ -793,6 +798,7 @@ pub async fn add_video_metadata(
     resolution_height: u32,
     length: u32,
     original_video_hash: &[u8],
+    extended_metadata: Option<proto::VideoExtendedMetadata>,
 ) -> Result<(), sqlx::Error> {
     sqlx::query(
         "
@@ -801,7 +807,8 @@ pub async fn add_video_metadata(
                 resolution_width = ?,
                 resolution_height = ?,
                 length = ?,
-                original_video_hash = ?
+                original_video_hash = ?,
+                extended_metadata = ?
             WHERE
                 id = ?
         ",
@@ -810,6 +817,7 @@ pub async fn add_video_metadata(
     .bind(resolution_height)
     .bind(length)
     .bind(original_video_hash)
+    .bind(extended_metadata.map(|meta| meta.encode_to_vec()))
     .bind(id)
     .execute(db)
     .await?;
@@ -1261,7 +1269,8 @@ pub async fn get_videos_from_rip(
                 resolution_height,
                 length,
                 original_video_hash,
-                rip_job
+                rip_job,
+                extended_metadata
             FROM video_files
             WHERE
                 rip_job = ?

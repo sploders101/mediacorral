@@ -89,6 +89,7 @@ impl BlobStorageController {
                 length: None,
                 original_video_hash: None,
                 rip_job,
+                extended_metadata: None,
             },
         )
         .await?;
@@ -111,6 +112,7 @@ impl BlobStorageController {
             result.resolution_height,
             result.duration,
             &result.video_hash,
+            result.extended_metadata,
         )
         .await?;
 

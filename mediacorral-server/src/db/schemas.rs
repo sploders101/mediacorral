@@ -168,7 +168,7 @@ impl From<proto::VideoType> for VideoType {
     }
 }
 
-#[derive(Deserialize, Debug, Clone, Eq, PartialEq, FromRow)]
+#[derive(Deserialize, Debug, Clone, FromRow)]
 pub struct VideoFilesItem {
     pub id: Option<i64>,
     ///  Video type:
@@ -185,6 +185,7 @@ pub struct VideoFilesItem {
     pub length: Option<u32>,
     pub original_video_hash: Option<Vec<u8>>,
     pub rip_job: Option<i64>,
+    pub extended_metadata: Option<Vec<u8>>,
 }
 impl Into<proto::VideoFile> for VideoFilesItem {
     fn into(self) -> proto::VideoFile {
@@ -198,6 +199,9 @@ impl Into<proto::VideoFile> for VideoFilesItem {
             length: self.length,
             original_video_hash: self.original_video_hash,
             rip_job: self.rip_job,
+            extended_metadata: self.extended_metadata.and_then(|contents| {
+                proto::VideoExtendedMetadata::decode(std::io::Cursor::new(contents)).ok()
+            }),
         };
     }
 }

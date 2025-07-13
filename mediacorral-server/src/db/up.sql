@@ -81,7 +81,8 @@ CREATE TABLE `video_files`(
 	`resolution_height` INTEGER,
 	`length` INTEGER,
 	`original_video_hash` BINARY,
-	`rip_job` INTEGER
+	`rip_job` INTEGER,
+	`extended_metadata` BINARY
 );
 
 -- Contains subtitle files extracted from the mkv used for comparison.

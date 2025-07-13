@@ -2,6 +2,7 @@ use std::io::{Read, Seek};
 
 use image::{GrayAlphaImage, GrayImage, Pixel, RgbaImage};
 use matroska_demuxer::{Frame, MatroskaFile, TrackEntry, TrackType};
+use mediacorral_proto::mediacorral::server::v1::VideoExtendedMetadata;
 use ocr::PartessError;
 use pgs::{PgsError, processor::PgsProcessor};
 use tokio::sync::watch;
@@ -38,6 +39,7 @@ pub struct MediaDetails {
     pub duration: u32,
     pub video_hash: Vec<u8>,
     pub subtitles: Option<String>,
+    pub extended_metadata: Option<VideoExtendedMetadata>,
 }
 
 fn get_subtitle_track(tracks: &[TrackEntry]) -> Result<Option<&TrackEntry>, ExtractDetailsError> {
@@ -204,6 +206,7 @@ where
             Some(st_ctx) => Some(format_subtitles_srt(st_ctx.collect()?, duration)),
             None => None,
         },
+        extended_metadata: None,
     });
 }
 
