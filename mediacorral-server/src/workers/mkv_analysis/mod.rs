@@ -1,7 +1,7 @@
 use std::io::{Read, Seek};
 
 use matroska_demuxer::{Frame, MatroskaFile, TrackType};
-use mediacorral_proto::mediacorral::server::v1::VideoExtendedMetadata;
+use mediacorral_proto::mediacorral::server::v1::{ChapterInfo, VideoExtendedMetadata};
 use subtitles::{
     StContext, format_subtitles_srt, get_subtitle_track,
     ocr::PartessError,
@@ -50,7 +50,9 @@ where
     T: Read + Seek,
 {
     let mut mkv_file = MatroskaFile::open(mkv_file)?;
+    let mut extended_metadata = VideoExtendedMetadata::default();
 
+    // Video-related things
     let vid_track = mkv_file
         .tracks()
         .into_iter()
@@ -58,14 +60,6 @@ where
         .ok_or(ExtractDetailsError::MissingVideoTrack)?;
     let vid_track_info = vid_track.video().unwrap();
     let vid_track_number = vid_track.track_number().get();
-    let mut vid_hasher = md5::Context::new();
-
-    let st_track = get_subtitle_track(mkv_file.tracks())?;
-    let st_track_number = st_track.map(|track| track.track_number().get());
-    let mut st_ctx = match st_track {
-        Some(st_track) => Some(StContext::new(st_track, partess_cache)?),
-        None => None,
-    };
 
     let resolution_width: u32 = vid_track_info
         .display_width()
@@ -76,17 +70,59 @@ where
         .ok_or(ExtractDetailsError::MissingRequiredProps)?
         .get() as _;
 
+    let mut vid_hasher = md5::Context::new();
+
+    // Subtitle-related things
+    let st_track = get_subtitle_track(mkv_file.tracks())?;
+    let st_track_number = st_track.map(|track| track.track_number().get());
+    let mut st_ctx = match st_track {
+        Some(st_track) => Some(StContext::new(st_track, partess_cache)?),
+        None => None,
+    };
+
+    // Container-related things
     let info = mkv_file.info();
+
     let timestamp_scale = info.timestamp_scale().get();
     let duration: u64 = match info.duration() {
         Some(duration) => duration.round() as u64 * timestamp_scale,
         None => return Err(ExtractDetailsError::MissingRequiredProps),
     };
     let duration_secs = duration / 1_000_000_000;
-    if let Some(ref mut progress) = progress {
-        let _ = progress.send(0.0);
+
+    if let Some(chapters) = mkv_file.chapters() {
+        let mut chapters = chapters
+            .into_iter()
+            .flat_map(|edition| edition.chapter_atoms().into_iter())
+            .enumerate()
+            .peekable();
+        while let Some((i, chapter)) = chapters.next() {
+            extended_metadata.chapter_info.push(ChapterInfo {
+                chapter_number: (i + 1) as _,
+                chapter_uid: chapter.uid().get(),
+                chapter_start: chapter.time_start(),
+                chapter_end: chapter
+                    .time_end()
+                    .or(chapters
+                        .peek()
+                        .map(|(_i, next_chapter)| next_chapter.time_start()))
+                    .unwrap_or(duration),
+                chapter_name: chapter
+                    .displays()
+                    .into_iter()
+                    .find(|display| {
+                        matches!(
+                            display.language_ietf().or(display.language()),
+                            Some("eng") | Some("en") | Some("en-US") | Some("en-GB")
+                        )
+                    })
+                    .map(|display| display.string().into())
+                    .unwrap_or_else(|| format!("Chapter {}", i + 1)),
+            });
+        }
     }
 
+    // Frame processing loop
     let mut frame = Frame::default();
     while mkv_file.next_frame(&mut frame)? {
         frame.timestamp = frame.timestamp * timestamp_scale;
@@ -124,6 +160,6 @@ where
             Some(st_ctx) => Some(format_subtitles_srt(st_ctx.collect()?, duration)),
             None => None,
         },
-        extended_metadata: None,
+        extended_metadata: Some(extended_metadata),
     });
 }
