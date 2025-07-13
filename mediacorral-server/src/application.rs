@@ -417,7 +417,7 @@ impl Application {
                 result.resolution_height,
                 result.duration,
                 &result.video_hash,
-                None,
+                result.extended_metadata,
             )
             .await?;
 
