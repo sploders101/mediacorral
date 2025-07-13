@@ -10,7 +10,8 @@ export function reportErrorsFactory() {
 			return result;
 		} catch (error) {
 			if (error instanceof RpcError) {
-				await prompter.alert(decodeURIComponent(error.message), alertTitle);
+				if (error.code === "CANCELLED") throw error;
+				await prompter.alert(`Code: ${error.code}\n\nMessage:\n${decodeURIComponent(error.message)}`, alertTitle);
 			}
 			throw error;
 		}
