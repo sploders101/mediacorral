@@ -168,6 +168,7 @@ impl BlobStorageController {
         }
 
         db::delete_matches_from_rip(&self.db_connection, rip_job).await?;
+        db::delete_rip_job(&self.db_connection, rip_job).await?;
 
         return Ok(());
     }
