@@ -1,7 +1,8 @@
 use image::{GrayAlphaImage, GrayImage, Pixel, RgbaImage};
 use matroska_demuxer::{Frame, TrackEntry, TrackType};
+use ocr::PartessCache;
 use pgs::processor::PgsProcessor;
-use vobsub::{PartessCache, VobsubProcessor};
+use vobsub::VobsubProcessor;
 
 use super::ExtractDetailsError;
 

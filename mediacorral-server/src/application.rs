@@ -39,9 +39,7 @@ use crate::{
         tmdb::{TmdbError, TmdbImporter},
     },
     rayon_helpers::BackpressuredAsyncRayon,
-    workers::mkv_analysis::{
-        ExtractDetailsError, extract_details, subtitles::vobsub::PartessCache,
-    },
+    workers::mkv_analysis::{ExtractDetailsError, extract_details, subtitles::ocr::PartessCache},
 };
 
 pub struct Application {

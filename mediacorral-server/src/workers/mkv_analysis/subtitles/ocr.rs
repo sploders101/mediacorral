@@ -1,11 +1,12 @@
 use std::{
+    collections::HashMap,
     io::Cursor,
     ops::{Deref, DerefMut},
     sync::{Arc, Mutex},
 };
 
 use image::GrayImage;
-use leptess::{LepTess, Variable, leptonica};
+use leptess::{leptonica, LepTess, Variable};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -90,5 +91,23 @@ impl Partess {
 impl Clone for Partess {
     fn clone(&self) -> Self {
         return Self(Arc::clone(&self.0));
+    }
+}
+
+pub struct PartessCache {
+    pub cache: Arc<Mutex<HashMap<String, Partess>>>,
+}
+impl PartessCache {
+    pub fn new() -> Self {
+        return Self {
+            cache: Arc::new(Mutex::new(HashMap::new())),
+        };
+    }
+}
+impl Clone for PartessCache {
+    fn clone(&self) -> Self {
+        return Self {
+            cache: Arc::clone(&self.cache),
+        };
     }
 }

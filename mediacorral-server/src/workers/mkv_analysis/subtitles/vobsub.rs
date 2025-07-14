@@ -2,11 +2,6 @@
 //!
 //! https://sam.zoy.org/writings/dvd/subtitles/
 
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
-
 use image::{GrayImage, Rgb, Rgba, RgbaImage};
 
 use leptess::Variable;
@@ -14,7 +9,11 @@ use thiserror::Error;
 
 use crate::rayon_helpers::BackpressuredRayon;
 
-use super::{ExtractDetailsError, Subtitle, ocr::Partess, process_rgba_image};
+use super::{
+    ExtractDetailsError, Subtitle,
+    ocr::{Partess, PartessCache},
+    process_rgba_image,
+};
 
 #[derive(Error, Debug, Clone)]
 pub enum VobsubError {
@@ -26,24 +25,6 @@ pub enum VobsubError {
     InvalidControl,
     #[error("Invalid VobSub frame data.")]
     InvalidFrame,
-}
-
-pub struct PartessCache {
-    pub cache: Arc<Mutex<HashMap<String, Partess>>>,
-}
-impl PartessCache {
-    pub fn new() -> Self {
-        return Self {
-            cache: Arc::new(Mutex::new(HashMap::new())),
-        };
-    }
-}
-impl Clone for PartessCache {
-    fn clone(&self) -> Self {
-        return Self {
-            cache: Arc::clone(&self.cache),
-        };
-    }
 }
 
 pub struct VobsubProcessor {

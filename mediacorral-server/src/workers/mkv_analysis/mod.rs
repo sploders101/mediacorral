@@ -4,10 +4,10 @@ use matroska_demuxer::{Frame, MatroskaFile, TrackType};
 use mediacorral_proto::mediacorral::server::v1::{ChapterInfo, VideoExtendedMetadata};
 use subtitles::{
     StContext, get_subtitle_track,
-    ocr::PartessError,
+    ocr::{PartessCache, PartessError},
     pgs::PgsError,
     srt::format_subtitles_srt,
-    vobsub::{PartessCache, VobsubError},
+    vobsub::VobsubError,
 };
 use tokio::sync::watch;
 
