@@ -38,6 +38,7 @@ pub fn get_subtitle_track(
     });
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Subtitle {
     timestamp: u64,
     duration: Option<u64>,
