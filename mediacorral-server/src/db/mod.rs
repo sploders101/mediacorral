@@ -8,6 +8,7 @@ pub mod schemas;
 
 type Db = sqlx::SqlitePool;
 
+#[allow(dead_code)]
 pub async fn insert_movie(db: &Db, movie: &MoviesItem) -> Result<i64, sqlx::Error> {
     let result = sqlx::query(
         "
@@ -151,6 +152,7 @@ pub async fn get_movie_by_tmdb_id(db: &Db, tmdb_id: i32) -> Result<MoviesItem, s
     return Ok(result);
 }
 
+#[allow(dead_code)]
 pub async fn insert_movies_special_feature(
     db: &Db,
     movie_special_feature: &MoviesSpecialFeaturesItem,
@@ -187,6 +189,7 @@ pub async fn insert_movies_special_feature(
     return Ok(result.get(0));
 }
 
+#[allow(dead_code)]
 pub async fn insert_tv_show(db: &Db, tv_show: &TvShowsItem) -> Result<i64, sqlx::Error> {
     let result = sqlx::query(
         "
@@ -410,6 +413,7 @@ pub async fn get_tv_episode_by_tmdb_id(
     .await?);
 }
 
+#[allow(dead_code)]
 pub async fn insert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64, sqlx::Error> {
     let result = sqlx::query(
         "
@@ -484,6 +488,7 @@ pub async fn upsert_tv_season(db: &Db, tv_season: &TvSeasonsItem) -> Result<i64,
     return Ok(result.get(0));
 }
 
+#[allow(dead_code)]
 pub async fn insert_tv_episode(db: &Db, tv_episode: &TvEpisodesItem) -> Result<i64, sqlx::Error> {
     let result = sqlx::query(
         "
@@ -767,6 +772,7 @@ pub async fn insert_video_file(db: &Db, video_file: &VideoFilesItem) -> Result<i
     return Ok(result.get(0));
 }
 
+#[allow(dead_code)]
 pub async fn get_video_file(db: &Db, id: i64) -> sqlx::Result<VideoFilesItem> {
     return sqlx::query_as(
         "
@@ -940,6 +946,7 @@ pub async fn insert_ost_download_item(
     return Ok(result.get(0));
 }
 
+#[allow(dead_code)]
 pub async fn get_ost_download_items_by_tmdb_id(
     db: &Db,
     tmdb_id: i32,
@@ -1162,6 +1169,7 @@ pub struct RipImageBlob {
     pub image_blob: String,
 }
 
+#[allow(dead_code)]
 pub async fn get_rip_image_blobs(db: &Db, rip_job: i64) -> Result<Vec<RipImageBlob>, sqlx::Error> {
     return Ok(sqlx::query_as(
         "
