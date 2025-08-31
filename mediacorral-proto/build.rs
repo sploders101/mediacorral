@@ -10,6 +10,7 @@ pub fn main() {
                 "proto/mediacorral/drive_controller/v1/main.proto",
                 "proto/mediacorral/server/v1/api.proto",
                 "proto/mediacorral/server/v1/notifications.proto",
+                "proto/mediacorral/transcription/v1/api.proto",
             ],
             &["proto/"],
         )

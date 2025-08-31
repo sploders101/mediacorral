@@ -1,0 +1,15 @@
+syntax = "proto3";
+package mediacorral.transcription.v1;
+
+service TranscriptionService {
+  // Transcribes an MKV file into subtitles
+  rpc TranscribeMkv(stream TranscribeMkvRequest) returns (TranscribeMkvResponse);
+}
+
+message TranscribeMkvRequest {
+  bytes mkv_chunk = 1;
+}
+
+message TranscribeMkvResponse {
+  string subtitles = 1;
+}

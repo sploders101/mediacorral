@@ -17,4 +17,9 @@ pub mod mediacorral {
             }
         }
     }
+    pub mod transcription {
+        pub mod v1 {
+            tonic::include_proto!("mediacorral.transcription.v1");
+        }
+    }
 }
