@@ -6,7 +6,7 @@ use std::{
 };
 
 use image::GrayImage;
-use leptess::{leptonica, LepTess, Variable};
+use leptess::{LepTess, Variable, leptonica};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
