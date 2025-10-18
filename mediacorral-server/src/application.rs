@@ -393,16 +393,12 @@ impl Application {
             }
             let new_path = self.blob_storage.get_file_path(&file.blob_id.to_string());
             let partess_cache = self.partess_cache.clone();
-            join_set.spawn(async move {
-                tokio::task::spawn_blocking(move || {
-                    let io_file = std::fs::File::open(new_path)?;
-                    Result::<_, ExtractDetailsError>::Ok((
-                        file,
-                        extract_details(io_file, None, &partess_cache)?,
-                    ))
-                })
-                .await
-                .unwrap()
+            join_set.spawn_blocking(move || {
+                let io_file = std::fs::File::open(new_path)?;
+                Result::<_, ExtractDetailsError>::Ok((
+                    file,
+                    extract_details(io_file, None, &partess_cache)?,
+                ))
             });
         }
 
