@@ -128,15 +128,6 @@ export interface ReapJobRequest {
 export interface ReapJobResponse {
 }
 /**
- * @generated from protobuf message mediacorral.drive_controller.v1.CommandError
- */
-export interface CommandError {
-    /**
-     * @generated from protobuf field: uint64 code = 1
-     */
-    code: bigint;
-}
-/**
  * The current status of the rip job
  *
  * @generated from protobuf message mediacorral.drive_controller.v1.RipStatus
@@ -974,53 +965,6 @@ class ReapJobResponse$Type extends MessageType<ReapJobResponse> {
  * @generated MessageType for protobuf message mediacorral.drive_controller.v1.ReapJobResponse
  */
 export const ReapJobResponse = new ReapJobResponse$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class CommandError$Type extends MessageType<CommandError> {
-    constructor() {
-        super("mediacorral.drive_controller.v1.CommandError", [
-            { no: 1, name: "code", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ }
-        ]);
-    }
-    create(value?: PartialMessage<CommandError>): CommandError {
-        const message = globalThis.Object.create((this.messagePrototype!));
-        message.code = 0n;
-        if (value !== undefined)
-            reflectionMergePartial<CommandError>(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: CommandError): CommandError {
-        let message = target ?? this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                case /* uint64 code */ 1:
-                    message.code = reader.uint64().toBigInt();
-                    break;
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message: CommandError, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* uint64 code = 1; */
-        if (message.code !== 0n)
-            writer.tag(1, WireType.Varint).uint64(message.code);
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message mediacorral.drive_controller.v1.CommandError
- */
-export const CommandError = new CommandError$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class RipStatus$Type extends MessageType<RipStatus> {
     constructor() {
