@@ -1,14 +1,12 @@
 <script lang="ts" setup>
 import {
 	DriveStatusTag,
-	JobStatus,
 	RipStatus,
 	type DriveState,
 } from "@/generated/mediacorral/drive_controller/v1/main";
 import type { DiscDrive, RipJob } from "@/generated/mediacorral/server/v1/api";
 import { injectKeys } from "@/scripts/config";
 import { reportErrorsFactory } from "@/scripts/uiUtils";
-import { RpcError } from "@protobuf-ts/runtime-rpc";
 
 const rpc = inject(injectKeys.rpc)!;
 const reportErrors = reportErrorsFactory();
@@ -153,65 +151,49 @@ watch(
 	}
 );
 
-let jobTrackerAbort: AbortController = new AbortController();
-async function trackJob(jobId: bigint) {
-	jobTrackerAbort.abort("Tracker obsoleted");
-	jobTrackerAbort = new AbortController();
-	let response = rpc.streamRipJobUpdates(
-		{ jobId },
-		{
-			abort: jobTrackerAbort.signal,
-		}
-	);
-	jobStatus.value = {
-		jobId,
-		status: JobStatus.UNSPECIFIED,
-		logs: [],
-		cprogTitle: "",
-		tprogTitle: "",
-		progress: {
-			cprogValue: 0,
-			tprogValue: 0,
-			maxValue: Infinity,
-		},
-	};
-	await reportErrors(
-		(async () => {
-			for await (const update of response.responses) {
-				switch (update.ripUpdate.oneofKind) {
-					case "status":
-						jobStatus.value!.status = update.ripUpdate.status;
-						break;
-					case "logMessage":
-						jobStatus.value!.logs.push(update.ripUpdate.logMessage);
-						break;
-					case "cprogTitle":
-						jobStatus.value!.cprogTitle = update.ripUpdate.cprogTitle;
-						break;
-					case "tprogTitle":
-						jobStatus.value!.tprogTitle = update.ripUpdate.tprogTitle;
-						break;
-					case "progressValues":
-						jobStatus.value!.progress = update.ripUpdate.progressValues;
-						break;
-				}
+let jobTrackerInterval = ref<number | undefined>(undefined);
+function trackJob() {
+	if (jobTrackerInterval.value !== undefined) {
+		clearInterval(jobTrackerInterval.value);
+	}
+	jobStatus.value = RipStatus.create();
+	let inflight = false;
+	setInterval(async () => {
+		if (inflight) return;
+		if (jobInfo.value === undefined) return;
+		inflight = true;
+		let requestingJob = jobInfo.value.id;
+		try {
+			let {response} = await rpc.getRipJobStatus({jobId: requestingJob});
+			if (requestingJob === jobInfo.value.id) {
+				jobStatus.value = response.status;
 			}
-		})(),
-		"Error while streaming job updates"
-	);
+		} finally {
+			inflight = false;
+		}
+	}, 1000);
 }
 watch(
 	() => jobInfo.value?.id,
 	(id) => {
 		if (id === undefined) {
-			jobTrackerAbort.abort("Job no longer active");
+			if (jobTrackerInterval.value !== undefined) {
+				clearInterval(jobTrackerInterval.value);
+				jobTrackerInterval.value = undefined;
+			}
 		} else {
-			trackJob(id);
+			jobStatus.value = RipStatus.create();
+			trackJob();
 		}
 	},
 	{ immediate: true }
 );
-onBeforeUnmount(() => jobTrackerAbort.abort());
+onBeforeUnmount(() => {
+	if (jobTrackerInterval.value === undefined) {
+		clearInterval(jobTrackerInterval.value)
+		jobTrackerInterval.value = undefined;
+	}
+});
 
 const allowRename = computed(
 	() => driveStatus.value?.activeRipJob !== undefined

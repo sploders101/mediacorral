@@ -2,7 +2,6 @@
 // @generated from protobuf file "mediacorral/server/v1/api.proto" (package "mediacorral.server.v1", syntax proto3)
 // tslint:disable
 import { DriveState } from "../../drive_controller/v1/main";
-import { RipUpdate } from "../../drive_controller/v1/main";
 import { ServiceType } from "@protobuf-ts/runtime-rpc";
 import type { BinaryWriteOptions } from "@protobuf-ts/runtime";
 import type { IBinaryWriter } from "@protobuf-ts/runtime";
@@ -15,9 +14,9 @@ import { reflectionMergePartial } from "@protobuf-ts/runtime";
 import { MessageType } from "@protobuf-ts/runtime";
 import { VideoExtendedMetadata } from "./metadata";
 import { RipStatus } from "../../drive_controller/v1/main";
-import { TmdbMovieResult } from "../../common/tmdb/v1/main";
-import { TmdbTvResult } from "../../common/tmdb/v1/main";
-import { TmdbAnyTitle } from "../../common/tmdb/v1/main";
+import { TmdbMovieResult } from "./tmdb";
+import { TmdbTvResult } from "./tmdb";
+import { TmdbAnyTitle } from "./tmdb";
 /**
  * @generated from protobuf message mediacorral.server.v1.GetSubtitlesRequest
  */
@@ -70,7 +69,7 @@ export interface SearchTmdbMultiResponse {
      */
     totalResults: number;
     /**
-     * @generated from protobuf field: repeated mediacorral.common.tmdb.v1.TmdbAnyTitle results = 4
+     * @generated from protobuf field: repeated mediacorral.server.v1.TmdbAnyTitle results = 4
      */
     results: TmdbAnyTitle[];
 }
@@ -116,7 +115,7 @@ export interface SearchTmdbTvResponse {
      */
     totalResults: number;
     /**
-     * @generated from protobuf field: repeated mediacorral.common.tmdb.v1.TmdbTvResult results = 4
+     * @generated from protobuf field: repeated mediacorral.server.v1.TmdbTvResult results = 4
      */
     results: TmdbTvResult[];
 }
@@ -166,7 +165,7 @@ export interface SearchTmdbMovieResponse {
      */
     totalResults: number;
     /**
-     * @generated from protobuf field: repeated mediacorral.common.tmdb.v1.TmdbMovieResult results = 4
+     * @generated from protobuf field: repeated mediacorral.server.v1.TmdbMovieResult results = 4
      */
     results: TmdbMovieResult[];
 }
@@ -364,15 +363,6 @@ export interface GetRipJobStatusResponse {
      * @generated from protobuf field: mediacorral.drive_controller.v1.RipStatus status = 1
      */
     status?: RipStatus;
-}
-/**
- * @generated from protobuf message mediacorral.server.v1.StreamRipJobUpdatesRequest
- */
-export interface StreamRipJobUpdatesRequest {
-    /**
-     * @generated from protobuf field: int64 job_id = 1
-     */
-    jobId: bigint;
 }
 /**
  * @generated from protobuf message mediacorral.server.v1.EjectRequest
@@ -1291,7 +1281,7 @@ class SearchTmdbMultiResponse$Type extends MessageType<SearchTmdbMultiResponse> 
                 case /* uint32 total_results */ 3:
                     message.totalResults = reader.uint32();
                     break;
-                case /* repeated mediacorral.common.tmdb.v1.TmdbAnyTitle results */ 4:
+                case /* repeated mediacorral.server.v1.TmdbAnyTitle results */ 4:
                     message.results.push(TmdbAnyTitle.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
@@ -1315,7 +1305,7 @@ class SearchTmdbMultiResponse$Type extends MessageType<SearchTmdbMultiResponse> 
         /* uint32 total_results = 3; */
         if (message.totalResults !== 0)
             writer.tag(3, WireType.Varint).uint32(message.totalResults);
-        /* repeated mediacorral.common.tmdb.v1.TmdbAnyTitle results = 4; */
+        /* repeated mediacorral.server.v1.TmdbAnyTitle results = 4; */
         for (let i = 0; i < message.results.length; i++)
             TmdbAnyTitle.internalBinaryWrite(message.results[i], writer.tag(4, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
@@ -1437,7 +1427,7 @@ class SearchTmdbTvResponse$Type extends MessageType<SearchTmdbTvResponse> {
                 case /* uint32 total_results */ 3:
                     message.totalResults = reader.uint32();
                     break;
-                case /* repeated mediacorral.common.tmdb.v1.TmdbTvResult results */ 4:
+                case /* repeated mediacorral.server.v1.TmdbTvResult results */ 4:
                     message.results.push(TmdbTvResult.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
@@ -1461,7 +1451,7 @@ class SearchTmdbTvResponse$Type extends MessageType<SearchTmdbTvResponse> {
         /* uint32 total_results = 3; */
         if (message.totalResults !== 0)
             writer.tag(3, WireType.Varint).uint32(message.totalResults);
-        /* repeated mediacorral.common.tmdb.v1.TmdbTvResult results = 4; */
+        /* repeated mediacorral.server.v1.TmdbTvResult results = 4; */
         for (let i = 0; i < message.results.length; i++)
             TmdbTvResult.internalBinaryWrite(message.results[i], writer.tag(4, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
@@ -1590,7 +1580,7 @@ class SearchTmdbMovieResponse$Type extends MessageType<SearchTmdbMovieResponse> 
                 case /* uint32 total_results */ 3:
                     message.totalResults = reader.uint32();
                     break;
-                case /* repeated mediacorral.common.tmdb.v1.TmdbMovieResult results */ 4:
+                case /* repeated mediacorral.server.v1.TmdbMovieResult results */ 4:
                     message.results.push(TmdbMovieResult.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
@@ -1614,7 +1604,7 @@ class SearchTmdbMovieResponse$Type extends MessageType<SearchTmdbMovieResponse> 
         /* uint32 total_results = 3; */
         if (message.totalResults !== 0)
             writer.tag(3, WireType.Varint).uint32(message.totalResults);
-        /* repeated mediacorral.common.tmdb.v1.TmdbMovieResult results = 4; */
+        /* repeated mediacorral.server.v1.TmdbMovieResult results = 4; */
         for (let i = 0; i < message.results.length; i++)
             TmdbMovieResult.internalBinaryWrite(message.results[i], writer.tag(4, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
@@ -2512,53 +2502,6 @@ class GetRipJobStatusResponse$Type extends MessageType<GetRipJobStatusResponse> 
  * @generated MessageType for protobuf message mediacorral.server.v1.GetRipJobStatusResponse
  */
 export const GetRipJobStatusResponse = new GetRipJobStatusResponse$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class StreamRipJobUpdatesRequest$Type extends MessageType<StreamRipJobUpdatesRequest> {
-    constructor() {
-        super("mediacorral.server.v1.StreamRipJobUpdatesRequest", [
-            { no: 1, name: "job_id", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
-        ]);
-    }
-    create(value?: PartialMessage<StreamRipJobUpdatesRequest>): StreamRipJobUpdatesRequest {
-        const message = globalThis.Object.create((this.messagePrototype!));
-        message.jobId = 0n;
-        if (value !== undefined)
-            reflectionMergePartial<StreamRipJobUpdatesRequest>(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StreamRipJobUpdatesRequest): StreamRipJobUpdatesRequest {
-        let message = target ?? this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                case /* int64 job_id */ 1:
-                    message.jobId = reader.int64().toBigInt();
-                    break;
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message: StreamRipJobUpdatesRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* int64 job_id = 1; */
-        if (message.jobId !== 0n)
-            writer.tag(1, WireType.Varint).int64(message.jobId);
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message mediacorral.server.v1.StreamRipJobUpdatesRequest
- */
-export const StreamRipJobUpdatesRequest = new StreamRipJobUpdatesRequest$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class EjectRequest$Type extends MessageType<EjectRequest> {
     constructor() {
@@ -5409,7 +5352,6 @@ export const CoordinatorApiService = new ServiceType("mediacorral.server.v1.Coor
     { name: "ListDrives", options: {}, I: ListDrivesRequest, O: ListDrivesResponse },
     { name: "StartRipJob", options: {}, I: StartRipJobRequest, O: StartRipJobResponse },
     { name: "GetRipJobStatus", options: {}, I: GetRipJobStatusRequest, O: GetRipJobStatusResponse },
-    { name: "StreamRipJobUpdates", serverStreaming: true, options: {}, I: StreamRipJobUpdatesRequest, O: RipUpdate },
     { name: "Eject", options: {}, I: EjectRequest, O: EjectResponse },
     { name: "Retract", options: {}, I: RetractRequest, O: RetractResponse },
     { name: "GetDriveState", options: {}, I: GetDriveStateRequest, O: DriveState },

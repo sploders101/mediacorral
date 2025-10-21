@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import PromptService from "./components/PromptService.vue";
-import { AutoripStatus } from "./generated/mediacorral/server/v1/api";
 import { injectKeys } from "./scripts/config";
 
 const drawer = ref(false);

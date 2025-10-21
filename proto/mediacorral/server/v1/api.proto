@@ -1,7 +1,7 @@
 syntax = "proto3";
 package mediacorral.server.v1;
 
-import "mediacorral/common/tmdb/v1/main.proto";
+import "mediacorral/server/v1/tmdb.proto";
 import "mediacorral/drive_controller/v1/main.proto";
 import "mediacorral/server/v1/metadata.proto";
 
@@ -38,10 +38,6 @@ service CoordinatorApiService {
 
   // Gets the current status of a rip job
   rpc GetRipJobStatus (GetRipJobStatusRequest) returns (GetRipJobStatusResponse);
-
-  // Streams status updates from a rip job.
-  // Initial state is always `RipStatus::default()`.
-  rpc StreamRipJobUpdates (StreamRipJobUpdatesRequest) returns (stream mediacorral.drive_controller.v1.RipUpdate);
 
   // Ejects a disc
   rpc Eject (EjectRequest) returns (EjectResponse);
@@ -126,7 +122,7 @@ message SearchTmdbMultiResponse {
   uint32 page = 1;
   uint32 total_pages = 2;
   uint32 total_results = 3;
-  repeated mediacorral.common.tmdb.v1.TmdbAnyTitle results = 4;
+  repeated TmdbAnyTitle results = 4;
 }
 
 message SearchTmdbTvRequest {
@@ -140,7 +136,7 @@ message SearchTmdbTvResponse {
   uint32 page = 1;
   uint32 total_pages = 2;
   uint32 total_results = 3;
-  repeated mediacorral.common.tmdb.v1.TmdbTvResult results = 4;
+  repeated TmdbTvResult results = 4;
 }
 
 message SearchTmdbMovieRequest {
@@ -155,7 +151,7 @@ message SearchTmdbMovieResponse {
   uint32 page = 1;
   uint32 total_pages = 2;
   uint32 total_results = 3;
-  repeated mediacorral.common.tmdb.v1.TmdbMovieResult results = 4;
+  repeated TmdbMovieResult results = 4;
 }
 
 message ImportTmdbTvRequest {
@@ -231,10 +227,6 @@ message GetRipJobStatusRequest {
 }
 message GetRipJobStatusResponse {
   mediacorral.drive_controller.v1.RipStatus status = 1;
-}
-
-message StreamRipJobUpdatesRequest {
-  int64 job_id = 1;
 }
 
 message EjectRequest {

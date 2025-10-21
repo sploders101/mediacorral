@@ -7,8 +7,7 @@
 package serverv1
 
 import (
-	v1 "github.com/sploders101/mediacorral/mediacorral-server/gen/mediacorral/common/tmdb/v1"
-	v11 "github.com/sploders101/mediacorral/mediacorral-server/gen/mediacorral/drive_controller/v1"
+	v1 "github.com/sploders101/mediacorral/mediacorral-server/gen/mediacorral/drive_controller/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -354,7 +353,7 @@ type SearchTmdbMultiResponse struct {
 	xxx_hidden_Page         uint32                 `protobuf:"varint,1,opt,name=page,proto3"`
 	xxx_hidden_TotalPages   uint32                 `protobuf:"varint,2,opt,name=total_pages,json=totalPages,proto3"`
 	xxx_hidden_TotalResults uint32                 `protobuf:"varint,3,opt,name=total_results,json=totalResults,proto3"`
-	xxx_hidden_Results      *[]*v1.TmdbAnyTitle    `protobuf:"bytes,4,rep,name=results,proto3"`
+	xxx_hidden_Results      *[]*TmdbAnyTitle       `protobuf:"bytes,4,rep,name=results,proto3"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -405,7 +404,7 @@ func (x *SearchTmdbMultiResponse) GetTotalResults() uint32 {
 	return 0
 }
 
-func (x *SearchTmdbMultiResponse) GetResults() []*v1.TmdbAnyTitle {
+func (x *SearchTmdbMultiResponse) GetResults() []*TmdbAnyTitle {
 	if x != nil {
 		if x.xxx_hidden_Results != nil {
 			return *x.xxx_hidden_Results
@@ -426,7 +425,7 @@ func (x *SearchTmdbMultiResponse) SetTotalResults(v uint32) {
 	x.xxx_hidden_TotalResults = v
 }
 
-func (x *SearchTmdbMultiResponse) SetResults(v []*v1.TmdbAnyTitle) {
+func (x *SearchTmdbMultiResponse) SetResults(v []*TmdbAnyTitle) {
 	x.xxx_hidden_Results = &v
 }
 
@@ -436,7 +435,7 @@ type SearchTmdbMultiResponse_builder struct {
 	Page         uint32
 	TotalPages   uint32
 	TotalResults uint32
-	Results      []*v1.TmdbAnyTitle
+	Results      []*TmdbAnyTitle
 }
 
 func (b0 SearchTmdbMultiResponse_builder) Build() *SearchTmdbMultiResponse {
@@ -643,7 +642,7 @@ type SearchTmdbTvResponse struct {
 	xxx_hidden_Page         uint32                 `protobuf:"varint,1,opt,name=page,proto3"`
 	xxx_hidden_TotalPages   uint32                 `protobuf:"varint,2,opt,name=total_pages,json=totalPages,proto3"`
 	xxx_hidden_TotalResults uint32                 `protobuf:"varint,3,opt,name=total_results,json=totalResults,proto3"`
-	xxx_hidden_Results      *[]*v1.TmdbTvResult    `protobuf:"bytes,4,rep,name=results,proto3"`
+	xxx_hidden_Results      *[]*TmdbTvResult       `protobuf:"bytes,4,rep,name=results,proto3"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -694,7 +693,7 @@ func (x *SearchTmdbTvResponse) GetTotalResults() uint32 {
 	return 0
 }
 
-func (x *SearchTmdbTvResponse) GetResults() []*v1.TmdbTvResult {
+func (x *SearchTmdbTvResponse) GetResults() []*TmdbTvResult {
 	if x != nil {
 		if x.xxx_hidden_Results != nil {
 			return *x.xxx_hidden_Results
@@ -715,7 +714,7 @@ func (x *SearchTmdbTvResponse) SetTotalResults(v uint32) {
 	x.xxx_hidden_TotalResults = v
 }
 
-func (x *SearchTmdbTvResponse) SetResults(v []*v1.TmdbTvResult) {
+func (x *SearchTmdbTvResponse) SetResults(v []*TmdbTvResult) {
 	x.xxx_hidden_Results = &v
 }
 
@@ -725,7 +724,7 @@ type SearchTmdbTvResponse_builder struct {
 	Page         uint32
 	TotalPages   uint32
 	TotalResults uint32
-	Results      []*v1.TmdbTvResult
+	Results      []*TmdbTvResult
 }
 
 func (b0 SearchTmdbTvResponse_builder) Build() *SearchTmdbTvResponse {
@@ -965,7 +964,7 @@ type SearchTmdbMovieResponse struct {
 	xxx_hidden_Page         uint32                 `protobuf:"varint,1,opt,name=page,proto3"`
 	xxx_hidden_TotalPages   uint32                 `protobuf:"varint,2,opt,name=total_pages,json=totalPages,proto3"`
 	xxx_hidden_TotalResults uint32                 `protobuf:"varint,3,opt,name=total_results,json=totalResults,proto3"`
-	xxx_hidden_Results      *[]*v1.TmdbMovieResult `protobuf:"bytes,4,rep,name=results,proto3"`
+	xxx_hidden_Results      *[]*TmdbMovieResult    `protobuf:"bytes,4,rep,name=results,proto3"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -1016,7 +1015,7 @@ func (x *SearchTmdbMovieResponse) GetTotalResults() uint32 {
 	return 0
 }
 
-func (x *SearchTmdbMovieResponse) GetResults() []*v1.TmdbMovieResult {
+func (x *SearchTmdbMovieResponse) GetResults() []*TmdbMovieResult {
 	if x != nil {
 		if x.xxx_hidden_Results != nil {
 			return *x.xxx_hidden_Results
@@ -1037,7 +1036,7 @@ func (x *SearchTmdbMovieResponse) SetTotalResults(v uint32) {
 	x.xxx_hidden_TotalResults = v
 }
 
-func (x *SearchTmdbMovieResponse) SetResults(v []*v1.TmdbMovieResult) {
+func (x *SearchTmdbMovieResponse) SetResults(v []*TmdbMovieResult) {
 	x.xxx_hidden_Results = &v
 }
 
@@ -1047,7 +1046,7 @@ type SearchTmdbMovieResponse_builder struct {
 	Page         uint32
 	TotalPages   uint32
 	TotalResults uint32
-	Results      []*v1.TmdbMovieResult
+	Results      []*TmdbMovieResult
 }
 
 func (b0 SearchTmdbMovieResponse_builder) Build() *SearchTmdbMovieResponse {
@@ -2123,7 +2122,7 @@ func (b0 GetRipJobStatusRequest_builder) Build() *GetRipJobStatusRequest {
 
 type GetRipJobStatusResponse struct {
 	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Status *v11.RipStatus         `protobuf:"bytes,1,opt,name=status,proto3"`
+	xxx_hidden_Status *v1.RipStatus          `protobuf:"bytes,1,opt,name=status,proto3"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -2153,14 +2152,14 @@ func (x *GetRipJobStatusResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *GetRipJobStatusResponse) GetStatus() *v11.RipStatus {
+func (x *GetRipJobStatusResponse) GetStatus() *v1.RipStatus {
 	if x != nil {
 		return x.xxx_hidden_Status
 	}
 	return nil
 }
 
-func (x *GetRipJobStatusResponse) SetStatus(v *v11.RipStatus) {
+func (x *GetRipJobStatusResponse) SetStatus(v *v1.RipStatus) {
 	x.xxx_hidden_Status = v
 }
 
@@ -2178,7 +2177,7 @@ func (x *GetRipJobStatusResponse) ClearStatus() {
 type GetRipJobStatusResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Status *v11.RipStatus
+	Status *v1.RipStatus
 }
 
 func (b0 GetRipJobStatusResponse_builder) Build() *GetRipJobStatusResponse {
@@ -2186,63 +2185,6 @@ func (b0 GetRipJobStatusResponse_builder) Build() *GetRipJobStatusResponse {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Status = b.Status
-	return m0
-}
-
-type StreamRipJobUpdatesRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_JobId int64                  `protobuf:"varint,1,opt,name=job_id,json=jobId,proto3"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *StreamRipJobUpdatesRequest) Reset() {
-	*x = StreamRipJobUpdatesRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[24]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StreamRipJobUpdatesRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StreamRipJobUpdatesRequest) ProtoMessage() {}
-
-func (x *StreamRipJobUpdatesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[24]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *StreamRipJobUpdatesRequest) GetJobId() int64 {
-	if x != nil {
-		return x.xxx_hidden_JobId
-	}
-	return 0
-}
-
-func (x *StreamRipJobUpdatesRequest) SetJobId(v int64) {
-	x.xxx_hidden_JobId = v
-}
-
-type StreamRipJobUpdatesRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	JobId int64
-}
-
-func (b0 StreamRipJobUpdatesRequest_builder) Build() *StreamRipJobUpdatesRequest {
-	m0 := &StreamRipJobUpdatesRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_JobId = b.JobId
 	return m0
 }
 
@@ -2255,7 +2197,7 @@ type EjectRequest struct {
 
 func (x *EjectRequest) Reset() {
 	*x = EjectRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[25]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2267,7 +2209,7 @@ func (x *EjectRequest) String() string {
 func (*EjectRequest) ProtoMessage() {}
 
 func (x *EjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[25]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2322,7 +2264,7 @@ type EjectResponse struct {
 
 func (x *EjectResponse) Reset() {
 	*x = EjectResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[26]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2334,7 +2276,7 @@ func (x *EjectResponse) String() string {
 func (*EjectResponse) ProtoMessage() {}
 
 func (x *EjectResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[26]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2366,7 +2308,7 @@ type RetractRequest struct {
 
 func (x *RetractRequest) Reset() {
 	*x = RetractRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[27]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2378,7 +2320,7 @@ func (x *RetractRequest) String() string {
 func (*RetractRequest) ProtoMessage() {}
 
 func (x *RetractRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[27]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2433,7 +2375,7 @@ type RetractResponse struct {
 
 func (x *RetractResponse) Reset() {
 	*x = RetractResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[28]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2445,7 +2387,7 @@ func (x *RetractResponse) String() string {
 func (*RetractResponse) ProtoMessage() {}
 
 func (x *RetractResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[28]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2478,7 +2420,7 @@ type GetDriveStateRequest struct {
 
 func (x *GetDriveStateRequest) Reset() {
 	*x = GetDriveStateRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[29]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2490,7 +2432,7 @@ func (x *GetDriveStateRequest) String() string {
 func (*GetDriveStateRequest) ProtoMessage() {}
 
 func (x *GetDriveStateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[29]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2547,7 +2489,7 @@ type ListMoviesRequest struct {
 
 func (x *ListMoviesRequest) Reset() {
 	*x = ListMoviesRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[30]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2559,7 +2501,7 @@ func (x *ListMoviesRequest) String() string {
 func (*ListMoviesRequest) ProtoMessage() {}
 
 func (x *ListMoviesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[30]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2591,7 +2533,7 @@ type ListMoviesResponse struct {
 
 func (x *ListMoviesResponse) Reset() {
 	*x = ListMoviesResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[31]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2603,7 +2545,7 @@ func (x *ListMoviesResponse) String() string {
 func (*ListMoviesResponse) ProtoMessage() {}
 
 func (x *ListMoviesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[31]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2658,7 +2600,7 @@ type Movie struct {
 
 func (x *Movie) Reset() {
 	*x = Movie{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[32]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2670,7 +2612,7 @@ func (x *Movie) String() string {
 func (*Movie) ProtoMessage() {}
 
 func (x *Movie) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[32]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2879,7 +2821,7 @@ type GetMovieRequest struct {
 
 func (x *GetMovieRequest) Reset() {
 	*x = GetMovieRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[33]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2891,7 +2833,7 @@ func (x *GetMovieRequest) String() string {
 func (*GetMovieRequest) ProtoMessage() {}
 
 func (x *GetMovieRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[33]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2936,7 +2878,7 @@ type GetMovieResponse struct {
 
 func (x *GetMovieResponse) Reset() {
 	*x = GetMovieResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[34]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2948,7 +2890,7 @@ func (x *GetMovieResponse) String() string {
 func (*GetMovieResponse) ProtoMessage() {}
 
 func (x *GetMovieResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[34]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3004,7 +2946,7 @@ type GetMovieByTmdbIdRequest struct {
 
 func (x *GetMovieByTmdbIdRequest) Reset() {
 	*x = GetMovieByTmdbIdRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[35]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3016,7 +2958,7 @@ func (x *GetMovieByTmdbIdRequest) String() string {
 func (*GetMovieByTmdbIdRequest) ProtoMessage() {}
 
 func (x *GetMovieByTmdbIdRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[35]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3061,7 +3003,7 @@ type GetMovieByTmdbIdResponse struct {
 
 func (x *GetMovieByTmdbIdResponse) Reset() {
 	*x = GetMovieByTmdbIdResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[36]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3073,7 +3015,7 @@ func (x *GetMovieByTmdbIdResponse) String() string {
 func (*GetMovieByTmdbIdResponse) ProtoMessage() {}
 
 func (x *GetMovieByTmdbIdResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[36]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3128,7 +3070,7 @@ type ListTvShowsRequest struct {
 
 func (x *ListTvShowsRequest) Reset() {
 	*x = ListTvShowsRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[37]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3140,7 +3082,7 @@ func (x *ListTvShowsRequest) String() string {
 func (*ListTvShowsRequest) ProtoMessage() {}
 
 func (x *ListTvShowsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[37]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3172,7 +3114,7 @@ type ListTvShowsResponse struct {
 
 func (x *ListTvShowsResponse) Reset() {
 	*x = ListTvShowsResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[38]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3184,7 +3126,7 @@ func (x *ListTvShowsResponse) String() string {
 func (*ListTvShowsResponse) ProtoMessage() {}
 
 func (x *ListTvShowsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[38]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3238,7 +3180,7 @@ type TvShow struct {
 
 func (x *TvShow) Reset() {
 	*x = TvShow{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[39]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3250,7 +3192,7 @@ func (x *TvShow) String() string {
 func (*TvShow) ProtoMessage() {}
 
 func (x *TvShow) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[39]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3430,7 +3372,7 @@ type ListTvSeasonsRequest struct {
 
 func (x *ListTvSeasonsRequest) Reset() {
 	*x = ListTvSeasonsRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[40]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3442,7 +3384,7 @@ func (x *ListTvSeasonsRequest) String() string {
 func (*ListTvSeasonsRequest) ProtoMessage() {}
 
 func (x *ListTvSeasonsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[40]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3488,7 +3430,7 @@ type ListTvSeasonsResponse struct {
 
 func (x *ListTvSeasonsResponse) Reset() {
 	*x = ListTvSeasonsResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[41]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3500,7 +3442,7 @@ func (x *ListTvSeasonsResponse) String() string {
 func (*ListTvSeasonsResponse) ProtoMessage() {}
 
 func (x *ListTvSeasonsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[41]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3568,7 +3510,7 @@ type TvSeason struct {
 
 func (x *TvSeason) Reset() {
 	*x = TvSeason{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[42]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3580,7 +3522,7 @@ func (x *TvSeason) String() string {
 func (*TvSeason) ProtoMessage() {}
 
 func (x *TvSeason) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[42]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3754,7 +3696,7 @@ type ListTvEpisodesRequest struct {
 
 func (x *ListTvEpisodesRequest) Reset() {
 	*x = ListTvEpisodesRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[43]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3766,7 +3708,7 @@ func (x *ListTvEpisodesRequest) String() string {
 func (*ListTvEpisodesRequest) ProtoMessage() {}
 
 func (x *ListTvEpisodesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[43]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3812,7 +3754,7 @@ type ListTvEpisodesResponse struct {
 
 func (x *ListTvEpisodesResponse) Reset() {
 	*x = ListTvEpisodesResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[44]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3824,7 +3766,7 @@ func (x *ListTvEpisodesResponse) String() string {
 func (*ListTvEpisodesResponse) ProtoMessage() {}
 
 func (x *ListTvEpisodesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[44]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3894,7 +3836,7 @@ type TvEpisode struct {
 
 func (x *TvEpisode) Reset() {
 	*x = TvEpisode{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[45]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3906,7 +3848,7 @@ func (x *TvEpisode) String() string {
 func (*TvEpisode) ProtoMessage() {}
 
 func (x *TvEpisode) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[45]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4122,7 +4064,7 @@ type GetTvShowRequest struct {
 
 func (x *GetTvShowRequest) Reset() {
 	*x = GetTvShowRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[46]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4134,7 +4076,7 @@ func (x *GetTvShowRequest) String() string {
 func (*GetTvShowRequest) ProtoMessage() {}
 
 func (x *GetTvShowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[46]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4179,7 +4121,7 @@ type GetTvShowResponse struct {
 
 func (x *GetTvShowResponse) Reset() {
 	*x = GetTvShowResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[47]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4191,7 +4133,7 @@ func (x *GetTvShowResponse) String() string {
 func (*GetTvShowResponse) ProtoMessage() {}
 
 func (x *GetTvShowResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[47]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4247,7 +4189,7 @@ type GetTvSeasonRequest struct {
 
 func (x *GetTvSeasonRequest) Reset() {
 	*x = GetTvSeasonRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[48]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4259,7 +4201,7 @@ func (x *GetTvSeasonRequest) String() string {
 func (*GetTvSeasonRequest) ProtoMessage() {}
 
 func (x *GetTvSeasonRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[48]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4304,7 +4246,7 @@ type GetTvSeasonResponse struct {
 
 func (x *GetTvSeasonResponse) Reset() {
 	*x = GetTvSeasonResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[49]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4316,7 +4258,7 @@ func (x *GetTvSeasonResponse) String() string {
 func (*GetTvSeasonResponse) ProtoMessage() {}
 
 func (x *GetTvSeasonResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[49]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4372,7 +4314,7 @@ type GetTvEpisodeRequest struct {
 
 func (x *GetTvEpisodeRequest) Reset() {
 	*x = GetTvEpisodeRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[50]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4384,7 +4326,7 @@ func (x *GetTvEpisodeRequest) String() string {
 func (*GetTvEpisodeRequest) ProtoMessage() {}
 
 func (x *GetTvEpisodeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[50]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4429,7 +4371,7 @@ type GetTvEpisodeResponse struct {
 
 func (x *GetTvEpisodeResponse) Reset() {
 	*x = GetTvEpisodeResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[51]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4441,7 +4383,7 @@ func (x *GetTvEpisodeResponse) String() string {
 func (*GetTvEpisodeResponse) ProtoMessage() {}
 
 func (x *GetTvEpisodeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[51]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4497,7 +4439,7 @@ type GetTvEpisodeByTmdbIdRequest struct {
 
 func (x *GetTvEpisodeByTmdbIdRequest) Reset() {
 	*x = GetTvEpisodeByTmdbIdRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[52]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4509,7 +4451,7 @@ func (x *GetTvEpisodeByTmdbIdRequest) String() string {
 func (*GetTvEpisodeByTmdbIdRequest) ProtoMessage() {}
 
 func (x *GetTvEpisodeByTmdbIdRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[52]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4554,7 +4496,7 @@ type GetTvEpisodeByTmdbIdResponse struct {
 
 func (x *GetTvEpisodeByTmdbIdResponse) Reset() {
 	*x = GetTvEpisodeByTmdbIdResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[53]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4566,7 +4508,7 @@ func (x *GetTvEpisodeByTmdbIdResponse) String() string {
 func (*GetTvEpisodeByTmdbIdResponse) ProtoMessage() {}
 
 func (x *GetTvEpisodeByTmdbIdResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[53]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4626,7 +4568,7 @@ type TagFileRequest struct {
 
 func (x *TagFileRequest) Reset() {
 	*x = TagFileRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[54]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4638,7 +4580,7 @@ func (x *TagFileRequest) String() string {
 func (*TagFileRequest) ProtoMessage() {}
 
 func (x *TagFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[54]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4724,7 +4666,7 @@ type TagFileResponse struct {
 
 func (x *TagFileResponse) Reset() {
 	*x = TagFileResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[55]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4736,7 +4678,7 @@ func (x *TagFileResponse) String() string {
 func (*TagFileResponse) ProtoMessage() {}
 
 func (x *TagFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[55]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4768,7 +4710,7 @@ type GetJobInfoRequest struct {
 
 func (x *GetJobInfoRequest) Reset() {
 	*x = GetJobInfoRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[56]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4780,7 +4722,7 @@ func (x *GetJobInfoRequest) String() string {
 func (*GetJobInfoRequest) ProtoMessage() {}
 
 func (x *GetJobInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[56]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4825,7 +4767,7 @@ type GetJobInfoResponse struct {
 
 func (x *GetJobInfoResponse) Reset() {
 	*x = GetJobInfoResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[57]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4837,7 +4779,7 @@ func (x *GetJobInfoResponse) String() string {
 func (*GetJobInfoResponse) ProtoMessage() {}
 
 func (x *GetJobInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[57]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4894,7 +4836,7 @@ type RenameJobRequest struct {
 
 func (x *RenameJobRequest) Reset() {
 	*x = RenameJobRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[58]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4906,7 +4848,7 @@ func (x *RenameJobRequest) String() string {
 func (*RenameJobRequest) ProtoMessage() {}
 
 func (x *RenameJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[58]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4963,7 +4905,7 @@ type RenameJobResponse struct {
 
 func (x *RenameJobResponse) Reset() {
 	*x = RenameJobResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[59]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4975,7 +4917,7 @@ func (x *RenameJobResponse) String() string {
 func (*RenameJobResponse) ProtoMessage() {}
 
 func (x *RenameJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[59]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5007,7 +4949,7 @@ type DeleteJobRequest struct {
 
 func (x *DeleteJobRequest) Reset() {
 	*x = DeleteJobRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[60]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5019,7 +4961,7 @@ func (x *DeleteJobRequest) String() string {
 func (*DeleteJobRequest) ProtoMessage() {}
 
 func (x *DeleteJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[60]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5063,7 +5005,7 @@ type DeleteJobResponse struct {
 
 func (x *DeleteJobResponse) Reset() {
 	*x = DeleteJobResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[61]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5075,7 +5017,7 @@ func (x *DeleteJobResponse) String() string {
 func (*DeleteJobResponse) ProtoMessage() {}
 
 func (x *DeleteJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[61]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5108,7 +5050,7 @@ type SuspectJobRequest struct {
 
 func (x *SuspectJobRequest) Reset() {
 	*x = SuspectJobRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[62]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5120,7 +5062,7 @@ func (x *SuspectJobRequest) String() string {
 func (*SuspectJobRequest) ProtoMessage() {}
 
 func (x *SuspectJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[62]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5188,7 +5130,7 @@ type SuspectJobResponse struct {
 
 func (x *SuspectJobResponse) Reset() {
 	*x = SuspectJobResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[63]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5200,7 +5142,7 @@ func (x *SuspectJobResponse) String() string {
 func (*SuspectJobResponse) ProtoMessage() {}
 
 func (x *SuspectJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[63]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5233,7 +5175,7 @@ type GetUntaggedJobsRequest struct {
 
 func (x *GetUntaggedJobsRequest) Reset() {
 	*x = GetUntaggedJobsRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[64]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5245,7 +5187,7 @@ func (x *GetUntaggedJobsRequest) String() string {
 func (*GetUntaggedJobsRequest) ProtoMessage() {}
 
 func (x *GetUntaggedJobsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[64]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5303,7 +5245,7 @@ type GetUntaggedJobsResponse struct {
 
 func (x *GetUntaggedJobsResponse) Reset() {
 	*x = GetUntaggedJobsResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[65]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5315,7 +5257,7 @@ func (x *GetUntaggedJobsResponse) String() string {
 func (*GetUntaggedJobsResponse) ProtoMessage() {}
 
 func (x *GetUntaggedJobsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[65]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5369,7 +5311,7 @@ type RipJob struct {
 
 func (x *RipJob) Reset() {
 	*x = RipJob{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[66]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5381,7 +5323,7 @@ func (x *RipJob) String() string {
 func (*RipJob) ProtoMessage() {}
 
 func (x *RipJob) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[66]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5521,7 +5463,7 @@ type GetJobCatalogueInfoRequest struct {
 
 func (x *GetJobCatalogueInfoRequest) Reset() {
 	*x = GetJobCatalogueInfoRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[67]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5533,7 +5475,7 @@ func (x *GetJobCatalogueInfoRequest) String() string {
 func (*GetJobCatalogueInfoRequest) ProtoMessage() {}
 
 func (x *GetJobCatalogueInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[67]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5587,7 +5529,7 @@ type GetJobCatalogueInfoResponse struct {
 
 func (x *GetJobCatalogueInfoResponse) Reset() {
 	*x = GetJobCatalogueInfoResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[68]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5599,7 +5541,7 @@ func (x *GetJobCatalogueInfoResponse) String() string {
 func (*GetJobCatalogueInfoResponse) ProtoMessage() {}
 
 func (x *GetJobCatalogueInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[68]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5784,7 +5726,7 @@ type VideoFile struct {
 
 func (x *VideoFile) Reset() {
 	*x = VideoFile{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[69]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5796,7 +5738,7 @@ func (x *VideoFile) String() string {
 func (*VideoFile) ProtoMessage() {}
 
 func (x *VideoFile) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[69]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6073,7 +6015,7 @@ type MatchInfoItem struct {
 
 func (x *MatchInfoItem) Reset() {
 	*x = MatchInfoItem{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[70]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6085,7 +6027,7 @@ func (x *MatchInfoItem) String() string {
 func (*MatchInfoItem) ProtoMessage() {}
 
 func (x *MatchInfoItem) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[70]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6187,7 +6129,7 @@ type RipVideoBlobs struct {
 
 func (x *RipVideoBlobs) Reset() {
 	*x = RipVideoBlobs{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[71]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6199,7 +6141,7 @@ func (x *RipVideoBlobs) String() string {
 func (*RipVideoBlobs) ProtoMessage() {}
 
 func (x *RipVideoBlobs) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[71]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6306,7 +6248,7 @@ type OstDownloadsItem struct {
 
 func (x *OstDownloadsItem) Reset() {
 	*x = OstDownloadsItem{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[72]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6318,7 +6260,7 @@ func (x *OstDownloadsItem) String() string {
 func (*OstDownloadsItem) ProtoMessage() {}
 
 func (x *OstDownloadsItem) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[72]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6415,7 +6357,7 @@ type ReprocessJobRequest struct {
 
 func (x *ReprocessJobRequest) Reset() {
 	*x = ReprocessJobRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[73]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6427,7 +6369,7 @@ func (x *ReprocessJobRequest) String() string {
 func (*ReprocessJobRequest) ProtoMessage() {}
 
 func (x *ReprocessJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[73]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6471,7 +6413,7 @@ type ReprocessJobResponse struct {
 
 func (x *ReprocessJobResponse) Reset() {
 	*x = ReprocessJobResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[74]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6483,7 +6425,7 @@ func (x *ReprocessJobResponse) String() string {
 func (*ReprocessJobResponse) ProtoMessage() {}
 
 func (x *ReprocessJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[74]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6515,7 +6457,7 @@ type PruneRipJobRequest struct {
 
 func (x *PruneRipJobRequest) Reset() {
 	*x = PruneRipJobRequest{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[75]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6527,7 +6469,7 @@ func (x *PruneRipJobRequest) String() string {
 func (*PruneRipJobRequest) ProtoMessage() {}
 
 func (x *PruneRipJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[75]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6571,7 +6513,7 @@ type PruneRipJobResponse struct {
 
 func (x *PruneRipJobResponse) Reset() {
 	*x = PruneRipJobResponse{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[76]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6583,7 +6525,7 @@ func (x *PruneRipJobResponse) String() string {
 func (*PruneRipJobResponse) ProtoMessage() {}
 
 func (x *PruneRipJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[76]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6615,7 +6557,7 @@ type SuspectedContents_Movie struct {
 
 func (x *SuspectedContents_Movie) Reset() {
 	*x = SuspectedContents_Movie{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[77]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6627,7 +6569,7 @@ func (x *SuspectedContents_Movie) String() string {
 func (*SuspectedContents_Movie) ProtoMessage() {}
 
 func (x *SuspectedContents_Movie) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[77]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6672,7 +6614,7 @@ type SuspectedContents_TvEpisodes struct {
 
 func (x *SuspectedContents_TvEpisodes) Reset() {
 	*x = SuspectedContents_TvEpisodes{}
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[78]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6684,7 +6626,7 @@ func (x *SuspectedContents_TvEpisodes) String() string {
 func (*SuspectedContents_TvEpisodes) ProtoMessage() {}
 
 func (x *SuspectedContents_TvEpisodes) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_server_v1_api_proto_msgTypes[78]
+	mi := &file_mediacorral_server_v1_api_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6724,7 +6666,7 @@ var File_mediacorral_server_v1_api_proto protoreflect.FileDescriptor
 
 const file_mediacorral_server_v1_api_proto_rawDesc = "" +
 	"\n" +
-	"\x1fmediacorral/server/v1/api.proto\x12\x15mediacorral.server.v1\x1a%mediacorral/common/tmdb/v1/main.proto\x1a*mediacorral/drive_controller/v1/main.proto\x1a$mediacorral/server/v1/metadata.proto\".\n" +
+	"\x1fmediacorral/server/v1/api.proto\x12\x15mediacorral.server.v1\x1a mediacorral/server/v1/tmdb.proto\x1a*mediacorral/drive_controller/v1/main.proto\x1a$mediacorral/server/v1/metadata.proto\".\n" +
 	"\x13GetSubtitlesRequest\x12\x17\n" +
 	"\ablob_id\x18\x01 \x01(\tR\x06blobId\"4\n" +
 	"\x14GetSubtitlesResponse\x12\x1c\n" +
@@ -6734,13 +6676,13 @@ const file_mediacorral_server_v1_api_proto_rawDesc = "" +
 	"\blanguage\x18\x02 \x01(\tH\x00R\blanguage\x88\x01\x01\x12\x17\n" +
 	"\x04page\x18\x03 \x01(\rH\x01R\x04page\x88\x01\x01B\v\n" +
 	"\t_languageB\a\n" +
-	"\x05_page\"\xb7\x01\n" +
+	"\x05_page\"\xb2\x01\n" +
 	"\x17SearchTmdbMultiResponse\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\rR\x04page\x12\x1f\n" +
 	"\vtotal_pages\x18\x02 \x01(\rR\n" +
 	"totalPages\x12#\n" +
-	"\rtotal_results\x18\x03 \x01(\rR\ftotalResults\x12B\n" +
-	"\aresults\x18\x04 \x03(\v2(.mediacorral.common.tmdb.v1.TmdbAnyTitleR\aresults\"\xe9\x01\n" +
+	"\rtotal_results\x18\x03 \x01(\rR\ftotalResults\x12=\n" +
+	"\aresults\x18\x04 \x03(\v2#.mediacorral.server.v1.TmdbAnyTitleR\aresults\"\xe9\x01\n" +
 	"\x13SearchTmdbTvRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x122\n" +
 	"\x13first_air_date_year\x18\x02 \x01(\tH\x00R\x10firstAirDateYear\x88\x01\x01\x12\x1f\n" +
@@ -6750,13 +6692,13 @@ const file_mediacorral_server_v1_api_proto_rawDesc = "" +
 	"\x14_first_air_date_yearB\v\n" +
 	"\t_languageB\a\n" +
 	"\x05_yearB\a\n" +
-	"\x05_page\"\xb4\x01\n" +
+	"\x05_page\"\xaf\x01\n" +
 	"\x14SearchTmdbTvResponse\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\rR\x04page\x12\x1f\n" +
 	"\vtotal_pages\x18\x02 \x01(\rR\n" +
 	"totalPages\x12#\n" +
-	"\rtotal_results\x18\x03 \x01(\rR\ftotalResults\x12B\n" +
-	"\aresults\x18\x04 \x03(\v2(.mediacorral.common.tmdb.v1.TmdbTvResultR\aresults\"\x98\x02\n" +
+	"\rtotal_results\x18\x03 \x01(\rR\ftotalResults\x12=\n" +
+	"\aresults\x18\x04 \x03(\v2#.mediacorral.server.v1.TmdbTvResultR\aresults\"\x98\x02\n" +
 	"\x16SearchTmdbMovieRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x125\n" +
 	"\x14primary_release_year\x18\x02 \x01(\tH\x00R\x12primaryReleaseYear\x88\x01\x01\x12\x1f\n" +
@@ -6768,13 +6710,13 @@ const file_mediacorral_server_v1_api_proto_rawDesc = "" +
 	"\t_languageB\a\n" +
 	"\x05_yearB\t\n" +
 	"\a_regionB\a\n" +
-	"\x05_page\"\xba\x01\n" +
+	"\x05_page\"\xb5\x01\n" +
 	"\x17SearchTmdbMovieResponse\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\rR\x04page\x12\x1f\n" +
 	"\vtotal_pages\x18\x02 \x01(\rR\n" +
 	"totalPages\x12#\n" +
-	"\rtotal_results\x18\x03 \x01(\rR\ftotalResults\x12E\n" +
-	"\aresults\x18\x04 \x03(\v2+.mediacorral.common.tmdb.v1.TmdbMovieResultR\aresults\".\n" +
+	"\rtotal_results\x18\x03 \x01(\rR\ftotalResults\x12@\n" +
+	"\aresults\x18\x04 \x03(\v2&.mediacorral.server.v1.TmdbMovieResultR\aresults\".\n" +
 	"\x13ImportTmdbTvRequest\x12\x17\n" +
 	"\atmdb_id\x18\x01 \x01(\x05R\x06tmdbId\"+\n" +
 	"\x14ImportTmdbTvResponse\x12\x13\n" +
@@ -6823,9 +6765,7 @@ const file_mediacorral_server_v1_api_proto_rawDesc = "" +
 	"\x16GetRipJobStatusRequest\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\x03R\x05jobId\"]\n" +
 	"\x17GetRipJobStatusResponse\x12B\n" +
-	"\x06status\x18\x01 \x01(\v2*.mediacorral.drive_controller.v1.RipStatusR\x06status\"3\n" +
-	"\x1aStreamRipJobUpdatesRequest\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\x03R\x05jobId\"F\n" +
+	"\x06status\x18\x01 \x01(\v2*.mediacorral.drive_controller.v1.RipStatusR\x06status\"F\n" +
 	"\fEjectRequest\x126\n" +
 	"\x05drive\x18\x01 \x01(\v2 .mediacorral.server.v1.DiscDriveR\x05drive\"\x0f\n" +
 	"\rEjectResponse\"H\n" +
@@ -7050,7 +6990,7 @@ const file_mediacorral_server_v1_api_proto_rawDesc = "" +
 	"\x16VIDEO_TYPE_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10VIDEO_TYPE_MOVIE\x10\x01\x12\x1e\n" +
 	"\x1aVIDEO_TYPE_SPECIAL_FEATURE\x10\x02\x12\x19\n" +
-	"\x15VIDEO_TYPE_TV_EPISODE\x10\x032\x9d\x1c\n" +
+	"\x15VIDEO_TYPE_TV_EPISODE\x10\x032\xa5\x1b\n" +
 	"\x15CoordinatorApiService\x12g\n" +
 	"\fGetSubtitles\x12*.mediacorral.server.v1.GetSubtitlesRequest\x1a+.mediacorral.server.v1.GetSubtitlesResponse\x12p\n" +
 	"\x0fSearchTmdbMulti\x12-.mediacorral.server.v1.SearchTmdbMultiRequest\x1a..mediacorral.server.v1.SearchTmdbMultiResponse\x12g\n" +
@@ -7063,8 +7003,7 @@ const file_mediacorral_server_v1_api_proto_rawDesc = "" +
 	"\n" +
 	"ListDrives\x12(.mediacorral.server.v1.ListDrivesRequest\x1a).mediacorral.server.v1.ListDrivesResponse\x12d\n" +
 	"\vStartRipJob\x12).mediacorral.server.v1.StartRipJobRequest\x1a*.mediacorral.server.v1.StartRipJobResponse\x12p\n" +
-	"\x0fGetRipJobStatus\x12-.mediacorral.server.v1.GetRipJobStatusRequest\x1a..mediacorral.server.v1.GetRipJobStatusResponse\x12v\n" +
-	"\x13StreamRipJobUpdates\x121.mediacorral.server.v1.StreamRipJobUpdatesRequest\x1a*.mediacorral.drive_controller.v1.RipUpdate0\x01\x12R\n" +
+	"\x0fGetRipJobStatus\x12-.mediacorral.server.v1.GetRipJobStatusRequest\x1a..mediacorral.server.v1.GetRipJobStatusResponse\x12R\n" +
 	"\x05Eject\x12#.mediacorral.server.v1.EjectRequest\x1a$.mediacorral.server.v1.EjectResponse\x12X\n" +
 	"\aRetract\x12%.mediacorral.server.v1.RetractRequest\x1a&.mediacorral.server.v1.RetractResponse\x12i\n" +
 	"\rGetDriveState\x12+.mediacorral.server.v1.GetDriveStateRequest\x1a+.mediacorral.drive_controller.v1.DriveState\x12a\n" +
@@ -7093,7 +7032,7 @@ const file_mediacorral_server_v1_api_proto_rawDesc = "" +
 	"\x19com.mediacorral.server.v1B\bApiProtoP\x01ZXgithub.com/sploders101/mediacorral/mediacorral-server/gen/mediacorral/server/v1;serverv1\xa2\x02\x03MSX\xaa\x02\x15Mediacorral.Server.V1\xca\x02\x15Mediacorral\\Server\\V1\xe2\x02!Mediacorral\\Server\\V1\\GPBMetadata\xea\x02\x17Mediacorral::Server::V1b\x06proto3"
 
 var file_mediacorral_server_v1_api_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_mediacorral_server_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 79)
+var file_mediacorral_server_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 78)
 var file_mediacorral_server_v1_api_proto_goTypes = []any{
 	(AutoripStatus)(0),                   // 0: mediacorral.server.v1.AutoripStatus
 	(VideoType)(0),                       // 1: mediacorral.server.v1.VideoType
@@ -7121,105 +7060,103 @@ var file_mediacorral_server_v1_api_proto_goTypes = []any{
 	(*SuspectedContents)(nil),            // 23: mediacorral.server.v1.SuspectedContents
 	(*GetRipJobStatusRequest)(nil),       // 24: mediacorral.server.v1.GetRipJobStatusRequest
 	(*GetRipJobStatusResponse)(nil),      // 25: mediacorral.server.v1.GetRipJobStatusResponse
-	(*StreamRipJobUpdatesRequest)(nil),   // 26: mediacorral.server.v1.StreamRipJobUpdatesRequest
-	(*EjectRequest)(nil),                 // 27: mediacorral.server.v1.EjectRequest
-	(*EjectResponse)(nil),                // 28: mediacorral.server.v1.EjectResponse
-	(*RetractRequest)(nil),               // 29: mediacorral.server.v1.RetractRequest
-	(*RetractResponse)(nil),              // 30: mediacorral.server.v1.RetractResponse
-	(*GetDriveStateRequest)(nil),         // 31: mediacorral.server.v1.GetDriveStateRequest
-	(*ListMoviesRequest)(nil),            // 32: mediacorral.server.v1.ListMoviesRequest
-	(*ListMoviesResponse)(nil),           // 33: mediacorral.server.v1.ListMoviesResponse
-	(*Movie)(nil),                        // 34: mediacorral.server.v1.Movie
-	(*GetMovieRequest)(nil),              // 35: mediacorral.server.v1.GetMovieRequest
-	(*GetMovieResponse)(nil),             // 36: mediacorral.server.v1.GetMovieResponse
-	(*GetMovieByTmdbIdRequest)(nil),      // 37: mediacorral.server.v1.GetMovieByTmdbIdRequest
-	(*GetMovieByTmdbIdResponse)(nil),     // 38: mediacorral.server.v1.GetMovieByTmdbIdResponse
-	(*ListTvShowsRequest)(nil),           // 39: mediacorral.server.v1.ListTvShowsRequest
-	(*ListTvShowsResponse)(nil),          // 40: mediacorral.server.v1.ListTvShowsResponse
-	(*TvShow)(nil),                       // 41: mediacorral.server.v1.TvShow
-	(*ListTvSeasonsRequest)(nil),         // 42: mediacorral.server.v1.ListTvSeasonsRequest
-	(*ListTvSeasonsResponse)(nil),        // 43: mediacorral.server.v1.ListTvSeasonsResponse
-	(*TvSeason)(nil),                     // 44: mediacorral.server.v1.TvSeason
-	(*ListTvEpisodesRequest)(nil),        // 45: mediacorral.server.v1.ListTvEpisodesRequest
-	(*ListTvEpisodesResponse)(nil),       // 46: mediacorral.server.v1.ListTvEpisodesResponse
-	(*TvEpisode)(nil),                    // 47: mediacorral.server.v1.TvEpisode
-	(*GetTvShowRequest)(nil),             // 48: mediacorral.server.v1.GetTvShowRequest
-	(*GetTvShowResponse)(nil),            // 49: mediacorral.server.v1.GetTvShowResponse
-	(*GetTvSeasonRequest)(nil),           // 50: mediacorral.server.v1.GetTvSeasonRequest
-	(*GetTvSeasonResponse)(nil),          // 51: mediacorral.server.v1.GetTvSeasonResponse
-	(*GetTvEpisodeRequest)(nil),          // 52: mediacorral.server.v1.GetTvEpisodeRequest
-	(*GetTvEpisodeResponse)(nil),         // 53: mediacorral.server.v1.GetTvEpisodeResponse
-	(*GetTvEpisodeByTmdbIdRequest)(nil),  // 54: mediacorral.server.v1.GetTvEpisodeByTmdbIdRequest
-	(*GetTvEpisodeByTmdbIdResponse)(nil), // 55: mediacorral.server.v1.GetTvEpisodeByTmdbIdResponse
-	(*TagFileRequest)(nil),               // 56: mediacorral.server.v1.TagFileRequest
-	(*TagFileResponse)(nil),              // 57: mediacorral.server.v1.TagFileResponse
-	(*GetJobInfoRequest)(nil),            // 58: mediacorral.server.v1.GetJobInfoRequest
-	(*GetJobInfoResponse)(nil),           // 59: mediacorral.server.v1.GetJobInfoResponse
-	(*RenameJobRequest)(nil),             // 60: mediacorral.server.v1.RenameJobRequest
-	(*RenameJobResponse)(nil),            // 61: mediacorral.server.v1.RenameJobResponse
-	(*DeleteJobRequest)(nil),             // 62: mediacorral.server.v1.DeleteJobRequest
-	(*DeleteJobResponse)(nil),            // 63: mediacorral.server.v1.DeleteJobResponse
-	(*SuspectJobRequest)(nil),            // 64: mediacorral.server.v1.SuspectJobRequest
-	(*SuspectJobResponse)(nil),           // 65: mediacorral.server.v1.SuspectJobResponse
-	(*GetUntaggedJobsRequest)(nil),       // 66: mediacorral.server.v1.GetUntaggedJobsRequest
-	(*GetUntaggedJobsResponse)(nil),      // 67: mediacorral.server.v1.GetUntaggedJobsResponse
-	(*RipJob)(nil),                       // 68: mediacorral.server.v1.RipJob
-	(*GetJobCatalogueInfoRequest)(nil),   // 69: mediacorral.server.v1.GetJobCatalogueInfoRequest
-	(*GetJobCatalogueInfoResponse)(nil),  // 70: mediacorral.server.v1.GetJobCatalogueInfoResponse
-	(*VideoFile)(nil),                    // 71: mediacorral.server.v1.VideoFile
-	(*MatchInfoItem)(nil),                // 72: mediacorral.server.v1.MatchInfoItem
-	(*RipVideoBlobs)(nil),                // 73: mediacorral.server.v1.RipVideoBlobs
-	(*OstDownloadsItem)(nil),             // 74: mediacorral.server.v1.OstDownloadsItem
-	(*ReprocessJobRequest)(nil),          // 75: mediacorral.server.v1.ReprocessJobRequest
-	(*ReprocessJobResponse)(nil),         // 76: mediacorral.server.v1.ReprocessJobResponse
-	(*PruneRipJobRequest)(nil),           // 77: mediacorral.server.v1.PruneRipJobRequest
-	(*PruneRipJobResponse)(nil),          // 78: mediacorral.server.v1.PruneRipJobResponse
-	(*SuspectedContents_Movie)(nil),      // 79: mediacorral.server.v1.SuspectedContents.Movie
-	(*SuspectedContents_TvEpisodes)(nil), // 80: mediacorral.server.v1.SuspectedContents.TvEpisodes
-	(*v1.TmdbAnyTitle)(nil),              // 81: mediacorral.common.tmdb.v1.TmdbAnyTitle
-	(*v1.TmdbTvResult)(nil),              // 82: mediacorral.common.tmdb.v1.TmdbTvResult
-	(*v1.TmdbMovieResult)(nil),           // 83: mediacorral.common.tmdb.v1.TmdbMovieResult
-	(*v11.RipStatus)(nil),                // 84: mediacorral.drive_controller.v1.RipStatus
-	(*VideoExtendedMetadata)(nil),        // 85: mediacorral.server.v1.VideoExtendedMetadata
-	(*v11.RipUpdate)(nil),                // 86: mediacorral.drive_controller.v1.RipUpdate
-	(*v11.DriveState)(nil),               // 87: mediacorral.drive_controller.v1.DriveState
+	(*EjectRequest)(nil),                 // 26: mediacorral.server.v1.EjectRequest
+	(*EjectResponse)(nil),                // 27: mediacorral.server.v1.EjectResponse
+	(*RetractRequest)(nil),               // 28: mediacorral.server.v1.RetractRequest
+	(*RetractResponse)(nil),              // 29: mediacorral.server.v1.RetractResponse
+	(*GetDriveStateRequest)(nil),         // 30: mediacorral.server.v1.GetDriveStateRequest
+	(*ListMoviesRequest)(nil),            // 31: mediacorral.server.v1.ListMoviesRequest
+	(*ListMoviesResponse)(nil),           // 32: mediacorral.server.v1.ListMoviesResponse
+	(*Movie)(nil),                        // 33: mediacorral.server.v1.Movie
+	(*GetMovieRequest)(nil),              // 34: mediacorral.server.v1.GetMovieRequest
+	(*GetMovieResponse)(nil),             // 35: mediacorral.server.v1.GetMovieResponse
+	(*GetMovieByTmdbIdRequest)(nil),      // 36: mediacorral.server.v1.GetMovieByTmdbIdRequest
+	(*GetMovieByTmdbIdResponse)(nil),     // 37: mediacorral.server.v1.GetMovieByTmdbIdResponse
+	(*ListTvShowsRequest)(nil),           // 38: mediacorral.server.v1.ListTvShowsRequest
+	(*ListTvShowsResponse)(nil),          // 39: mediacorral.server.v1.ListTvShowsResponse
+	(*TvShow)(nil),                       // 40: mediacorral.server.v1.TvShow
+	(*ListTvSeasonsRequest)(nil),         // 41: mediacorral.server.v1.ListTvSeasonsRequest
+	(*ListTvSeasonsResponse)(nil),        // 42: mediacorral.server.v1.ListTvSeasonsResponse
+	(*TvSeason)(nil),                     // 43: mediacorral.server.v1.TvSeason
+	(*ListTvEpisodesRequest)(nil),        // 44: mediacorral.server.v1.ListTvEpisodesRequest
+	(*ListTvEpisodesResponse)(nil),       // 45: mediacorral.server.v1.ListTvEpisodesResponse
+	(*TvEpisode)(nil),                    // 46: mediacorral.server.v1.TvEpisode
+	(*GetTvShowRequest)(nil),             // 47: mediacorral.server.v1.GetTvShowRequest
+	(*GetTvShowResponse)(nil),            // 48: mediacorral.server.v1.GetTvShowResponse
+	(*GetTvSeasonRequest)(nil),           // 49: mediacorral.server.v1.GetTvSeasonRequest
+	(*GetTvSeasonResponse)(nil),          // 50: mediacorral.server.v1.GetTvSeasonResponse
+	(*GetTvEpisodeRequest)(nil),          // 51: mediacorral.server.v1.GetTvEpisodeRequest
+	(*GetTvEpisodeResponse)(nil),         // 52: mediacorral.server.v1.GetTvEpisodeResponse
+	(*GetTvEpisodeByTmdbIdRequest)(nil),  // 53: mediacorral.server.v1.GetTvEpisodeByTmdbIdRequest
+	(*GetTvEpisodeByTmdbIdResponse)(nil), // 54: mediacorral.server.v1.GetTvEpisodeByTmdbIdResponse
+	(*TagFileRequest)(nil),               // 55: mediacorral.server.v1.TagFileRequest
+	(*TagFileResponse)(nil),              // 56: mediacorral.server.v1.TagFileResponse
+	(*GetJobInfoRequest)(nil),            // 57: mediacorral.server.v1.GetJobInfoRequest
+	(*GetJobInfoResponse)(nil),           // 58: mediacorral.server.v1.GetJobInfoResponse
+	(*RenameJobRequest)(nil),             // 59: mediacorral.server.v1.RenameJobRequest
+	(*RenameJobResponse)(nil),            // 60: mediacorral.server.v1.RenameJobResponse
+	(*DeleteJobRequest)(nil),             // 61: mediacorral.server.v1.DeleteJobRequest
+	(*DeleteJobResponse)(nil),            // 62: mediacorral.server.v1.DeleteJobResponse
+	(*SuspectJobRequest)(nil),            // 63: mediacorral.server.v1.SuspectJobRequest
+	(*SuspectJobResponse)(nil),           // 64: mediacorral.server.v1.SuspectJobResponse
+	(*GetUntaggedJobsRequest)(nil),       // 65: mediacorral.server.v1.GetUntaggedJobsRequest
+	(*GetUntaggedJobsResponse)(nil),      // 66: mediacorral.server.v1.GetUntaggedJobsResponse
+	(*RipJob)(nil),                       // 67: mediacorral.server.v1.RipJob
+	(*GetJobCatalogueInfoRequest)(nil),   // 68: mediacorral.server.v1.GetJobCatalogueInfoRequest
+	(*GetJobCatalogueInfoResponse)(nil),  // 69: mediacorral.server.v1.GetJobCatalogueInfoResponse
+	(*VideoFile)(nil),                    // 70: mediacorral.server.v1.VideoFile
+	(*MatchInfoItem)(nil),                // 71: mediacorral.server.v1.MatchInfoItem
+	(*RipVideoBlobs)(nil),                // 72: mediacorral.server.v1.RipVideoBlobs
+	(*OstDownloadsItem)(nil),             // 73: mediacorral.server.v1.OstDownloadsItem
+	(*ReprocessJobRequest)(nil),          // 74: mediacorral.server.v1.ReprocessJobRequest
+	(*ReprocessJobResponse)(nil),         // 75: mediacorral.server.v1.ReprocessJobResponse
+	(*PruneRipJobRequest)(nil),           // 76: mediacorral.server.v1.PruneRipJobRequest
+	(*PruneRipJobResponse)(nil),          // 77: mediacorral.server.v1.PruneRipJobResponse
+	(*SuspectedContents_Movie)(nil),      // 78: mediacorral.server.v1.SuspectedContents.Movie
+	(*SuspectedContents_TvEpisodes)(nil), // 79: mediacorral.server.v1.SuspectedContents.TvEpisodes
+	(*TmdbAnyTitle)(nil),                 // 80: mediacorral.server.v1.TmdbAnyTitle
+	(*TmdbTvResult)(nil),                 // 81: mediacorral.server.v1.TmdbTvResult
+	(*TmdbMovieResult)(nil),              // 82: mediacorral.server.v1.TmdbMovieResult
+	(*v1.RipStatus)(nil),                 // 83: mediacorral.drive_controller.v1.RipStatus
+	(*VideoExtendedMetadata)(nil),        // 84: mediacorral.server.v1.VideoExtendedMetadata
+	(*v1.DriveState)(nil),                // 85: mediacorral.drive_controller.v1.DriveState
 }
 var file_mediacorral_server_v1_api_proto_depIdxs = []int32{
-	81, // 0: mediacorral.server.v1.SearchTmdbMultiResponse.results:type_name -> mediacorral.common.tmdb.v1.TmdbAnyTitle
-	82, // 1: mediacorral.server.v1.SearchTmdbTvResponse.results:type_name -> mediacorral.common.tmdb.v1.TmdbTvResult
-	83, // 2: mediacorral.server.v1.SearchTmdbMovieResponse.results:type_name -> mediacorral.common.tmdb.v1.TmdbMovieResult
+	80, // 0: mediacorral.server.v1.SearchTmdbMultiResponse.results:type_name -> mediacorral.server.v1.TmdbAnyTitle
+	81, // 1: mediacorral.server.v1.SearchTmdbTvResponse.results:type_name -> mediacorral.server.v1.TmdbTvResult
+	82, // 2: mediacorral.server.v1.SearchTmdbMovieResponse.results:type_name -> mediacorral.server.v1.TmdbMovieResult
 	0,  // 3: mediacorral.server.v1.AutoripStatusRequest.status:type_name -> mediacorral.server.v1.AutoripStatus
 	0,  // 4: mediacorral.server.v1.AutoripStatusResponse.status:type_name -> mediacorral.server.v1.AutoripStatus
 	20, // 5: mediacorral.server.v1.ListDrivesResponse.drives:type_name -> mediacorral.server.v1.DiscDrive
 	20, // 6: mediacorral.server.v1.StartRipJobRequest.drive:type_name -> mediacorral.server.v1.DiscDrive
 	23, // 7: mediacorral.server.v1.StartRipJobRequest.suspected_contents:type_name -> mediacorral.server.v1.SuspectedContents
-	79, // 8: mediacorral.server.v1.SuspectedContents.movie:type_name -> mediacorral.server.v1.SuspectedContents.Movie
-	80, // 9: mediacorral.server.v1.SuspectedContents.tv_episodes:type_name -> mediacorral.server.v1.SuspectedContents.TvEpisodes
-	84, // 10: mediacorral.server.v1.GetRipJobStatusResponse.status:type_name -> mediacorral.drive_controller.v1.RipStatus
+	78, // 8: mediacorral.server.v1.SuspectedContents.movie:type_name -> mediacorral.server.v1.SuspectedContents.Movie
+	79, // 9: mediacorral.server.v1.SuspectedContents.tv_episodes:type_name -> mediacorral.server.v1.SuspectedContents.TvEpisodes
+	83, // 10: mediacorral.server.v1.GetRipJobStatusResponse.status:type_name -> mediacorral.drive_controller.v1.RipStatus
 	20, // 11: mediacorral.server.v1.EjectRequest.drive:type_name -> mediacorral.server.v1.DiscDrive
 	20, // 12: mediacorral.server.v1.RetractRequest.drive:type_name -> mediacorral.server.v1.DiscDrive
-	34, // 13: mediacorral.server.v1.ListMoviesResponse.movies:type_name -> mediacorral.server.v1.Movie
-	34, // 14: mediacorral.server.v1.GetMovieResponse.movie:type_name -> mediacorral.server.v1.Movie
-	34, // 15: mediacorral.server.v1.GetMovieByTmdbIdResponse.movie:type_name -> mediacorral.server.v1.Movie
-	41, // 16: mediacorral.server.v1.ListTvShowsResponse.tv_shows:type_name -> mediacorral.server.v1.TvShow
-	44, // 17: mediacorral.server.v1.ListTvSeasonsResponse.tv_seasons:type_name -> mediacorral.server.v1.TvSeason
-	47, // 18: mediacorral.server.v1.ListTvEpisodesResponse.tv_episodes:type_name -> mediacorral.server.v1.TvEpisode
-	41, // 19: mediacorral.server.v1.GetTvShowResponse.tv_show:type_name -> mediacorral.server.v1.TvShow
-	44, // 20: mediacorral.server.v1.GetTvSeasonResponse.tv_season:type_name -> mediacorral.server.v1.TvSeason
-	47, // 21: mediacorral.server.v1.GetTvEpisodeResponse.episode:type_name -> mediacorral.server.v1.TvEpisode
-	47, // 22: mediacorral.server.v1.GetTvEpisodeByTmdbIdResponse.episode:type_name -> mediacorral.server.v1.TvEpisode
+	33, // 13: mediacorral.server.v1.ListMoviesResponse.movies:type_name -> mediacorral.server.v1.Movie
+	33, // 14: mediacorral.server.v1.GetMovieResponse.movie:type_name -> mediacorral.server.v1.Movie
+	33, // 15: mediacorral.server.v1.GetMovieByTmdbIdResponse.movie:type_name -> mediacorral.server.v1.Movie
+	40, // 16: mediacorral.server.v1.ListTvShowsResponse.tv_shows:type_name -> mediacorral.server.v1.TvShow
+	43, // 17: mediacorral.server.v1.ListTvSeasonsResponse.tv_seasons:type_name -> mediacorral.server.v1.TvSeason
+	46, // 18: mediacorral.server.v1.ListTvEpisodesResponse.tv_episodes:type_name -> mediacorral.server.v1.TvEpisode
+	40, // 19: mediacorral.server.v1.GetTvShowResponse.tv_show:type_name -> mediacorral.server.v1.TvShow
+	43, // 20: mediacorral.server.v1.GetTvSeasonResponse.tv_season:type_name -> mediacorral.server.v1.TvSeason
+	46, // 21: mediacorral.server.v1.GetTvEpisodeResponse.episode:type_name -> mediacorral.server.v1.TvEpisode
+	46, // 22: mediacorral.server.v1.GetTvEpisodeByTmdbIdResponse.episode:type_name -> mediacorral.server.v1.TvEpisode
 	1,  // 23: mediacorral.server.v1.TagFileRequest.video_type:type_name -> mediacorral.server.v1.VideoType
-	68, // 24: mediacorral.server.v1.GetJobInfoResponse.details:type_name -> mediacorral.server.v1.RipJob
+	67, // 24: mediacorral.server.v1.GetJobInfoResponse.details:type_name -> mediacorral.server.v1.RipJob
 	23, // 25: mediacorral.server.v1.SuspectJobRequest.suspicion:type_name -> mediacorral.server.v1.SuspectedContents
-	68, // 26: mediacorral.server.v1.GetUntaggedJobsResponse.rip_jobs:type_name -> mediacorral.server.v1.RipJob
+	67, // 26: mediacorral.server.v1.GetUntaggedJobsResponse.rip_jobs:type_name -> mediacorral.server.v1.RipJob
 	23, // 27: mediacorral.server.v1.RipJob.suspected_contents:type_name -> mediacorral.server.v1.SuspectedContents
 	23, // 28: mediacorral.server.v1.GetJobCatalogueInfoResponse.suspected_contents:type_name -> mediacorral.server.v1.SuspectedContents
-	71, // 29: mediacorral.server.v1.GetJobCatalogueInfoResponse.video_files:type_name -> mediacorral.server.v1.VideoFile
-	72, // 30: mediacorral.server.v1.GetJobCatalogueInfoResponse.matches:type_name -> mediacorral.server.v1.MatchInfoItem
-	73, // 31: mediacorral.server.v1.GetJobCatalogueInfoResponse.subtitle_maps:type_name -> mediacorral.server.v1.RipVideoBlobs
-	74, // 32: mediacorral.server.v1.GetJobCatalogueInfoResponse.ost_subtitle_files:type_name -> mediacorral.server.v1.OstDownloadsItem
+	70, // 29: mediacorral.server.v1.GetJobCatalogueInfoResponse.video_files:type_name -> mediacorral.server.v1.VideoFile
+	71, // 30: mediacorral.server.v1.GetJobCatalogueInfoResponse.matches:type_name -> mediacorral.server.v1.MatchInfoItem
+	72, // 31: mediacorral.server.v1.GetJobCatalogueInfoResponse.subtitle_maps:type_name -> mediacorral.server.v1.RipVideoBlobs
+	73, // 32: mediacorral.server.v1.GetJobCatalogueInfoResponse.ost_subtitle_files:type_name -> mediacorral.server.v1.OstDownloadsItem
 	1,  // 33: mediacorral.server.v1.VideoFile.video_type:type_name -> mediacorral.server.v1.VideoType
-	85, // 34: mediacorral.server.v1.VideoFile.extended_metadata:type_name -> mediacorral.server.v1.VideoExtendedMetadata
+	84, // 34: mediacorral.server.v1.VideoFile.extended_metadata:type_name -> mediacorral.server.v1.VideoExtendedMetadata
 	1,  // 35: mediacorral.server.v1.OstDownloadsItem.video_type:type_name -> mediacorral.server.v1.VideoType
 	2,  // 36: mediacorral.server.v1.CoordinatorApiService.GetSubtitles:input_type -> mediacorral.server.v1.GetSubtitlesRequest
 	4,  // 37: mediacorral.server.v1.CoordinatorApiService.SearchTmdbMulti:input_type -> mediacorral.server.v1.SearchTmdbMultiRequest
@@ -7232,65 +7169,63 @@ var file_mediacorral_server_v1_api_proto_depIdxs = []int32{
 	18, // 44: mediacorral.server.v1.CoordinatorApiService.ListDrives:input_type -> mediacorral.server.v1.ListDrivesRequest
 	21, // 45: mediacorral.server.v1.CoordinatorApiService.StartRipJob:input_type -> mediacorral.server.v1.StartRipJobRequest
 	24, // 46: mediacorral.server.v1.CoordinatorApiService.GetRipJobStatus:input_type -> mediacorral.server.v1.GetRipJobStatusRequest
-	26, // 47: mediacorral.server.v1.CoordinatorApiService.StreamRipJobUpdates:input_type -> mediacorral.server.v1.StreamRipJobUpdatesRequest
-	27, // 48: mediacorral.server.v1.CoordinatorApiService.Eject:input_type -> mediacorral.server.v1.EjectRequest
-	29, // 49: mediacorral.server.v1.CoordinatorApiService.Retract:input_type -> mediacorral.server.v1.RetractRequest
-	31, // 50: mediacorral.server.v1.CoordinatorApiService.GetDriveState:input_type -> mediacorral.server.v1.GetDriveStateRequest
-	32, // 51: mediacorral.server.v1.CoordinatorApiService.ListMovies:input_type -> mediacorral.server.v1.ListMoviesRequest
-	35, // 52: mediacorral.server.v1.CoordinatorApiService.GetMovie:input_type -> mediacorral.server.v1.GetMovieRequest
-	37, // 53: mediacorral.server.v1.CoordinatorApiService.GetMovieByTmdbId:input_type -> mediacorral.server.v1.GetMovieByTmdbIdRequest
-	39, // 54: mediacorral.server.v1.CoordinatorApiService.ListTvShows:input_type -> mediacorral.server.v1.ListTvShowsRequest
-	42, // 55: mediacorral.server.v1.CoordinatorApiService.ListTvSeasons:input_type -> mediacorral.server.v1.ListTvSeasonsRequest
-	45, // 56: mediacorral.server.v1.CoordinatorApiService.ListTvEpisodes:input_type -> mediacorral.server.v1.ListTvEpisodesRequest
-	48, // 57: mediacorral.server.v1.CoordinatorApiService.GetTvShow:input_type -> mediacorral.server.v1.GetTvShowRequest
-	50, // 58: mediacorral.server.v1.CoordinatorApiService.GetTvSeason:input_type -> mediacorral.server.v1.GetTvSeasonRequest
-	52, // 59: mediacorral.server.v1.CoordinatorApiService.GetTvEpisode:input_type -> mediacorral.server.v1.GetTvEpisodeRequest
-	54, // 60: mediacorral.server.v1.CoordinatorApiService.GetTvEpisodeByTmdbId:input_type -> mediacorral.server.v1.GetTvEpisodeByTmdbIdRequest
-	56, // 61: mediacorral.server.v1.CoordinatorApiService.TagFile:input_type -> mediacorral.server.v1.TagFileRequest
-	58, // 62: mediacorral.server.v1.CoordinatorApiService.GetJobInfo:input_type -> mediacorral.server.v1.GetJobInfoRequest
-	60, // 63: mediacorral.server.v1.CoordinatorApiService.RenameJob:input_type -> mediacorral.server.v1.RenameJobRequest
-	62, // 64: mediacorral.server.v1.CoordinatorApiService.DeleteJob:input_type -> mediacorral.server.v1.DeleteJobRequest
-	64, // 65: mediacorral.server.v1.CoordinatorApiService.SuspectJob:input_type -> mediacorral.server.v1.SuspectJobRequest
-	66, // 66: mediacorral.server.v1.CoordinatorApiService.GetUntaggedJobs:input_type -> mediacorral.server.v1.GetUntaggedJobsRequest
-	69, // 67: mediacorral.server.v1.CoordinatorApiService.GetJobCatalogueInfo:input_type -> mediacorral.server.v1.GetJobCatalogueInfoRequest
-	75, // 68: mediacorral.server.v1.CoordinatorApiService.ReprocessJob:input_type -> mediacorral.server.v1.ReprocessJobRequest
-	77, // 69: mediacorral.server.v1.CoordinatorApiService.PruneRipJob:input_type -> mediacorral.server.v1.PruneRipJobRequest
-	3,  // 70: mediacorral.server.v1.CoordinatorApiService.GetSubtitles:output_type -> mediacorral.server.v1.GetSubtitlesResponse
-	5,  // 71: mediacorral.server.v1.CoordinatorApiService.SearchTmdbMulti:output_type -> mediacorral.server.v1.SearchTmdbMultiResponse
-	7,  // 72: mediacorral.server.v1.CoordinatorApiService.SearchTmdbTv:output_type -> mediacorral.server.v1.SearchTmdbTvResponse
-	9,  // 73: mediacorral.server.v1.CoordinatorApiService.SearchTmdbMovie:output_type -> mediacorral.server.v1.SearchTmdbMovieResponse
-	11, // 74: mediacorral.server.v1.CoordinatorApiService.ImportTmdbTv:output_type -> mediacorral.server.v1.ImportTmdbTvResponse
-	13, // 75: mediacorral.server.v1.CoordinatorApiService.ImportTmdbMovie:output_type -> mediacorral.server.v1.ImportTmdbMovieResponse
-	15, // 76: mediacorral.server.v1.CoordinatorApiService.RebuildExportsDir:output_type -> mediacorral.server.v1.RebuildExportsDirResponse
-	17, // 77: mediacorral.server.v1.CoordinatorApiService.AutoripStatus:output_type -> mediacorral.server.v1.AutoripStatusResponse
-	19, // 78: mediacorral.server.v1.CoordinatorApiService.ListDrives:output_type -> mediacorral.server.v1.ListDrivesResponse
-	22, // 79: mediacorral.server.v1.CoordinatorApiService.StartRipJob:output_type -> mediacorral.server.v1.StartRipJobResponse
-	25, // 80: mediacorral.server.v1.CoordinatorApiService.GetRipJobStatus:output_type -> mediacorral.server.v1.GetRipJobStatusResponse
-	86, // 81: mediacorral.server.v1.CoordinatorApiService.StreamRipJobUpdates:output_type -> mediacorral.drive_controller.v1.RipUpdate
-	28, // 82: mediacorral.server.v1.CoordinatorApiService.Eject:output_type -> mediacorral.server.v1.EjectResponse
-	30, // 83: mediacorral.server.v1.CoordinatorApiService.Retract:output_type -> mediacorral.server.v1.RetractResponse
-	87, // 84: mediacorral.server.v1.CoordinatorApiService.GetDriveState:output_type -> mediacorral.drive_controller.v1.DriveState
-	33, // 85: mediacorral.server.v1.CoordinatorApiService.ListMovies:output_type -> mediacorral.server.v1.ListMoviesResponse
-	36, // 86: mediacorral.server.v1.CoordinatorApiService.GetMovie:output_type -> mediacorral.server.v1.GetMovieResponse
-	38, // 87: mediacorral.server.v1.CoordinatorApiService.GetMovieByTmdbId:output_type -> mediacorral.server.v1.GetMovieByTmdbIdResponse
-	40, // 88: mediacorral.server.v1.CoordinatorApiService.ListTvShows:output_type -> mediacorral.server.v1.ListTvShowsResponse
-	43, // 89: mediacorral.server.v1.CoordinatorApiService.ListTvSeasons:output_type -> mediacorral.server.v1.ListTvSeasonsResponse
-	46, // 90: mediacorral.server.v1.CoordinatorApiService.ListTvEpisodes:output_type -> mediacorral.server.v1.ListTvEpisodesResponse
-	49, // 91: mediacorral.server.v1.CoordinatorApiService.GetTvShow:output_type -> mediacorral.server.v1.GetTvShowResponse
-	51, // 92: mediacorral.server.v1.CoordinatorApiService.GetTvSeason:output_type -> mediacorral.server.v1.GetTvSeasonResponse
-	53, // 93: mediacorral.server.v1.CoordinatorApiService.GetTvEpisode:output_type -> mediacorral.server.v1.GetTvEpisodeResponse
-	55, // 94: mediacorral.server.v1.CoordinatorApiService.GetTvEpisodeByTmdbId:output_type -> mediacorral.server.v1.GetTvEpisodeByTmdbIdResponse
-	57, // 95: mediacorral.server.v1.CoordinatorApiService.TagFile:output_type -> mediacorral.server.v1.TagFileResponse
-	59, // 96: mediacorral.server.v1.CoordinatorApiService.GetJobInfo:output_type -> mediacorral.server.v1.GetJobInfoResponse
-	61, // 97: mediacorral.server.v1.CoordinatorApiService.RenameJob:output_type -> mediacorral.server.v1.RenameJobResponse
-	63, // 98: mediacorral.server.v1.CoordinatorApiService.DeleteJob:output_type -> mediacorral.server.v1.DeleteJobResponse
-	65, // 99: mediacorral.server.v1.CoordinatorApiService.SuspectJob:output_type -> mediacorral.server.v1.SuspectJobResponse
-	67, // 100: mediacorral.server.v1.CoordinatorApiService.GetUntaggedJobs:output_type -> mediacorral.server.v1.GetUntaggedJobsResponse
-	70, // 101: mediacorral.server.v1.CoordinatorApiService.GetJobCatalogueInfo:output_type -> mediacorral.server.v1.GetJobCatalogueInfoResponse
-	76, // 102: mediacorral.server.v1.CoordinatorApiService.ReprocessJob:output_type -> mediacorral.server.v1.ReprocessJobResponse
-	78, // 103: mediacorral.server.v1.CoordinatorApiService.PruneRipJob:output_type -> mediacorral.server.v1.PruneRipJobResponse
-	70, // [70:104] is the sub-list for method output_type
-	36, // [36:70] is the sub-list for method input_type
+	26, // 47: mediacorral.server.v1.CoordinatorApiService.Eject:input_type -> mediacorral.server.v1.EjectRequest
+	28, // 48: mediacorral.server.v1.CoordinatorApiService.Retract:input_type -> mediacorral.server.v1.RetractRequest
+	30, // 49: mediacorral.server.v1.CoordinatorApiService.GetDriveState:input_type -> mediacorral.server.v1.GetDriveStateRequest
+	31, // 50: mediacorral.server.v1.CoordinatorApiService.ListMovies:input_type -> mediacorral.server.v1.ListMoviesRequest
+	34, // 51: mediacorral.server.v1.CoordinatorApiService.GetMovie:input_type -> mediacorral.server.v1.GetMovieRequest
+	36, // 52: mediacorral.server.v1.CoordinatorApiService.GetMovieByTmdbId:input_type -> mediacorral.server.v1.GetMovieByTmdbIdRequest
+	38, // 53: mediacorral.server.v1.CoordinatorApiService.ListTvShows:input_type -> mediacorral.server.v1.ListTvShowsRequest
+	41, // 54: mediacorral.server.v1.CoordinatorApiService.ListTvSeasons:input_type -> mediacorral.server.v1.ListTvSeasonsRequest
+	44, // 55: mediacorral.server.v1.CoordinatorApiService.ListTvEpisodes:input_type -> mediacorral.server.v1.ListTvEpisodesRequest
+	47, // 56: mediacorral.server.v1.CoordinatorApiService.GetTvShow:input_type -> mediacorral.server.v1.GetTvShowRequest
+	49, // 57: mediacorral.server.v1.CoordinatorApiService.GetTvSeason:input_type -> mediacorral.server.v1.GetTvSeasonRequest
+	51, // 58: mediacorral.server.v1.CoordinatorApiService.GetTvEpisode:input_type -> mediacorral.server.v1.GetTvEpisodeRequest
+	53, // 59: mediacorral.server.v1.CoordinatorApiService.GetTvEpisodeByTmdbId:input_type -> mediacorral.server.v1.GetTvEpisodeByTmdbIdRequest
+	55, // 60: mediacorral.server.v1.CoordinatorApiService.TagFile:input_type -> mediacorral.server.v1.TagFileRequest
+	57, // 61: mediacorral.server.v1.CoordinatorApiService.GetJobInfo:input_type -> mediacorral.server.v1.GetJobInfoRequest
+	59, // 62: mediacorral.server.v1.CoordinatorApiService.RenameJob:input_type -> mediacorral.server.v1.RenameJobRequest
+	61, // 63: mediacorral.server.v1.CoordinatorApiService.DeleteJob:input_type -> mediacorral.server.v1.DeleteJobRequest
+	63, // 64: mediacorral.server.v1.CoordinatorApiService.SuspectJob:input_type -> mediacorral.server.v1.SuspectJobRequest
+	65, // 65: mediacorral.server.v1.CoordinatorApiService.GetUntaggedJobs:input_type -> mediacorral.server.v1.GetUntaggedJobsRequest
+	68, // 66: mediacorral.server.v1.CoordinatorApiService.GetJobCatalogueInfo:input_type -> mediacorral.server.v1.GetJobCatalogueInfoRequest
+	74, // 67: mediacorral.server.v1.CoordinatorApiService.ReprocessJob:input_type -> mediacorral.server.v1.ReprocessJobRequest
+	76, // 68: mediacorral.server.v1.CoordinatorApiService.PruneRipJob:input_type -> mediacorral.server.v1.PruneRipJobRequest
+	3,  // 69: mediacorral.server.v1.CoordinatorApiService.GetSubtitles:output_type -> mediacorral.server.v1.GetSubtitlesResponse
+	5,  // 70: mediacorral.server.v1.CoordinatorApiService.SearchTmdbMulti:output_type -> mediacorral.server.v1.SearchTmdbMultiResponse
+	7,  // 71: mediacorral.server.v1.CoordinatorApiService.SearchTmdbTv:output_type -> mediacorral.server.v1.SearchTmdbTvResponse
+	9,  // 72: mediacorral.server.v1.CoordinatorApiService.SearchTmdbMovie:output_type -> mediacorral.server.v1.SearchTmdbMovieResponse
+	11, // 73: mediacorral.server.v1.CoordinatorApiService.ImportTmdbTv:output_type -> mediacorral.server.v1.ImportTmdbTvResponse
+	13, // 74: mediacorral.server.v1.CoordinatorApiService.ImportTmdbMovie:output_type -> mediacorral.server.v1.ImportTmdbMovieResponse
+	15, // 75: mediacorral.server.v1.CoordinatorApiService.RebuildExportsDir:output_type -> mediacorral.server.v1.RebuildExportsDirResponse
+	17, // 76: mediacorral.server.v1.CoordinatorApiService.AutoripStatus:output_type -> mediacorral.server.v1.AutoripStatusResponse
+	19, // 77: mediacorral.server.v1.CoordinatorApiService.ListDrives:output_type -> mediacorral.server.v1.ListDrivesResponse
+	22, // 78: mediacorral.server.v1.CoordinatorApiService.StartRipJob:output_type -> mediacorral.server.v1.StartRipJobResponse
+	25, // 79: mediacorral.server.v1.CoordinatorApiService.GetRipJobStatus:output_type -> mediacorral.server.v1.GetRipJobStatusResponse
+	27, // 80: mediacorral.server.v1.CoordinatorApiService.Eject:output_type -> mediacorral.server.v1.EjectResponse
+	29, // 81: mediacorral.server.v1.CoordinatorApiService.Retract:output_type -> mediacorral.server.v1.RetractResponse
+	85, // 82: mediacorral.server.v1.CoordinatorApiService.GetDriveState:output_type -> mediacorral.drive_controller.v1.DriveState
+	32, // 83: mediacorral.server.v1.CoordinatorApiService.ListMovies:output_type -> mediacorral.server.v1.ListMoviesResponse
+	35, // 84: mediacorral.server.v1.CoordinatorApiService.GetMovie:output_type -> mediacorral.server.v1.GetMovieResponse
+	37, // 85: mediacorral.server.v1.CoordinatorApiService.GetMovieByTmdbId:output_type -> mediacorral.server.v1.GetMovieByTmdbIdResponse
+	39, // 86: mediacorral.server.v1.CoordinatorApiService.ListTvShows:output_type -> mediacorral.server.v1.ListTvShowsResponse
+	42, // 87: mediacorral.server.v1.CoordinatorApiService.ListTvSeasons:output_type -> mediacorral.server.v1.ListTvSeasonsResponse
+	45, // 88: mediacorral.server.v1.CoordinatorApiService.ListTvEpisodes:output_type -> mediacorral.server.v1.ListTvEpisodesResponse
+	48, // 89: mediacorral.server.v1.CoordinatorApiService.GetTvShow:output_type -> mediacorral.server.v1.GetTvShowResponse
+	50, // 90: mediacorral.server.v1.CoordinatorApiService.GetTvSeason:output_type -> mediacorral.server.v1.GetTvSeasonResponse
+	52, // 91: mediacorral.server.v1.CoordinatorApiService.GetTvEpisode:output_type -> mediacorral.server.v1.GetTvEpisodeResponse
+	54, // 92: mediacorral.server.v1.CoordinatorApiService.GetTvEpisodeByTmdbId:output_type -> mediacorral.server.v1.GetTvEpisodeByTmdbIdResponse
+	56, // 93: mediacorral.server.v1.CoordinatorApiService.TagFile:output_type -> mediacorral.server.v1.TagFileResponse
+	58, // 94: mediacorral.server.v1.CoordinatorApiService.GetJobInfo:output_type -> mediacorral.server.v1.GetJobInfoResponse
+	60, // 95: mediacorral.server.v1.CoordinatorApiService.RenameJob:output_type -> mediacorral.server.v1.RenameJobResponse
+	62, // 96: mediacorral.server.v1.CoordinatorApiService.DeleteJob:output_type -> mediacorral.server.v1.DeleteJobResponse
+	64, // 97: mediacorral.server.v1.CoordinatorApiService.SuspectJob:output_type -> mediacorral.server.v1.SuspectJobResponse
+	66, // 98: mediacorral.server.v1.CoordinatorApiService.GetUntaggedJobs:output_type -> mediacorral.server.v1.GetUntaggedJobsResponse
+	69, // 99: mediacorral.server.v1.CoordinatorApiService.GetJobCatalogueInfo:output_type -> mediacorral.server.v1.GetJobCatalogueInfoResponse
+	75, // 100: mediacorral.server.v1.CoordinatorApiService.ReprocessJob:output_type -> mediacorral.server.v1.ReprocessJobResponse
+	77, // 101: mediacorral.server.v1.CoordinatorApiService.PruneRipJob:output_type -> mediacorral.server.v1.PruneRipJobResponse
+	69, // [69:102] is the sub-list for method output_type
+	36, // [36:69] is the sub-list for method input_type
 	36, // [36:36] is the sub-list for extension type_name
 	36, // [36:36] is the sub-list for extension extendee
 	0,  // [0:36] is the sub-list for field type_name
@@ -7301,6 +7236,7 @@ func file_mediacorral_server_v1_api_proto_init() {
 	if File_mediacorral_server_v1_api_proto != nil {
 		return
 	}
+	file_mediacorral_server_v1_tmdb_proto_init()
 	file_mediacorral_server_v1_metadata_proto_init()
 	file_mediacorral_server_v1_api_proto_msgTypes[2].OneofWrappers = []any{}
 	file_mediacorral_server_v1_api_proto_msgTypes[4].OneofWrappers = []any{}
@@ -7310,22 +7246,22 @@ func file_mediacorral_server_v1_api_proto_init() {
 		(*suspectedContents_Movie_)(nil),
 		(*suspectedContents_TvEpisodes_)(nil),
 	}
-	file_mediacorral_server_v1_api_proto_msgTypes[32].OneofWrappers = []any{}
-	file_mediacorral_server_v1_api_proto_msgTypes[39].OneofWrappers = []any{}
-	file_mediacorral_server_v1_api_proto_msgTypes[42].OneofWrappers = []any{}
-	file_mediacorral_server_v1_api_proto_msgTypes[45].OneofWrappers = []any{}
-	file_mediacorral_server_v1_api_proto_msgTypes[54].OneofWrappers = []any{}
-	file_mediacorral_server_v1_api_proto_msgTypes[66].OneofWrappers = []any{}
+	file_mediacorral_server_v1_api_proto_msgTypes[31].OneofWrappers = []any{}
+	file_mediacorral_server_v1_api_proto_msgTypes[38].OneofWrappers = []any{}
+	file_mediacorral_server_v1_api_proto_msgTypes[41].OneofWrappers = []any{}
+	file_mediacorral_server_v1_api_proto_msgTypes[44].OneofWrappers = []any{}
+	file_mediacorral_server_v1_api_proto_msgTypes[53].OneofWrappers = []any{}
+	file_mediacorral_server_v1_api_proto_msgTypes[65].OneofWrappers = []any{}
+	file_mediacorral_server_v1_api_proto_msgTypes[67].OneofWrappers = []any{}
 	file_mediacorral_server_v1_api_proto_msgTypes[68].OneofWrappers = []any{}
-	file_mediacorral_server_v1_api_proto_msgTypes[69].OneofWrappers = []any{}
-	file_mediacorral_server_v1_api_proto_msgTypes[71].OneofWrappers = []any{}
+	file_mediacorral_server_v1_api_proto_msgTypes[70].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mediacorral_server_v1_api_proto_rawDesc), len(file_mediacorral_server_v1_api_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   79,
+			NumMessages:   78,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

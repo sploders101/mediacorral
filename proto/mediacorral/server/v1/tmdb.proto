@@ -1,5 +1,5 @@
 syntax = "proto3";
-package mediacorral.common.tmdb.v1;
+package mediacorral.server.v1;
 
 message TmdbAnyTitle {
   int32 id = 1;

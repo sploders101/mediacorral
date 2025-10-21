@@ -31,7 +31,6 @@ const (
 	CoordinatorApiService_ListDrives_FullMethodName           = "/mediacorral.server.v1.CoordinatorApiService/ListDrives"
 	CoordinatorApiService_StartRipJob_FullMethodName          = "/mediacorral.server.v1.CoordinatorApiService/StartRipJob"
 	CoordinatorApiService_GetRipJobStatus_FullMethodName      = "/mediacorral.server.v1.CoordinatorApiService/GetRipJobStatus"
-	CoordinatorApiService_StreamRipJobUpdates_FullMethodName  = "/mediacorral.server.v1.CoordinatorApiService/StreamRipJobUpdates"
 	CoordinatorApiService_Eject_FullMethodName                = "/mediacorral.server.v1.CoordinatorApiService/Eject"
 	CoordinatorApiService_Retract_FullMethodName              = "/mediacorral.server.v1.CoordinatorApiService/Retract"
 	CoordinatorApiService_GetDriveState_FullMethodName        = "/mediacorral.server.v1.CoordinatorApiService/GetDriveState"
@@ -82,9 +81,6 @@ type CoordinatorApiServiceClient interface {
 	StartRipJob(ctx context.Context, in *StartRipJobRequest, opts ...grpc.CallOption) (*StartRipJobResponse, error)
 	// Gets the current status of a rip job
 	GetRipJobStatus(ctx context.Context, in *GetRipJobStatusRequest, opts ...grpc.CallOption) (*GetRipJobStatusResponse, error)
-	// Streams status updates from a rip job.
-	// Initial state is always `RipStatus::default()`.
-	StreamRipJobUpdates(ctx context.Context, in *StreamRipJobUpdatesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[v1.RipUpdate], error)
 	// Ejects a disc
 	Eject(ctx context.Context, in *EjectRequest, opts ...grpc.CallOption) (*EjectResponse, error)
 	// Retracts a disc
@@ -248,25 +244,6 @@ func (c *coordinatorApiServiceClient) GetRipJobStatus(ctx context.Context, in *G
 	}
 	return out, nil
 }
-
-func (c *coordinatorApiServiceClient) StreamRipJobUpdates(ctx context.Context, in *StreamRipJobUpdatesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[v1.RipUpdate], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &CoordinatorApiService_ServiceDesc.Streams[0], CoordinatorApiService_StreamRipJobUpdates_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[StreamRipJobUpdatesRequest, v1.RipUpdate]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type CoordinatorApiService_StreamRipJobUpdatesClient = grpc.ServerStreamingClient[v1.RipUpdate]
 
 func (c *coordinatorApiServiceClient) Eject(ctx context.Context, in *EjectRequest, opts ...grpc.CallOption) (*EjectResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -514,9 +491,6 @@ type CoordinatorApiServiceServer interface {
 	StartRipJob(context.Context, *StartRipJobRequest) (*StartRipJobResponse, error)
 	// Gets the current status of a rip job
 	GetRipJobStatus(context.Context, *GetRipJobStatusRequest) (*GetRipJobStatusResponse, error)
-	// Streams status updates from a rip job.
-	// Initial state is always `RipStatus::default()`.
-	StreamRipJobUpdates(*StreamRipJobUpdatesRequest, grpc.ServerStreamingServer[v1.RipUpdate]) error
 	// Ejects a disc
 	Eject(context.Context, *EjectRequest) (*EjectResponse, error)
 	// Retracts a disc
@@ -602,9 +576,6 @@ func (UnimplementedCoordinatorApiServiceServer) StartRipJob(context.Context, *St
 }
 func (UnimplementedCoordinatorApiServiceServer) GetRipJobStatus(context.Context, *GetRipJobStatusRequest) (*GetRipJobStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRipJobStatus not implemented")
-}
-func (UnimplementedCoordinatorApiServiceServer) StreamRipJobUpdates(*StreamRipJobUpdatesRequest, grpc.ServerStreamingServer[v1.RipUpdate]) error {
-	return status.Errorf(codes.Unimplemented, "method StreamRipJobUpdates not implemented")
 }
 func (UnimplementedCoordinatorApiServiceServer) Eject(context.Context, *EjectRequest) (*EjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Eject not implemented")
@@ -889,17 +860,6 @@ func _CoordinatorApiService_GetRipJobStatus_Handler(srv interface{}, ctx context
 	}
 	return interceptor(ctx, in, info, handler)
 }
-
-func _CoordinatorApiService_StreamRipJobUpdates_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(StreamRipJobUpdatesRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(CoordinatorApiServiceServer).StreamRipJobUpdates(m, &grpc.GenericServerStream[StreamRipJobUpdatesRequest, v1.RipUpdate]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type CoordinatorApiService_StreamRipJobUpdatesServer = grpc.ServerStreamingServer[v1.RipUpdate]
 
 func _CoordinatorApiService_Eject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EjectRequest)
@@ -1437,12 +1397,6 @@ var CoordinatorApiService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CoordinatorApiService_PruneRipJob_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "StreamRipJobUpdates",
-			Handler:       _CoordinatorApiService_StreamRipJobUpdates_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "mediacorral/server/v1/api.proto",
 }
