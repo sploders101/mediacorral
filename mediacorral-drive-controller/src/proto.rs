@@ -10,11 +10,4 @@ pub mod mediacorral {
             tonic::include_proto!("mediacorral.server.v1");
         }
     }
-    pub mod common {
-        pub mod tmdb {
-            pub mod v1 {
-                tonic::include_proto!("mediacorral.common.tmdb.v1");
-            }
-        }
-    }
 }

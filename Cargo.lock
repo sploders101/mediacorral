@@ -1285,25 +1285,16 @@ dependencies = [
  "clap",
  "eject",
  "futures",
- "mediacorral-proto",
  "nix 0.30.1",
+ "prost",
  "serde",
  "serde_yaml",
  "tokio",
  "tokio-stream",
  "tonic",
+ "tonic-build",
  "tonic-reflection",
  "udev",
-]
-
-[[package]]
-name = "mediacorral-proto"
-version = "0.1.0"
-dependencies = [
- "prost",
- "tokio",
- "tonic",
- "tonic-build",
 ]
 
 [[package]]

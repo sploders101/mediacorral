@@ -14,7 +14,7 @@ use makemkv::{
     Makemkv,
     messaging::{MakemkvMessage, ProgressBar},
 };
-use mediacorral_proto::mediacorral::{
+use proto::mediacorral::{
     drive_controller::v1::{
         DriveState, DriveStatusTag, EjectRequest, EjectResponse, GetDriveCountRequest,
         GetDriveCountResponse, GetDriveMetaRequest, GetDriveMetaResponse, GetDriveStateRequest,
@@ -39,6 +39,7 @@ use tonic::transport::{Endpoint, Server};
 
 mod async_udev;
 mod makemkv;
+mod proto;
 
 macro_rules! try_ejector {
     (wrap $val:expr) => {
@@ -573,9 +574,7 @@ fn main() {
             }
 
             let reflection = tonic_reflection::server::Builder::configure()
-                .register_encoded_file_descriptor_set(
-                    mediacorral_proto::mediacorral::FILE_DESCRIPTOR_SET,
-                )
+                .register_encoded_file_descriptor_set(proto::mediacorral::FILE_DESCRIPTOR_SET)
                 .with_service_name("mediacorral.drive_controller.v1.DriveControllerService")
                 .build_v1()
                 .unwrap();
