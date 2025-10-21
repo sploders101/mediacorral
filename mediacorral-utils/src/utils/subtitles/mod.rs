@@ -2,6 +2,7 @@ use image::{GrayAlphaImage, GrayImage, Pixel, RgbaImage};
 use matroska_demuxer::{Frame, TrackEntry, TrackType};
 use ocr::PartessCache;
 use pgs::processor::PgsProcessor;
+use serde::{Deserialize, Serialize};
 use vobsub::VobsubProcessor;
 
 use super::ExtractDetailsError;
@@ -39,7 +40,7 @@ pub fn get_subtitle_track(
     });
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Subtitle {
     timestamp: u64,
     duration: Option<u64>,

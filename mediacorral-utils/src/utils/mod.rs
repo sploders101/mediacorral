@@ -1,7 +1,8 @@
 use std::io::{Read, Seek};
 
 use matroska_demuxer::{Frame, MatroskaFile, TrackType};
-use mediacorral_proto::mediacorral::server::v1::{ChapterInfo, VideoExtendedMetadata};
+use serde::Serialize;
+use serde_with::serde_as;
 use subtitles::{
     StContext, get_subtitle_track,
     ocr::{PartessCache, PartessError},
@@ -9,7 +10,6 @@ use subtitles::{
     srt::format_subtitles_srt,
     vobsub::VobsubError,
 };
-use tokio::sync::watch;
 
 pub mod subtitles;
 
@@ -33,18 +33,34 @@ pub enum ExtractDetailsError {
     PartessError(#[from] PartessError),
 }
 
+#[serde_as]
+#[derive(Serialize, Debug, Clone)]
 pub struct MediaDetails {
     pub resolution_width: u32,
     pub resolution_height: u32,
     pub duration: u32,
-    pub video_hash: Vec<u8>,
+    #[serde_as(as = "serde_with::hex::Hex")]
+    pub video_hash: [u8; 16],
     pub subtitles: Option<String>,
     pub extended_metadata: Option<VideoExtendedMetadata>,
 }
 
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct VideoExtendedMetadata {
+    pub chapter_info: Vec<ChapterInfo>,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ChapterInfo {
+    pub chapter_number: u32,
+    pub chapter_uid: u64,
+    pub chapter_start: u64,
+    pub chapter_end: u64,
+    pub chapter_name: String,
+}
+
 pub fn extract_details<T>(
     mkv_file: T,
-    mut progress: Option<watch::Sender<f64>>,
     partess_cache: &PartessCache,
 ) -> Result<MediaDetails, ExtractDetailsError>
 where
@@ -137,26 +153,13 @@ where
                 st_ctx.process_frame(&mut frame)?;
             }
         }
-
-        // Update progress
-        if let Some(ref mut progress) = progress.as_mut() {
-            let progress_value = (frame.timestamp as f64 / duration as f64 * 100.0).round();
-            let _ = progress.send_if_modified(|old_val| {
-                if *old_val != progress_value {
-                    *old_val = progress_value;
-                    true
-                } else {
-                    false
-                }
-            });
-        }
     }
 
     return Ok(MediaDetails {
         resolution_width,
         resolution_height,
         duration: duration_secs as u32,
-        video_hash: vid_hasher.compute().to_vec(),
+        video_hash: vid_hasher.compute().0,
         subtitles: match st_ctx {
             Some(st_ctx) => Some(format_subtitles_srt(st_ctx.collect()?, duration)),
             None => None,

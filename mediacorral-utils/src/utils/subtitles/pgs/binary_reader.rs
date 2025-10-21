@@ -37,7 +37,7 @@ impl PacketWriter {
     }
 
     pub fn write_i8(&mut self, num: i8) {
-        self.packet.push(unsafe { core::mem::transmute(num) });
+        self.packet.push(num.cast_unsigned());
     }
     pub fn write_i16(&mut self, num: i16) {
         self.packet.extend_from_slice(&num.to_be_bytes());
@@ -156,7 +156,7 @@ impl<'a> PacketReader<'a> {
         if self.cursor + 1 > self.packet.len() {
             return None;
         }
-        let num = unsafe { core::mem::transmute(self.packet[self.cursor]) };
+        let num = self.packet[self.cursor].cast_signed();
         self.cursor += 1;
         return Some(num);
     }

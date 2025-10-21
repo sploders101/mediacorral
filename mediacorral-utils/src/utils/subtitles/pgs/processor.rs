@@ -3,7 +3,7 @@ use leptess::Variable;
 
 use crate::{
     rayon_helpers::BackpressuredRayon,
-    workers::mkv_analysis::subtitles::{
+    utils::subtitles::{
         ExtractDetailsError, Subtitle,
         ocr::{Partess, PartessCache},
         process_graya_image,
