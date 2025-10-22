@@ -7,7 +7,7 @@
 package serverv1
 
 import (
-	v1 "github.com/sploders101/mediacorral/mediacorral-server/gen/mediacorral/drive_controller/v1"
+	v1 "github.com/sploders101/mediacorral/backend/gen/mediacorral/drive_controller/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -7028,8 +7028,8 @@ const file_mediacorral_server_v1_api_proto_rawDesc = "" +
 	"\x0fGetUntaggedJobs\x12-.mediacorral.server.v1.GetUntaggedJobsRequest\x1a..mediacorral.server.v1.GetUntaggedJobsResponse\x12|\n" +
 	"\x13GetJobCatalogueInfo\x121.mediacorral.server.v1.GetJobCatalogueInfoRequest\x1a2.mediacorral.server.v1.GetJobCatalogueInfoResponse\x12g\n" +
 	"\fReprocessJob\x12*.mediacorral.server.v1.ReprocessJobRequest\x1a+.mediacorral.server.v1.ReprocessJobResponse\x12d\n" +
-	"\vPruneRipJob\x12).mediacorral.server.v1.PruneRipJobRequest\x1a*.mediacorral.server.v1.PruneRipJobResponseB\xf5\x01\n" +
-	"\x19com.mediacorral.server.v1B\bApiProtoP\x01ZXgithub.com/sploders101/mediacorral/mediacorral-server/gen/mediacorral/server/v1;serverv1\xa2\x02\x03MSX\xaa\x02\x15Mediacorral.Server.V1\xca\x02\x15Mediacorral\\Server\\V1\xe2\x02!Mediacorral\\Server\\V1\\GPBMetadata\xea\x02\x17Mediacorral::Server::V1b\x06proto3"
+	"\vPruneRipJob\x12).mediacorral.server.v1.PruneRipJobRequest\x1a*.mediacorral.server.v1.PruneRipJobResponseB\xea\x01\n" +
+	"\x19com.mediacorral.server.v1B\bApiProtoP\x01ZMgithub.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1;serverv1\xa2\x02\x03MSX\xaa\x02\x15Mediacorral.Server.V1\xca\x02\x15Mediacorral\\Server\\V1\xe2\x02!Mediacorral\\Server\\V1\\GPBMetadata\xea\x02\x17Mediacorral::Server::V1b\x06proto3"
 
 var file_mediacorral_server_v1_api_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_mediacorral_server_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 78)

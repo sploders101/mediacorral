@@ -3,7 +3,7 @@ package grpcservices
 import (
 	"context"
 
-	server_pb "github.com/sploders101/mediacorral/mediacorral-server/gen/mediacorral/server/v1"
+	server_pb "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

@@ -206,8 +206,8 @@ const file_mediacorral_server_v1_metadata_proto_rawDesc = "" +
 	"\rchapter_start\x18\x03 \x01(\x04R\fchapterStart\x12\x1f\n" +
 	"\vchapter_end\x18\x04 \x01(\x04R\n" +
 	"chapterEnd\x12!\n" +
-	"\fchapter_name\x18\x05 \x01(\tR\vchapterNameB\xfa\x01\n" +
-	"\x19com.mediacorral.server.v1B\rMetadataProtoP\x01ZXgithub.com/sploders101/mediacorral/mediacorral-server/gen/mediacorral/server/v1;serverv1\xa2\x02\x03MSX\xaa\x02\x15Mediacorral.Server.V1\xca\x02\x15Mediacorral\\Server\\V1\xe2\x02!Mediacorral\\Server\\V1\\GPBMetadata\xea\x02\x17Mediacorral::Server::V1b\x06proto3"
+	"\fchapter_name\x18\x05 \x01(\tR\vchapterNameB\xef\x01\n" +
+	"\x19com.mediacorral.server.v1B\rMetadataProtoP\x01ZMgithub.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1;serverv1\xa2\x02\x03MSX\xaa\x02\x15Mediacorral.Server.V1\xca\x02\x15Mediacorral\\Server\\V1\xe2\x02!Mediacorral\\Server\\V1\\GPBMetadata\xea\x02\x17Mediacorral::Server::V1b\x06proto3"
 
 var file_mediacorral_server_v1_metadata_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_mediacorral_server_v1_metadata_proto_goTypes = []any{

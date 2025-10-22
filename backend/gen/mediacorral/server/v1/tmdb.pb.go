@@ -2809,8 +2809,8 @@ const file_mediacorral_server_v1_tmdb_proto_rawDesc = "" +
 	"\t_overviewB\n" +
 	"\n" +
 	"\b_runtimeB\r\n" +
-	"\v_still_pathB\xf6\x01\n" +
-	"\x19com.mediacorral.server.v1B\tTmdbProtoP\x01ZXgithub.com/sploders101/mediacorral/mediacorral-server/gen/mediacorral/server/v1;serverv1\xa2\x02\x03MSX\xaa\x02\x15Mediacorral.Server.V1\xca\x02\x15Mediacorral\\Server\\V1\xe2\x02!Mediacorral\\Server\\V1\\GPBMetadata\xea\x02\x17Mediacorral::Server::V1b\x06proto3"
+	"\v_still_pathB\xeb\x01\n" +
+	"\x19com.mediacorral.server.v1B\tTmdbProtoP\x01ZMgithub.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1;serverv1\xa2\x02\x03MSX\xaa\x02\x15Mediacorral.Server.V1\xca\x02\x15Mediacorral\\Server\\V1\xe2\x02!Mediacorral\\Server\\V1\\GPBMetadata\xea\x02\x17Mediacorral::Server::V1b\x06proto3"
 
 var file_mediacorral_server_v1_tmdb_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_mediacorral_server_v1_tmdb_proto_goTypes = []any{

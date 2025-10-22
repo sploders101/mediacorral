@@ -195,8 +195,8 @@ const file_mediacorral_server_v1_exports_proto_rawDesc = "" +
 	"\bLinkType\x12\x19\n" +
 	"\x15LINK_TYPE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12LINK_TYPE_SYMBOLIC\x10\x01\x12\x12\n" +
-	"\x0eLINK_TYPE_HARD\x10\x02B\xf9\x01\n" +
-	"\x19com.mediacorral.server.v1B\fExportsProtoP\x01ZXgithub.com/sploders101/mediacorral/mediacorral-server/gen/mediacorral/server/v1;serverv1\xa2\x02\x03MSX\xaa\x02\x15Mediacorral.Server.V1\xca\x02\x15Mediacorral\\Server\\V1\xe2\x02!Mediacorral\\Server\\V1\\GPBMetadata\xea\x02\x17Mediacorral::Server::V1b\x06proto3"
+	"\x0eLINK_TYPE_HARD\x10\x02B\xee\x01\n" +
+	"\x19com.mediacorral.server.v1B\fExportsProtoP\x01ZMgithub.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1;serverv1\xa2\x02\x03MSX\xaa\x02\x15Mediacorral.Server.V1\xca\x02\x15Mediacorral\\Server\\V1\xe2\x02!Mediacorral\\Server\\V1\\GPBMetadata\xea\x02\x17Mediacorral::Server::V1b\x06proto3"
 
 var file_mediacorral_server_v1_exports_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_mediacorral_server_v1_exports_proto_msgTypes = make([]protoimpl.MessageInfo, 1)

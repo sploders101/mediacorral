@@ -303,8 +303,8 @@ const file_mediacorral_server_v1_notifications_proto_rawDesc = "" +
 	"\x13RipFinishedResponse2\xef\x01\n" +
 	"\x1eCoordinatorNotificationService\x12g\n" +
 	"\fDiscInserted\x12*.mediacorral.server.v1.DiscInsertedRequest\x1a+.mediacorral.server.v1.DiscInsertedResponse\x12d\n" +
-	"\vRipFinished\x12).mediacorral.server.v1.RipFinishedRequest\x1a*.mediacorral.server.v1.RipFinishedResponseB\xff\x01\n" +
-	"\x19com.mediacorral.server.v1B\x12NotificationsProtoP\x01ZXgithub.com/sploders101/mediacorral/mediacorral-server/gen/mediacorral/server/v1;serverv1\xa2\x02\x03MSX\xaa\x02\x15Mediacorral.Server.V1\xca\x02\x15Mediacorral\\Server\\V1\xe2\x02!Mediacorral\\Server\\V1\\GPBMetadata\xea\x02\x17Mediacorral::Server::V1b\x06proto3"
+	"\vRipFinished\x12).mediacorral.server.v1.RipFinishedRequest\x1a*.mediacorral.server.v1.RipFinishedResponseB\xf4\x01\n" +
+	"\x19com.mediacorral.server.v1B\x12NotificationsProtoP\x01ZMgithub.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1;serverv1\xa2\x02\x03MSX\xaa\x02\x15Mediacorral.Server.V1\xca\x02\x15Mediacorral\\Server\\V1\xe2\x02!Mediacorral\\Server\\V1\\GPBMetadata\xea\x02\x17Mediacorral::Server::V1b\x06proto3"
 
 var file_mediacorral_server_v1_notifications_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_mediacorral_server_v1_notifications_proto_goTypes = []any{

@@ -1,4 +1,4 @@
-module github.com/sploders101/mediacorral/mediacorral-server
+module github.com/sploders101/mediacorral/backend
 
 go 1.24.4
 

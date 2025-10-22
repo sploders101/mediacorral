@@ -1710,8 +1710,8 @@ const file_mediacorral_drive_controller_v1_main_proto_rawDesc = "" +
 	"\bRipMedia\x120.mediacorral.drive_controller.v1.RipMediaRequest\x1a1.mediacorral.drive_controller.v1.RipMediaResponse\x12p\n" +
 	"\fGetJobStatus\x124.mediacorral.drive_controller.v1.GetJobStatusRequest\x1a*.mediacorral.drive_controller.v1.RipStatus\x12p\n" +
 	"\vWatchRipJob\x123.mediacorral.drive_controller.v1.WatchRipJobRequest\x1a*.mediacorral.drive_controller.v1.RipUpdate0\x01\x12l\n" +
-	"\aReapJob\x12/.mediacorral.drive_controller.v1.ReapJobRequest\x1a0.mediacorral.drive_controller.v1.ReapJobResponseB\xb8\x02\n" +
-	"#com.mediacorral.drive_controller.v1B\tMainProtoP\x01Zlgithub.com/sploders101/mediacorral/mediacorral-server/gen/mediacorral/drive_controller/v1;drive_controllerv1\xa2\x02\x03MDX\xaa\x02\x1eMediacorral.DriveController.V1\xca\x02\x1eMediacorral\\DriveController\\V1\xe2\x02*Mediacorral\\DriveController\\V1\\GPBMetadata\xea\x02 Mediacorral::DriveController::V1b\x06proto3"
+	"\aReapJob\x12/.mediacorral.drive_controller.v1.ReapJobRequest\x1a0.mediacorral.drive_controller.v1.ReapJobResponseB\xad\x02\n" +
+	"#com.mediacorral.drive_controller.v1B\tMainProtoP\x01Zagithub.com/sploders101/mediacorral/backend/gen/mediacorral/drive_controller/v1;drive_controllerv1\xa2\x02\x03MDX\xaa\x02\x1eMediacorral.DriveController.V1\xca\x02\x1eMediacorral\\DriveController\\V1\xe2\x02*Mediacorral\\DriveController\\V1\\GPBMetadata\xea\x02 Mediacorral::DriveController::V1b\x06proto3"
 
 var file_mediacorral_drive_controller_v1_main_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_mediacorral_drive_controller_v1_main_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
