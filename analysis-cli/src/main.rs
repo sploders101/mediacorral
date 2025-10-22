@@ -14,6 +14,8 @@ use utils::{
     subtitles::{ocr::PartessCache, srt::parse_srt_file},
 };
 
+use crate::utils::subtitles::{Subtitle, srt::format_subtitles_srt};
+
 #[derive(Parser, Debug, Clone)]
 /// This is a collection of utilities for processing media files in mediacorral.
 struct Args {
@@ -37,6 +39,15 @@ enum McUtilsCommand {
         #[arg()]
         /// Path to the file that should be processed. Passing `-` will read from stdin
         file: String,
+    },
+    Json2srt {
+        #[arg()]
+        /// Path to the file that should be processed. Passing `-` will read from stdin
+        file: String,
+        #[arg(short, long, default_value_t = 0)]
+        /// The duration (in milliseconds) of the source material. Used as the end time
+        /// for the last subtitle if it is unspecified.
+        duration: u64,
     },
 }
 
@@ -67,6 +78,25 @@ fn main() {
             let result = parse_srt_file(subtitles.lines()).expect("Failed to parse subtitles");
             let mut stdout = stdout().lock();
             let _ = serde_json::to_writer(&mut stdout, &result);
+        }
+        McUtilsCommand::Json2srt { file, duration } => {
+            let mut subtitles = String::new();
+            if file == "-" {
+                stdin()
+                    .lock()
+                    .read_to_string(&mut subtitles)
+                    .expect("Failed to read subtitles from stdin");
+            } else {
+                File::open(file)
+                    .expect("Failed to open file")
+                    .read_to_string(&mut subtitles)
+                    .expect("Failed to read subtitles from file");
+            }
+            let json_subs: Vec<Subtitle> =
+                serde_json::from_str(&subtitles).expect("Failed to parse json");
+            let subtitles_str = format_subtitles_srt(json_subs, duration);
+
+            print!("{subtitles_str}");
         }
     };
 }
