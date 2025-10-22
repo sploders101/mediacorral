@@ -3,6 +3,7 @@ module github.com/sploders101/mediacorral/backend
 go 1.24.4
 
 require (
+	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/twitchtv/twirp v8.1.3+incompatible
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
