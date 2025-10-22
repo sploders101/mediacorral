@@ -20,7 +20,7 @@ plugins:
     opt:
       - paths=source_relative
   - remote: buf.build/community/timostamm-protobuf-ts:v2.11.1
-    out: mediacorral-frontend/src/generated
+    out: frontend/src/generated
     opt:
       - long_type_bigint
 inputs:
