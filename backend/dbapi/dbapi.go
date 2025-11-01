@@ -6,9 +6,10 @@ import (
 	"path"
 
 	"github.com/sploders101/mediacorral/backend/dbapi/migrations"
+	gproto "google.golang.org/protobuf/proto"
+
 	proto "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
 	"github.com/sploders101/mediacorral/backend/helpers/config"
-	gproto "google.golang.org/protobuf/proto"
 )
 
 type Db struct {
