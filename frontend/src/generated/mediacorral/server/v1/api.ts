@@ -13,6 +13,7 @@ import { UnknownFieldHandler } from "@protobuf-ts/runtime";
 import type { PartialMessage } from "@protobuf-ts/runtime";
 import { reflectionMergePartial } from "@protobuf-ts/runtime";
 import { MessageType } from "@protobuf-ts/runtime";
+import { VideoExtendedMetadata } from "./metadata";
 import { RipStatus } from "../../drive_controller/v1/main";
 import { TmdbMovieResult } from "../../common/tmdb/v1/main";
 import { TmdbTvResult } from "../../common/tmdb/v1/main";
@@ -821,6 +822,20 @@ export interface SuspectJobRequest {
 export interface SuspectJobResponse {
 }
 /**
+ * @generated from protobuf message mediacorral.server.v1.ReanalyzeJobRequest
+ */
+export interface ReanalyzeJobRequest {
+    /**
+     * @generated from protobuf field: int64 job_id = 1
+     */
+    jobId: bigint;
+}
+/**
+ * @generated from protobuf message mediacorral.server.v1.ReanalyzeJobResponse
+ */
+export interface ReanalyzeJobResponse {
+}
+/**
  * @generated from protobuf message mediacorral.server.v1.GetUntaggedJobsRequest
  */
 export interface GetUntaggedJobsRequest {
@@ -959,6 +974,10 @@ export interface VideoFile {
      * @generated from protobuf field: optional int64 rip_job = 9
      */
     ripJob?: bigint;
+    /**
+     * @generated from protobuf field: optional mediacorral.server.v1.VideoExtendedMetadata extended_metadata = 10
+     */
+    extendedMetadata?: VideoExtendedMetadata;
 }
 /**
  * @generated from protobuf message mediacorral.server.v1.MatchInfoItem
@@ -4545,6 +4564,91 @@ class SuspectJobResponse$Type extends MessageType<SuspectJobResponse> {
  */
 export const SuspectJobResponse = new SuspectJobResponse$Type();
 // @generated message type with reflection information, may provide speed optimized methods
+class ReanalyzeJobRequest$Type extends MessageType<ReanalyzeJobRequest> {
+    constructor() {
+        super("mediacorral.server.v1.ReanalyzeJobRequest", [
+            { no: 1, name: "job_id", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
+        ]);
+    }
+    create(value?: PartialMessage<ReanalyzeJobRequest>): ReanalyzeJobRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.jobId = 0n;
+        if (value !== undefined)
+            reflectionMergePartial<ReanalyzeJobRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ReanalyzeJobRequest): ReanalyzeJobRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* int64 job_id */ 1:
+                    message.jobId = reader.int64().toBigInt();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ReanalyzeJobRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* int64 job_id = 1; */
+        if (message.jobId !== 0n)
+            writer.tag(1, WireType.Varint).int64(message.jobId);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.ReanalyzeJobRequest
+ */
+export const ReanalyzeJobRequest = new ReanalyzeJobRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ReanalyzeJobResponse$Type extends MessageType<ReanalyzeJobResponse> {
+    constructor() {
+        super("mediacorral.server.v1.ReanalyzeJobResponse", []);
+    }
+    create(value?: PartialMessage<ReanalyzeJobResponse>): ReanalyzeJobResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<ReanalyzeJobResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ReanalyzeJobResponse): ReanalyzeJobResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ReanalyzeJobResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.ReanalyzeJobResponse
+ */
+export const ReanalyzeJobResponse = new ReanalyzeJobResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
 class GetUntaggedJobsRequest$Type extends MessageType<GetUntaggedJobsRequest> {
     constructor() {
         super("mediacorral.server.v1.GetUntaggedJobsRequest", [
@@ -4891,7 +4995,8 @@ class VideoFile$Type extends MessageType<VideoFile> {
             { no: 6, name: "resolution_height", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ },
             { no: 7, name: "length", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ },
             { no: 8, name: "original_video_hash", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
-            { no: 9, name: "rip_job", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
+            { no: 9, name: "rip_job", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 10, name: "extended_metadata", kind: "message", T: () => VideoExtendedMetadata }
         ]);
     }
     create(value?: PartialMessage<VideoFile>): VideoFile {
@@ -4935,6 +5040,9 @@ class VideoFile$Type extends MessageType<VideoFile> {
                 case /* optional int64 rip_job */ 9:
                     message.ripJob = reader.int64().toBigInt();
                     break;
+                case /* optional mediacorral.server.v1.VideoExtendedMetadata extended_metadata */ 10:
+                    message.extendedMetadata = VideoExtendedMetadata.internalBinaryRead(reader, reader.uint32(), options, message.extendedMetadata);
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -4974,6 +5082,9 @@ class VideoFile$Type extends MessageType<VideoFile> {
         /* optional int64 rip_job = 9; */
         if (message.ripJob !== undefined)
             writer.tag(9, WireType.Varint).int64(message.ripJob);
+        /* optional mediacorral.server.v1.VideoExtendedMetadata extended_metadata = 10; */
+        if (message.extendedMetadata)
+            VideoExtendedMetadata.internalBinaryWrite(message.extendedMetadata, writer.tag(10, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -5416,6 +5527,7 @@ export const CoordinatorApiService = new ServiceType("mediacorral.server.v1.Coor
     { name: "RenameJob", options: {}, I: RenameJobRequest, O: RenameJobResponse },
     { name: "DeleteJob", options: {}, I: DeleteJobRequest, O: DeleteJobResponse },
     { name: "SuspectJob", options: {}, I: SuspectJobRequest, O: SuspectJobResponse },
+    { name: "ReanalyzeJob", options: {}, I: ReanalyzeJobRequest, O: ReanalyzeJobResponse },
     { name: "GetUntaggedJobs", options: {}, I: GetUntaggedJobsRequest, O: GetUntaggedJobsResponse },
     { name: "GetJobCatalogueInfo", options: {}, I: GetJobCatalogueInfoRequest, O: GetJobCatalogueInfoResponse },
     { name: "ReprocessJob", options: {}, I: ReprocessJobRequest, O: ReprocessJobResponse },

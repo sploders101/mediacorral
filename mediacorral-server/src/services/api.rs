@@ -719,6 +719,21 @@ impl CoordinatorApiService for ApiService {
         return Ok(tonic::Response::new(proto::SuspectJobResponse {}));
     }
 
+    /// Re-analyzes a job based on suspicion
+    async fn reanalyze_job(
+        &self,
+        request: tonic::Request<proto::ReanalyzeJobRequest>,
+    ) -> Result<tonic::Response<proto::ReanalyzeJobResponse>, tonic::Status> {
+        let request = request.into_inner();
+        let application = Arc::clone(&self.application);
+        tokio::task::spawn(async move { application.analyze_job(request.job_id).await })
+            .await
+            .unwrap()
+            .bubble()?;
+
+        return Ok(tonic::Response::new(proto::ReanalyzeJobResponse {}));
+    }
+
     /// Gets a list of jobs containing untagged files
     async fn get_untagged_jobs(
         &self,

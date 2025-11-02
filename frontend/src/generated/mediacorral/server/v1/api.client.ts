@@ -12,6 +12,8 @@ import type { GetJobCatalogueInfoResponse } from "./api";
 import type { GetJobCatalogueInfoRequest } from "./api";
 import type { GetUntaggedJobsResponse } from "./api";
 import type { GetUntaggedJobsRequest } from "./api";
+import type { ReanalyzeJobResponse } from "./api";
+import type { ReanalyzeJobRequest } from "./api";
 import type { SuspectJobResponse } from "./api";
 import type { SuspectJobRequest } from "./api";
 import type { DeleteJobResponse } from "./api";
@@ -261,6 +263,12 @@ export interface ICoordinatorApiServiceClient {
      * @generated from protobuf rpc: SuspectJob
      */
     suspectJob(input: SuspectJobRequest, options?: RpcOptions): UnaryCall<SuspectJobRequest, SuspectJobResponse>;
+    /**
+     * Re-analyzes a job based on suspicion
+     *
+     * @generated from protobuf rpc: ReanalyzeJob
+     */
+    reanalyzeJob(input: ReanalyzeJobRequest, options?: RpcOptions): UnaryCall<ReanalyzeJobRequest, ReanalyzeJobResponse>;
     /**
      * Gets a list of jobs containing untagged files
      *
@@ -567,12 +575,21 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
         return stackIntercept<SuspectJobRequest, SuspectJobResponse>("unary", this._transport, method, opt, input);
     }
     /**
+     * Re-analyzes a job based on suspicion
+     *
+     * @generated from protobuf rpc: ReanalyzeJob
+     */
+    reanalyzeJob(input: ReanalyzeJobRequest, options?: RpcOptions): UnaryCall<ReanalyzeJobRequest, ReanalyzeJobResponse> {
+        const method = this.methods[30], opt = this._transport.mergeOptions(options);
+        return stackIntercept<ReanalyzeJobRequest, ReanalyzeJobResponse>("unary", this._transport, method, opt, input);
+    }
+    /**
      * Gets a list of jobs containing untagged files
      *
      * @generated from protobuf rpc: GetUntaggedJobs
      */
     getUntaggedJobs(input: GetUntaggedJobsRequest, options?: RpcOptions): UnaryCall<GetUntaggedJobsRequest, GetUntaggedJobsResponse> {
-        const method = this.methods[30], opt = this._transport.mergeOptions(options);
+        const method = this.methods[31], opt = this._transport.mergeOptions(options);
         return stackIntercept<GetUntaggedJobsRequest, GetUntaggedJobsResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -581,7 +598,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: GetJobCatalogueInfo
      */
     getJobCatalogueInfo(input: GetJobCatalogueInfoRequest, options?: RpcOptions): UnaryCall<GetJobCatalogueInfoRequest, GetJobCatalogueInfoResponse> {
-        const method = this.methods[31], opt = this._transport.mergeOptions(options);
+        const method = this.methods[32], opt = this._transport.mergeOptions(options);
         return stackIntercept<GetJobCatalogueInfoRequest, GetJobCatalogueInfoResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -590,7 +607,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: ReprocessJob
      */
     reprocessJob(input: ReprocessJobRequest, options?: RpcOptions): UnaryCall<ReprocessJobRequest, ReprocessJobResponse> {
-        const method = this.methods[32], opt = this._transport.mergeOptions(options);
+        const method = this.methods[33], opt = this._transport.mergeOptions(options);
         return stackIntercept<ReprocessJobRequest, ReprocessJobResponse>("unary", this._transport, method, opt, input);
     }
     /**
@@ -599,7 +616,7 @@ export class CoordinatorApiServiceClient implements ICoordinatorApiServiceClient
      * @generated from protobuf rpc: PruneRipJob
      */
     pruneRipJob(input: PruneRipJobRequest, options?: RpcOptions): UnaryCall<PruneRipJobRequest, PruneRipJobResponse> {
-        const method = this.methods[33], opt = this._transport.mergeOptions(options);
+        const method = this.methods[34], opt = this._transport.mergeOptions(options);
         return stackIntercept<PruneRipJobRequest, PruneRipJobResponse>("unary", this._transport, method, opt, input);
     }
 }

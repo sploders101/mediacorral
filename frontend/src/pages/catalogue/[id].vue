@@ -60,6 +60,13 @@ const ostFilesCache = computed(() => {
 	return ostFiles;
 });
 
+async function rerunAnalysis() {
+	loading.value = true;
+	let jobId = BigInt(route.params.id);
+	await reportErrors(rpc.reanalyzeJob({ jobId }), "Failed to analyze job");
+	refreshData();
+}
+
 watch(() => route.params.id, refreshData, { immediate: true });
 
 async function refreshData() {
@@ -437,6 +444,17 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 											}
 										})
 								"
+							/>
+						</template>
+					</v-tooltip>
+					<v-tooltip text="Rerun Analysis">
+						<template v-slot:activator="{ props }">
+							<v-btn
+								v-bind="props"
+								density="compact"
+								flat
+								icon="head-sync"
+								@click="rerunAnalysis()"
 							/>
 						</template>
 					</v-tooltip>
