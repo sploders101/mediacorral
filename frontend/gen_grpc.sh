@@ -8,5 +8,6 @@ npx protoc \
 	--proto_path ../mediacorral-proto/proto \
 	../mediacorral-proto/proto/mediacorral/server/v1/api.proto \
 	../mediacorral-proto/proto/mediacorral/server/v1/exports.proto \
+	../mediacorral-proto/proto/mediacorral/server/v1/metadata.proto \
 	../mediacorral-proto/proto/mediacorral/common/tmdb/v1/main.proto \
 	../mediacorral-proto/proto/mediacorral/drive_controller/v1/main.proto
