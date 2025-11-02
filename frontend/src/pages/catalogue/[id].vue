@@ -453,7 +453,7 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 								v-bind="props"
 								density="compact"
 								flat
-								icon="head-sync"
+								icon="mdi-head-sync"
 								@click="rerunAnalysis()"
 							/>
 						</template>
