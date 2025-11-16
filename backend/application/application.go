@@ -103,9 +103,9 @@ func NewApplication(configData config.ConfigFile) (*Application, error) {
 	}
 
 	return &Application{
-		db:             db,
-		settings:       applicationSettings{
-			autoripEnabled: configData.EnableAutorip,
+		db: db,
+		settings: applicationSettings{
+			autoripEnabled:   configData.EnableAutorip,
 			driveControllers: driveControllers,
 		},
 		ripDir:         ripDir,

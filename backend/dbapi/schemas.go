@@ -265,12 +265,12 @@ type ImageFilesItem struct {
 }
 
 type TvExportEntry struct {
-	TvTitle string
+	TvTitle       string
 	TvReleaseYear string
-	TvTmdb int32
-	SeasonNumber uint16
-	EpisodeTitle string
+	TvTmdb        int32
+	SeasonNumber  uint16
+	EpisodeTitle  string
 	EpisodeNumber uint16
-	EpisodeTmdb int32
-	EpisodeBlob string
+	EpisodeTmdb   int32
+	EpisodeBlob   string
 }
