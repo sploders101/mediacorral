@@ -263,3 +263,14 @@ type ImageFilesItem struct {
 	Name     sql.NullString
 	RipJob   sql.NullInt64
 }
+
+type TvExportEntry struct {
+	TvTitle string
+	TvReleaseYear string
+	TvTmdb int32
+	SeasonNumber uint16
+	EpisodeTitle string
+	EpisodeNumber uint16
+	EpisodeTmdb int32
+	EpisodeBlob string
+}

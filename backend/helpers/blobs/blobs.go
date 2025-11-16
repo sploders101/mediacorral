@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -21,34 +22,32 @@ import (
 // Wraps the database and uses it to keep track of files on the filesystem
 type BlobStorageController struct {
 	blobDir            string
-	analysisController analysis.AnalysisController
-	db                 dbapi.Db
+	analysisController *analysis.AnalysisController
 }
 
 func NewController(
 	blobDir string,
-	analysisController analysis.AnalysisController,
-	dbConnection dbapi.Db,
-) (BlobStorageController, error) {
+	analysisController *analysis.AnalysisController,
+) (*BlobStorageController, error) {
 	if data, err := os.Stat(blobDir); err == nil {
 		fileType := data.Mode().Type()
 		if fileType != os.ModeDir {
-			return BlobStorageController{}, fmt.Errorf(
+			return nil, fmt.Errorf(
 				"blobDir must be a directory: %w",
 				os.ErrInvalid,
 			)
 		}
 	} else {
-		return BlobStorageController{}, fmt.Errorf("error calling stat on blobDir: %w", err)
+		return nil, fmt.Errorf("error calling stat on blobDir: %w", err)
 	}
-	return BlobStorageController{
+	return &BlobStorageController{
 		blobDir,
 		analysisController,
-		dbConnection,
 	}, nil
 }
 
-func (controller BlobStorageController) AddVideoFile(
+func (controller *BlobStorageController) AddVideoFile(
+	db *dbapi.DbTx,
 	filePath string,
 	ripJob *int64,
 ) error {
@@ -74,7 +73,7 @@ func (controller BlobStorageController) AddVideoFile(
 		ripJobSql.Valid = true
 		ripJobSql.Int64 = *ripJob
 	}
-	record, err := controller.db.InsertVideoFile(
+	record, err := db.InsertVideoFile(
 		proto.VideoType_VIDEO_TYPE_UNSPECIFIED,
 		sql.NullInt64{},
 		videoUuid,
@@ -107,7 +106,7 @@ func (controller BlobStorageController) AddVideoFile(
 		extendedMetadata.Valid = true
 		extendedMetadata.V = metadata.ExtendedMetadata.IntoProto()
 	}
-	if err := controller.db.AddVideoMetadata(
+	if err := db.AddVideoMetadata(
 		record.Id,
 		metadata.ResolutionWidth,
 		metadata.ResolutionHeight,
@@ -121,7 +120,7 @@ func (controller BlobStorageController) AddVideoFile(
 	// Insert Subtitles
 
 	if metadata.Subtitles != nil {
-		err := controller.AddSubtitlesFile(record.Id, *metadata.Subtitles)
+		err := controller.AddSubtitlesFile(db, record.Id, *metadata.Subtitles)
 		if err != nil {
 			return err
 		}
@@ -130,7 +129,8 @@ func (controller BlobStorageController) AddVideoFile(
 	return nil
 }
 
-func (controller BlobStorageController) AddSubtitlesFile(
+func (controller *BlobStorageController) AddSubtitlesFile(
+	db *dbapi.DbTx,
 	videoFile int64,
 	subtitles string,
 ) error {
@@ -144,45 +144,46 @@ func (controller BlobStorageController) AddSubtitlesFile(
 		return err
 	}
 
-	if _, err := controller.db.InsertSubtitleFile(subsUuid, videoFile); err != nil {
+	if _, err := db.InsertSubtitleFile(subsUuid, videoFile); err != nil {
 		return fmt.Errorf("error inserting subtitle db entry: %w", err)
 	}
 
 	return nil
 }
 
-func (controller BlobStorageController) DeleteRipJob(ripJob int64) error {
-	videos, err := controller.db.GetVideosFromRip(ripJob)
+func (controller *BlobStorageController) DeleteRipJob(db *dbapi.DbTx, ripJob int64) error {
+	videos, err := db.GetVideosFromRip(ripJob)
 	if err != nil {
 		return err
 	}
 	for _, video := range videos {
-		if err := controller.DeleteBlob(video.BlobId); err != nil {
+		if err := controller.DeleteBlob(db, video.BlobId); err != nil {
 			return err
 		}
 	}
 
-	subtitles, err := controller.db.GetDiscSubsFromRip(ripJob)
+	subtitles, err := db.GetDiscSubsFromRip(ripJob)
 	if err != nil {
 		return err
 	}
 	for _, video := range subtitles {
-		if err := controller.DeleteBlob(video.SubtitleBlob); err != nil {
+		if err := controller.DeleteBlob(db, video.SubtitleBlob); err != nil {
 			return err
 		}
 	}
 
-	if err := controller.db.DeleteMatchesFromRip(ripJob); err != nil {
+	if err := db.DeleteMatchesFromRip(ripJob); err != nil {
 		return err
 	}
-	if err := controller.db.DeleteRipJob(ripJob); err != nil {
+	if err := db.DeleteRipJob(ripJob); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (controller BlobStorageController) AddOstSubtitles(
+func (controller *BlobStorageController) AddOstSubtitles(
+	db *dbapi.DbTx,
 	videoType proto.VideoType,
 	matchId int64,
 	filename string,
@@ -199,7 +200,7 @@ func (controller BlobStorageController) AddOstSubtitles(
 		return dbapi.OstDownloadsItem{}, err
 	}
 
-	entry, err := controller.db.InsertOstDownloadItem(
+	entry, err := db.InsertOstDownloadItem(
 		videoType,
 		matchId,
 		filename,
@@ -212,7 +213,12 @@ func (controller BlobStorageController) AddOstSubtitles(
 	return entry, nil
 }
 
-func (controller BlobStorageController) AddImage(name string, mimeType string, file io.ReadCloser) (dbapi.ImageFilesItem, error) {
+func (controller *BlobStorageController) AddImage(
+	db *dbapi.DbTx,
+	name string,
+	mimeType string,
+	file io.ReadCloser,
+) (dbapi.ImageFilesItem, error) {
 	imageUuid := uuid.New().String()
 	imagePath := controller.GetFilePath(imageUuid)
 	blobFile, err := os.Create(imagePath)
@@ -224,7 +230,7 @@ func (controller BlobStorageController) AddImage(name string, mimeType string, f
 		return dbapi.ImageFilesItem{}, err
 	}
 
-	dbItem, err := controller.db.InsertImageFile(
+	dbItem, err := db.InsertImageFile(
 		imageUuid,
 		mimeType,
 		sql.NullString{Valid: true, String: name},
@@ -237,29 +243,38 @@ func (controller BlobStorageController) AddImage(name string, mimeType string, f
 	return dbItem, nil
 }
 
-func (controller BlobStorageController) DeleteBlob(blobId string) error {
+func (controller *BlobStorageController) DeleteBlob(db *dbapi.DbTx, blobId string) error {
 	// Delete from the db first so we don't have bad data in the db.
-	if err := controller.db.DeleteBlob(blobId); err != nil {
+	if err := db.DeleteBlob(blobId); err != nil {
 		return err
 	}
 	blobPath := controller.GetFilePath(blobId)
-	if err := os.Remove(blobPath); err != nil {
-		return err
-	}
+	db.OnCommit(func() {
+		if err := os.Remove(blobPath); err != nil {
+			slog.Error("Failed to remove blob \"%s\": %s", blobId, err.Error())
+		}
+	})
 	return nil
 }
 
-func (controller BlobStorageController) GetFilePath(id string) string {
+func (controller *BlobStorageController) GetFilePath(id string) string {
 	return path.Join(controller.blobDir, id)
 }
 
-func (controller BlobStorageController) HardLink(blobId string, destination string) error {
+func (controller *BlobStorageController) HardLink(blobId string, destination string) error {
 	sourcePath := controller.GetFilePath(blobId)
 	err := os.Link(sourcePath, destination)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {
-			os.Remove(destination)
-			err := os.Link(sourcePath, destination)
+			err := os.Remove(destination)
+			if err != nil {
+				return fmt.Errorf(
+					"failed to delete existing hard link for \"%s\": %w",
+					destination,
+					err,
+				)
+			}
+			err = os.Link(sourcePath, destination)
 			if err != nil {
 				return err
 			}
@@ -270,7 +285,7 @@ func (controller BlobStorageController) HardLink(blobId string, destination stri
 	return nil
 }
 
-func (controller BlobStorageController) SymbolicLink(blobId string, destination string) error {
+func (controller *BlobStorageController) SymbolicLink(blobId string, destination string) error {
 	if !path.IsAbs(destination) {
 		return errors.New("destination must be absolute")
 	}

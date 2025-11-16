@@ -36,8 +36,8 @@ pub enum ExtractDetailsError {
 #[serde_as]
 #[derive(Serialize, Debug, Clone)]
 pub struct MediaDetails {
-    pub resolution_width: u32,
-    pub resolution_height: u32,
+    pub resolution_width: Option<u32>,
+    pub resolution_height: Option<u32>,
     pub duration: u32,
     #[serde_as(as = "serde_with::hex::Hex")]
     pub video_hash: [u8; 16],
@@ -78,14 +78,8 @@ where
     let vid_track_info = vid_track.video().unwrap();
     let vid_track_number = vid_track.track_number().get();
 
-    let resolution_width: u32 = vid_track_info
-        .display_width()
-        .ok_or(ExtractDetailsError::MissingRequiredProps)?
-        .get() as _;
-    let resolution_height: u32 = vid_track_info
-        .display_height()
-        .ok_or(ExtractDetailsError::MissingRequiredProps)?
-        .get() as _;
+    let resolution_width: Option<u32> = vid_track_info.display_width().map(|i| i.get() as _);
+    let resolution_height: Option<u32> = vid_track_info.display_height().map(|i| i.get() as _);
 
     let mut vid_hasher = md5::Context::new();
 

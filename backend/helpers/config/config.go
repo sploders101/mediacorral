@@ -9,6 +9,7 @@ import (
 )
 
 type ConfigFile struct {
+	AnalysisCli      string                `yaml:"analysis_cli"`
 	BasePath         *string               `yaml:"base_path"`
 	DataDirectory    string                `yaml:"data_directory"`
 	TmdbApiKey       string                `yaml:"tmdb_api_key"`
@@ -69,6 +70,10 @@ func LoadConfig() (ConfigFile, error) {
 
 	if !path.IsAbs(config.DataDirectory) {
 		config.DataDirectory = path.Join(*config.BasePath, config.DataDirectory)
+	}
+
+	if config.AnalysisCli == "" {
+		config.AnalysisCli = "mediacorral-analysis-cli"
 	}
 
 	for _, details := range config.ExportsDirs {

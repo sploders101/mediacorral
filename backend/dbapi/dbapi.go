@@ -1,23 +1,27 @@
 package dbapi
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
-	"path"
 
 	"github.com/sploders101/mediacorral/backend/dbapi/migrations"
 	gproto "google.golang.org/protobuf/proto"
 
 	proto "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
-	"github.com/sploders101/mediacorral/backend/helpers/config"
 )
 
 type Db struct {
 	db *sql.DB
 }
 
-func NewDb(config config.ConfigFile) (Db, error) {
-	db, err := sql.Open("sqlite3", path.Join(config.DataDirectory, "database.sqlite"))
+type DbTx struct {
+	tx              *sql.Tx
+	commitCallbacks []func()
+}
+
+func NewDb(dbPath string) (Db, error) {
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return Db{}, fmt.Errorf("an error occurred while opening the database: %w", err)
 	}
@@ -28,7 +32,44 @@ func NewDb(config config.ConfigFile) (Db, error) {
 	return Db{db: db}, nil
 }
 
-func (db *Db) InsertMovie(
+func (db Db) Begin() (DbTx, error) {
+	dbTx, err := db.db.Begin()
+	if err != nil {
+		return DbTx{}, err
+	}
+	return DbTx{tx: dbTx}, nil
+}
+
+func (db Db) BeginTx(ctx context.Context, opts *sql.TxOptions) (DbTx, error) {
+	dbTx, err := db.db.BeginTx(ctx, opts)
+	if err != nil {
+		return DbTx{}, err
+	}
+	return DbTx{tx: dbTx}, nil
+}
+
+// Registers a callback to be run after commit. This is useful for things like the blob
+// controller, which need to delete files, but don't want to leave broken links in the db.
+func (db *DbTx) OnCommit(callback func()) {
+	db.commitCallbacks = append(db.commitCallbacks, callback)
+}
+
+func (db *DbTx) Commit() error {
+	err := db.tx.Commit()
+	if err != nil {
+		return err
+	}
+	for _, callback := range db.commitCallbacks {
+		callback()
+	}
+	return nil
+}
+
+func (db *DbTx) Rollback() error {
+	return db.tx.Rollback()
+}
+
+func (db *DbTx) InsertMovie(
 	tmdbId sql.NullInt32,
 	posterBlob sql.NullInt64,
 	title string,
@@ -36,7 +77,7 @@ func (db *Db) InsertMovie(
 	description sql.NullString,
 	runtime sql.Null[uint32],
 ) (MoviesItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
             INSERT INTO movies (
                 tmdb_id,
@@ -72,8 +113,8 @@ func (db *Db) InsertMovie(
 	}, nil
 }
 
-func (db *Db) UpdateMovie(movie MoviesItem) error {
-	_, err := db.db.Exec(
+func (db *DbTx) UpdateMovie(movie MoviesItem) error {
+	_, err := db.tx.Exec(
 		`
 			UPDATE movies
 			SET
@@ -100,7 +141,7 @@ func (db *Db) UpdateMovie(movie MoviesItem) error {
 	return nil
 }
 
-func (db *Db) UpsertTmdbMovie(
+func (db *DbTx) UpsertTmdbMovie(
 	tmdbId sql.NullInt32,
 	posterBlob sql.NullInt64,
 	title string,
@@ -108,7 +149,7 @@ func (db *Db) UpsertTmdbMovie(
 	description sql.NullString,
 	runtime sql.Null[uint32],
 ) (MoviesItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
 			INSERT INTO movies (
                 tmdb_id,
@@ -153,8 +194,8 @@ func (db *Db) UpsertTmdbMovie(
 	}, nil
 }
 
-func (db *Db) GetMovies() ([]MoviesItem, error) {
-	result, err := db.db.Query(`
+func (db *DbTx) GetMovies() ([]MoviesItem, error) {
+	result, err := db.tx.Query(`
 		SELECT
 			id,
             tmdb_id,
@@ -187,8 +228,8 @@ func (db *Db) GetMovies() ([]MoviesItem, error) {
 	return movieResults, nil
 }
 
-func (db *Db) GetMovieById(id int64) (MoviesItem, error) {
-	result := db.db.QueryRow(
+func (db *DbTx) GetMovieById(id int64) (MoviesItem, error) {
+	result := db.tx.QueryRow(
 		`
 			SELECT
 				id,
@@ -219,8 +260,8 @@ func (db *Db) GetMovieById(id int64) (MoviesItem, error) {
 	return movie, nil
 }
 
-func (db *Db) GetMovieByTmdbId(tmdbId int32) (MoviesItem, error) {
-	result := db.db.QueryRow(
+func (db *DbTx) GetMovieByTmdbId(tmdbId int32) (MoviesItem, error) {
+	result := db.tx.QueryRow(
 		`
 			SELECT
 				id,
@@ -251,14 +292,14 @@ func (db *Db) GetMovieByTmdbId(tmdbId int32) (MoviesItem, error) {
 	return movie, nil
 }
 
-func (db *Db) InsertMoviesSpecialFeature(
+func (db *DbTx) InsertMoviesSpecialFeature(
 	movieId sql.NullInt64,
 	thumbnailBlob sql.NullInt64,
 	title string,
 	description sql.NullString,
 	runtime sql.NullInt64,
 ) (MoviesSpecialFeaturesItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
 			INSERT INTO movies_special_features (
 				movie_id,
@@ -286,10 +327,10 @@ func (db *Db) InsertMoviesSpecialFeature(
 	return specialFeature, nil
 }
 
-func (db *Db) UpdateMoviesSpecialFeature(
+func (db *DbTx) UpdateMoviesSpecialFeature(
 	specialFeature MoviesSpecialFeaturesItem,
 ) error {
-	if _, err := db.db.Exec(
+	if _, err := db.tx.Exec(
 		`
 			UPDATE movies_special_features
 			SET
@@ -311,14 +352,14 @@ func (db *Db) UpdateMoviesSpecialFeature(
 	return nil
 }
 
-func (db *Db) InsertTvShow(
+func (db *DbTx) InsertTvShow(
 	tmdbId sql.NullInt32,
 	posterBlob sql.NullInt64,
 	title string,
 	originalReleaseYear sql.NullString,
 	description sql.NullString,
 ) (TvShowsItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
 			INSERT INTO tv_shows (
 				tmdb_id,
@@ -343,8 +384,8 @@ func (db *Db) InsertTvShow(
 	return tvShow, nil
 }
 
-func (db *Db) UpdateTvShow(tvShow TvShowsItem) (TvShowsItem, error) {
-	if _, err := db.db.Exec(
+func (db *DbTx) UpdateTvShow(tvShow TvShowsItem) (TvShowsItem, error) {
+	if _, err := db.tx.Exec(
 		`
 			UPDATE tv_shows
 			SET
@@ -369,14 +410,14 @@ func (db *Db) UpdateTvShow(tvShow TvShowsItem) (TvShowsItem, error) {
 	return tvShow, nil
 }
 
-func (db *Db) UpsertTmdbTvShow(
-	tmdbId sql.NullInt32,
+func (db *DbTx) UpsertTmdbTvShow(
+	tmdbId int32,
 	posterBlob sql.NullInt64,
 	title string,
 	originalReleaseYear sql.NullString,
 	description sql.NullString,
 ) (TvShowsItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
             INSERT INTO tv_shows (
                 tmdb_id,
@@ -408,7 +449,7 @@ func (db *Db) UpsertTmdbTvShow(
 	}
 	return TvShowsItem{
 		Id:                  id,
-		TmdbId:              tmdbId,
+		TmdbId:              sql.NullInt32{Valid: true, Int32: tmdbId},
 		PosterBlob:          posterBlob,
 		Title:               title,
 		OriginalReleaseYear: originalReleaseYear,
@@ -416,8 +457,8 @@ func (db *Db) UpsertTmdbTvShow(
 	}, nil
 }
 
-func (db *Db) GetTvShows() ([]TvShowsItem, error) {
-	results, err := db.db.Query(
+func (db *DbTx) GetTvShows() ([]TvShowsItem, error) {
+	results, err := db.tx.Query(
 		`
 			SELECT
 				id,
@@ -451,8 +492,8 @@ func (db *Db) GetTvShows() ([]TvShowsItem, error) {
 	return tvShows, nil
 }
 
-func (db *Db) GetTvSeasons(seriesId int64) ([]TvSeasonsItem, error) {
-	results, err := db.db.Query(
+func (db *DbTx) GetTvSeasons(seriesId int64) ([]TvSeasonsItem, error) {
+	results, err := db.tx.Query(
 		`
 			SELECT
 				id,
@@ -490,8 +531,8 @@ func (db *Db) GetTvSeasons(seriesId int64) ([]TvSeasonsItem, error) {
 	return tvSeasons, nil
 }
 
-func (db *Db) GetTvEpisodes(seasonId int64) ([]TvEpisodesItem, error) {
-	results, err := db.db.Query(
+func (db *DbTx) GetTvEpisodes(seasonId int64) ([]TvEpisodesItem, error) {
+	results, err := db.tx.Query(
 		`
 			SELECT
 				id,
@@ -533,8 +574,8 @@ func (db *Db) GetTvEpisodes(seasonId int64) ([]TvEpisodesItem, error) {
 	return tvEpisodes, err
 }
 
-func (db *Db) GetTvShowById(seriesId int64) (TvShowsItem, error) {
-	result := db.db.QueryRow(
+func (db *DbTx) GetTvShowById(seriesId int64) (TvShowsItem, error) {
+	result := db.tx.QueryRow(
 		`
 			SELECT
 				id,
@@ -562,8 +603,8 @@ func (db *Db) GetTvShowById(seriesId int64) (TvShowsItem, error) {
 	return tvShow, nil
 }
 
-func (db *Db) GetTvSeasonById(seasonId int64) (TvSeasonsItem, error) {
-	result := db.db.QueryRow(
+func (db *DbTx) GetTvSeasonById(seasonId int64) (TvSeasonsItem, error) {
+	result := db.tx.QueryRow(
 		`
 			SELECT
 				id,
@@ -593,8 +634,8 @@ func (db *Db) GetTvSeasonById(seasonId int64) (TvSeasonsItem, error) {
 	return tvSeason, nil
 }
 
-func (db *Db) GetTvEpisodeById(episodeId int64) (TvEpisodesItem, error) {
-	result := db.db.QueryRow(
+func (db *DbTx) GetTvEpisodeById(episodeId int64) (TvEpisodesItem, error) {
+	result := db.tx.QueryRow(
 		`
 			SELECT
 				id,
@@ -628,8 +669,8 @@ func (db *Db) GetTvEpisodeById(episodeId int64) (TvEpisodesItem, error) {
 	return tvEpisode, nil
 }
 
-func (db *Db) GetTvEpisodeByTmdbId(tmdbId int32) (TvEpisodesItem, error) {
-	result := db.db.QueryRow(
+func (db *DbTx) GetTvEpisodeByTmdbId(tmdbId int32) (TvEpisodesItem, error) {
+	result := db.tx.QueryRow(
 		`
 			SELECT
 				id,
@@ -663,7 +704,7 @@ func (db *Db) GetTvEpisodeByTmdbId(tmdbId int32) (TvEpisodesItem, error) {
 	return tvEpisode, nil
 }
 
-func (db *Db) InsertTvSeason(
+func (db *DbTx) InsertTvSeason(
 	tmdbId sql.NullInt32,
 	tvShowId int64,
 	seasonNumber uint32,
@@ -671,7 +712,7 @@ func (db *Db) InsertTvSeason(
 	title string,
 	description sql.NullString,
 ) (TvSeasonsItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
 			INSERT INTO tv_seasons (
 				tmdb_id,
@@ -704,8 +745,8 @@ func (db *Db) InsertTvSeason(
 	return tvSeason, nil
 }
 
-func (db *Db) UpdateTvSeason(tvSeason TvSeasonsItem) error {
-	_, err := db.db.Exec(
+func (db *DbTx) UpdateTvSeason(tvSeason TvSeasonsItem) error {
+	_, err := db.tx.Exec(
 		`
 			UPDATE tv_seasons
 			SET
@@ -732,15 +773,15 @@ func (db *Db) UpdateTvSeason(tvSeason TvSeasonsItem) error {
 	return nil
 }
 
-func (db *Db) UpsertTmdbTvSeason(
-	tmdbId sql.NullInt32,
+func (db *DbTx) UpsertTmdbTvSeason(
+	tmdbId int32,
 	tvShowId int64,
 	seasonNumber uint32,
 	posterBlob sql.NullInt64,
 	title string,
 	description sql.NullString,
 ) (TvSeasonsItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
 			INSERT INTO tv_seasons (
 				tmdb_id,
@@ -767,6 +808,7 @@ func (db *Db) UpsertTmdbTvSeason(
 		description,
 	)
 	tvSeason := TvSeasonsItem{
+		TmdbId:      sql.NullInt32{Valid: true, Int32: tmdbId},
 		PosterBlob:  posterBlob,
 		Title:       title,
 		Description: description,
@@ -781,8 +823,8 @@ func (db *Db) UpsertTmdbTvSeason(
 	return tvSeason, nil
 }
 
-func (db *Db) InsertTvEpisode(
-	tmdbId sql.NullInt32,
+func (db *DbTx) InsertTvEpisode(
+	tmdbId int32,
 	tvShowId int64,
 	tvSeasonId int64,
 	episodeNumber uint32,
@@ -791,7 +833,7 @@ func (db *Db) InsertTvEpisode(
 	description sql.NullString,
 	runtime sql.Null[uint32],
 ) (TvEpisodesItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
 			INSERT INTO tv_episodes (
                 tmdb_id,
@@ -815,7 +857,7 @@ func (db *Db) InsertTvEpisode(
 		runtime,
 	)
 	tvEpisode := TvEpisodesItem{
-		TmdbId:        tmdbId,
+		TmdbId:        sql.NullInt32{Valid: true, Int32: tmdbId},
 		TvShowId:      tvShowId,
 		TvSeasonId:    tvSeasonId,
 		EpisodeNumber: episodeNumber,
@@ -830,8 +872,8 @@ func (db *Db) InsertTvEpisode(
 	return tvEpisode, nil
 }
 
-func (db *Db) UpdateTvEpisode(tvEpisode TvEpisodesItem) error {
-	_, err := db.db.Exec(
+func (db *DbTx) UpdateTvEpisode(tvEpisode TvEpisodesItem) error {
+	_, err := db.tx.Exec(
 		`
 			UPDATE tv_episodes
 			SET
@@ -862,8 +904,8 @@ func (db *Db) UpdateTvEpisode(tvEpisode TvEpisodesItem) error {
 	return nil
 }
 
-func (db *Db) UpsertTmdbTvEpisode(
-	tmdbId sql.NullInt32,
+func (db *DbTx) UpsertTmdbTvEpisode(
+	tmdbId int32,
 	tvShowId int64,
 	tvSeasonId int64,
 	episodeNumber uint32,
@@ -872,7 +914,7 @@ func (db *Db) UpsertTmdbTvEpisode(
 	description sql.NullString,
 	runtime sql.Null[uint32],
 ) (TvEpisodesItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
 			INSERT INTO tv_episodes (
 				tmdb_id,
@@ -905,7 +947,7 @@ func (db *Db) UpsertTmdbTvEpisode(
 		runtime,
 	)
 	tvEpisode := TvEpisodesItem{
-		TmdbId:        tmdbId,
+		TmdbId:        sql.NullInt32{Valid: true, Int32: tmdbId},
 		ThumbnailBlob: thumbnailBlob,
 		Title:         title,
 		Description:   description,
@@ -922,12 +964,12 @@ func (db *Db) UpsertTmdbTvEpisode(
 	return tvEpisode, nil
 }
 
-func (db *Db) CreateRipJob(
+func (db *DbTx) CreateRipJob(
 	startTime int64,
 	discTitle sql.NullString,
 	suspectedContents sql.Null[[]byte],
 ) (RipJobsItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
 			INSERT INTO rip_jobs (
                 start_time,
@@ -955,8 +997,8 @@ func (db *Db) CreateRipJob(
 	return ripJob, nil
 }
 
-func (db *Db) SetRipSuspicion(ripJob int64, suspicion sql.Null[[]byte]) error {
-	_, err := db.db.Exec(
+func (db *DbTx) SetRipSuspicion(ripJob int64, suspicion sql.Null[[]byte]) error {
+	_, err := db.tx.Exec(
 		`
 			UPDATE rip_jobs
 			SET
@@ -973,8 +1015,8 @@ func (db *Db) SetRipSuspicion(ripJob int64, suspicion sql.Null[[]byte]) error {
 	return nil
 }
 
-func (db *Db) GetRipJob(ripJob int64) (RipJobsItem, error) {
-	result := db.db.QueryRow(
+func (db *DbTx) GetRipJob(ripJob int64) (RipJobsItem, error) {
+	result := db.tx.QueryRow(
 		`
 			SELECT
 				id,
@@ -1003,8 +1045,8 @@ func (db *Db) GetRipJob(ripJob int64) (RipJobsItem, error) {
 	return ripJobItem, nil
 }
 
-func (db *Db) RenameRipJob(ripJob int64, newName string) error {
-	_, err := db.db.Exec(
+func (db *DbTx) RenameRipJob(ripJob int64, newName string) error {
+	_, err := db.tx.Exec(
 		`
 			UPDATE rip_jobs
 			SET
@@ -1021,8 +1063,8 @@ func (db *Db) RenameRipJob(ripJob int64, newName string) error {
 	return nil
 }
 
-func (db *Db) MarkRipJobFinished(ripJob int64, finished bool) error {
-	_, err := db.db.Exec(
+func (db *DbTx) MarkRipJobFinished(ripJob int64, finished bool) error {
+	_, err := db.tx.Exec(
 		`
 			UPDATE rip_jobs
 			SET
@@ -1039,8 +1081,8 @@ func (db *Db) MarkRipJobFinished(ripJob int64, finished bool) error {
 	return nil
 }
 
-func (db *Db) MarkRipJobImported(ripJob int64, imported bool) error {
-	_, err := db.db.Exec(
+func (db *DbTx) MarkRipJobImported(ripJob int64, imported bool) error {
+	_, err := db.tx.Exec(
 		`
 			UPDATE rip_jobs
 			SET
@@ -1057,7 +1099,7 @@ func (db *Db) MarkRipJobImported(ripJob int64, imported bool) error {
 	return nil
 }
 
-func (db *Db) InsertVideoFile(
+func (db *DbTx) InsertVideoFile(
 	videoType proto.VideoType,
 	matchId sql.NullInt64,
 	blobId string,
@@ -1068,7 +1110,7 @@ func (db *Db) InsertVideoFile(
 	ripJob sql.NullInt64,
 	extendedMetadata sql.Null[[]byte],
 ) (VideoFilesItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
 			INSERT INTO video_files (
                 video_type,
@@ -1110,8 +1152,8 @@ func (db *Db) InsertVideoFile(
 	return videoFile, nil
 }
 
-func (db *Db) GetVideoFile(videoId int64) (VideoFilesItem, error) {
-	result := db.db.QueryRow(
+func (db *DbTx) GetVideoFile(videoId int64) (VideoFilesItem, error) {
+	result := db.tx.QueryRow(
 		`
 			SELECT
 				id,
@@ -1148,7 +1190,7 @@ func (db *Db) GetVideoFile(videoId int64) (VideoFilesItem, error) {
 	return videoFile, nil
 }
 
-func (db *Db) AddVideoMetadata(
+func (db *DbTx) AddVideoMetadata(
 	videoId int64,
 	resolutionWidth uint32,
 	resolutionHeight uint32,
@@ -1165,7 +1207,7 @@ func (db *Db) AddVideoMetadata(
 		}
 		extMetaSerialized.V = buf
 	}
-	_, err := db.db.Exec(
+	_, err := db.tx.Exec(
 		`
 			UPDATE video_files
 			SET
@@ -1189,12 +1231,12 @@ func (db *Db) AddVideoMetadata(
 	return nil
 }
 
-func (db *Db) TagVideoFile(
+func (db *DbTx) TagVideoFile(
 	videoId int64,
 	videoType proto.VideoType,
 	matchId sql.NullInt64,
 ) error {
-	_, err := db.db.Exec(
+	_, err := db.tx.Exec(
 		`
 			UPDATE video_files
 			SET
@@ -1213,11 +1255,11 @@ func (db *Db) TagVideoFile(
 	return nil
 }
 
-func (db *Db) InsertSubtitleFile(
+func (db *DbTx) InsertSubtitleFile(
 	blobId string,
 	videoId int64,
 ) (SubtitleFilesItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
 			INSERT INTO subtitle_files (
 				blob_id,
@@ -1238,8 +1280,8 @@ func (db *Db) InsertSubtitleFile(
 	return file, nil
 }
 
-func (db *Db) GetSubtitlesForVideo(videoId int64) ([]SubtitleFilesItem, error) {
-	result, err := db.db.Query(
+func (db *DbTx) GetSubtitlesForVideo(videoId int64) ([]SubtitleFilesItem, error) {
+	result, err := db.tx.Query(
 		`
 			SELECT
 				id,
@@ -1265,13 +1307,13 @@ func (db *Db) GetSubtitlesForVideo(videoId int64) ([]SubtitleFilesItem, error) {
 	return files, nil
 }
 
-func (db *Db) InsertOstDownloadItem(
+func (db *DbTx) InsertOstDownloadItem(
 	videoType proto.VideoType,
 	matchId int64,
 	filename string,
 	blobId string,
 ) (OstDownloadsItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
 			INSERT INTO ost_downloads (
 				video_type,
@@ -1298,8 +1340,8 @@ func (db *Db) InsertOstDownloadItem(
 	return ostDownload, nil
 }
 
-func (db *Db) GetOstDownloadItemsByTmdbId(tmdbId int32) (OstDownloadsItem, error) {
-	result := db.db.QueryRow(
+func (db *DbTx) GetOstDownloadItemsByTmdbId(tmdbId int32) (OstDownloadsItem, error) {
+	result := db.tx.QueryRow(
 		`
 			SELECT
 				ost_downloads.id,
@@ -1334,11 +1376,11 @@ func (db *Db) GetOstDownloadItemsByTmdbId(tmdbId int32) (OstDownloadsItem, error
 	return ostDownload, nil
 }
 
-func (db *Db) GetOstDownloadItemsByMatch(
+func (db *DbTx) GetOstDownloadItemsByMatch(
 	videoType proto.VideoType,
 	matchId int64,
 ) ([]OstDownloadsItem, error) {
-	results, err := db.db.Query(
+	results, err := db.tx.Query(
 		`
 			SELECT
 				id,
@@ -1374,8 +1416,8 @@ func (db *Db) GetOstDownloadItemsByMatch(
 	return downloads, err
 }
 
-func (db *Db) ClearMatchInfoForJob(jobId int64) error {
-	_, err := db.db.Exec(
+func (db *DbTx) ClearMatchInfoForJob(jobId int64) error {
+	_, err := db.tx.Exec(
 		`
 			DELETE FROM match_info
 			WHERE video_file_id IN (
@@ -1393,13 +1435,13 @@ func (db *Db) ClearMatchInfoForJob(jobId int64) error {
 	return nil
 }
 
-func (db *Db) InsertMatchInfoItem(
+func (db *DbTx) InsertMatchInfoItem(
 	videoFileId int64,
 	ostDownloadId int64,
 	distance uint32,
 	maxDistance uint32,
 ) (MatchInfoItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
 			INSERT INTO match_info (
 				video_file_id,
@@ -1426,13 +1468,13 @@ func (db *Db) InsertMatchInfoItem(
 	return matchItem, nil
 }
 
-func (db *Db) InsertImageFile(
+func (db *DbTx) InsertImageFile(
 	blobId string,
 	mimeType string,
 	name sql.NullString,
 	ripJob sql.NullInt64,
 ) (ImageFilesItem, error) {
-	result := db.db.QueryRow(
+	result := db.tx.QueryRow(
 		`
 			INSERT INTO image_files (
 				blob_id,
@@ -1459,8 +1501,8 @@ func (db *Db) InsertImageFile(
 	return imageFile, nil
 }
 
-func (db *Db) DeleteBlob(blobId string) error {
-	_, err := db.db.Exec(
+func (db *DbTx) DeleteBlob(blobId string) error {
+	_, err := db.tx.Exec(
 		`
 			DELETE FROM video_files
 			WHERE
@@ -1504,8 +1546,8 @@ func (blob RipVideoBlobs) IntoProto() *proto.RipVideoBlobs {
 	return protoBlob.Build()
 }
 
-func (db *Db) GetRipVideoBlobs(ripJob int64) ([]RipVideoBlobs, error) {
-	result, err := db.db.Query(
+func (db *DbTx) GetRipVideoBlobs(ripJob int64) ([]RipVideoBlobs, error) {
+	result, err := db.tx.Query(
 		`
 			SELECT
 				video_files.id as id,
@@ -1549,8 +1591,8 @@ type RipImageBlob struct {
 	ImageBlob string
 }
 
-func (db *Db) GetRipImageBlobs(ripJob int64) ([]RipImageBlob, error) {
-	result, err := db.db.Query(
+func (db *DbTx) GetRipImageBlobs(ripJob int64) ([]RipImageBlob, error) {
+	result, err := db.tx.Query(
 		`
 			SELECT
 				rip_jobs.id as job_id,
@@ -1577,8 +1619,8 @@ func (db *Db) GetRipImageBlobs(ripJob int64) ([]RipImageBlob, error) {
 	return blobs, nil
 }
 
-func (db *Db) DeleteRipJob(ripJob int64) error {
-	_, err := db.db.Exec(
+func (db *DbTx) DeleteRipJob(ripJob int64) error {
+	_, err := db.tx.Exec(
 		`
 			DELETE FROM rip_jobs
 			WHERE
@@ -1592,8 +1634,8 @@ func (db *Db) DeleteRipJob(ripJob int64) error {
 	return nil
 }
 
-func (db *Db) GetUntaggedVideosFromJob(ripJob int64) ([]RipVideoBlobs, error) {
-	result, err := db.db.Query(
+func (db *DbTx) GetUntaggedVideosFromJob(ripJob int64) ([]RipVideoBlobs, error) {
+	result, err := db.tx.Query(
 		`
 			SELECT
 				video_files.id as id,
@@ -1630,11 +1672,11 @@ func (db *Db) GetUntaggedVideosFromJob(ripJob int64) ([]RipVideoBlobs, error) {
 	return blobs, nil
 }
 
-func (db *Db) GetRipJobsWithUntaggedVideos(
+func (db *DbTx) GetRipJobsWithUntaggedVideos(
 	skip uint32,
 	limit uint32,
 ) ([]RipJobsItem, error) {
-	result, err := db.db.Query(
+	result, err := db.tx.Query(
 		`
 			SELECT
 				rip_jobs.id,
@@ -1679,8 +1721,8 @@ func (db *Db) GetRipJobsWithUntaggedVideos(
 	return jobs, nil
 }
 
-func (db *Db) GetVideosFromRip(ripJob int64) ([]VideoFilesItem, error) {
-	result, err := db.db.Query(
+func (db *DbTx) GetVideosFromRip(ripJob int64) ([]VideoFilesItem, error) {
+	result, err := db.tx.Query(
 		`
 			SELECT
 				id,
@@ -1729,8 +1771,8 @@ type DiscSubsWithVideo struct {
 	SubtitleBlob string
 }
 
-func (db *Db) GetDiscSubsFromRip(ripJob int64) ([]DiscSubsWithVideo, error) {
-	results, err := db.db.Query(
+func (db *DbTx) GetDiscSubsFromRip(ripJob int64) ([]DiscSubsWithVideo, error) {
+	results, err := db.tx.Query(
 		`
 			SELECT
 				video_files.id as video_id,
@@ -1762,8 +1804,8 @@ func (db *Db) GetDiscSubsFromRip(ripJob int64) ([]DiscSubsWithVideo, error) {
 	return subsList, nil
 }
 
-func (db *Db) GetMatchesFromRip(ripJob int64) ([]MatchInfoItem, error) {
-	result, err := db.db.Query(
+func (db *DbTx) GetMatchesFromRip(ripJob int64) ([]MatchInfoItem, error) {
+	result, err := db.tx.Query(
 		`
 			SELECT
 				match_info.id,
@@ -1799,8 +1841,8 @@ func (db *Db) GetMatchesFromRip(ripJob int64) ([]MatchInfoItem, error) {
 	return matchItems, nil
 }
 
-func (db *Db) DeleteMatchesFromRip(ripJob int64) error {
-	_, err := db.db.Exec(
+func (db *DbTx) DeleteMatchesFromRip(ripJob int64) error {
+	_, err := db.tx.Exec(
 		`
 			DELETE
 			FROM video_files
@@ -1822,8 +1864,8 @@ func (db *Db) DeleteMatchesFromRip(ripJob int64) error {
 	return nil
 }
 
-func (db *Db) GetOstSubtitlesFromRip(ripJob int64) ([]OstDownloadsItem, error) {
-	result, err := db.db.Query(
+func (db *DbTx) GetOstSubtitlesFromRip(ripJob int64) ([]OstDownloadsItem, error) {
+	result, err := db.tx.Query(
 		`
 			SELECT
 				ost_downloads.id,
@@ -1859,4 +1901,99 @@ func (db *Db) GetOstSubtitlesFromRip(ripJob int64) ([]OstDownloadsItem, error) {
 		downloads = append(downloads, download)
 	}
 	return downloads, nil
+}
+
+// This function is used to stream information for TV show exports and act on them.
+// For each row, `cb` is called with the results. If `cb` or the sql driver returns
+// an error, it is immediately returned by this function.
+func (db *DbTx) ProcessTvExportsInfo(cb func(TvExportEntry) error) error {
+	result, err := db.tx.Query(
+		`
+            SELECT
+                tv_shows.title as tv_title,
+                tv_shows.original_release_year as tv_release_year,
+                tv_shows.tmdb_id as tv_tmdb,
+                tv_seasons.season_number as season_number,
+                tv_episodes.title as episode_title,
+                tv_episodes.episode_number as episode_number,
+                tv_episodes.tmdb_id as episode_tmdb,
+                video_files.blob_id as episode_blob
+            FROM video_files
+            JOIN tv_episodes ON
+                video_files.match_id = tv_episodes.id
+            JOIN tv_seasons ON
+                tv_episodes.tv_season_id = tv_seasons.id
+            JOIN tv_shows ON
+                tv_episodes.tv_show_id = tv_shows.id
+            WHERE video_type = 3
+            ORDER BY tv_episodes.id
+		`,
+	)
+	if err != nil {
+		return err
+	}
+	for result.Next() {
+		var entry TvExportEntry
+		if err := result.Scan(
+			&entry.TvTitle,
+			&entry.TvReleaseYear,
+			&entry.TvTmdb,
+			&entry.SeasonNumber,
+			&entry.EpisodeTitle,
+			&entry.EpisodeNumber,
+			&entry.EpisodeTmdb,
+			&entry.EpisodeBlob,
+		); err != nil {
+			return err
+		}
+		if err := cb(entry); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// This function is used to retrieve information for one TV show export and act on it.
+func (db *DbTx) FetchOneTvExportInfo(videoId int64) (TvExportEntry, error) {
+	result := db.tx.QueryRow(
+		`
+            SELECT
+                tv_shows.title as tv_title,
+                tv_shows.original_release_year as tv_release_year,
+                tv_shows.tmdb_id as tv_tmdb,
+                tv_seasons.season_number as season_number,
+                tv_episodes.title as episode_title,
+                tv_episodes.episode_number as episode_number,
+                tv_episodes.tmdb_id as episode_tmdb,
+                video_files.blob_id as episode_blob
+            FROM video_files
+            JOIN tv_episodes ON
+                video_files.match_id = tv_episodes.id
+            JOIN tv_seasons ON
+                tv_episodes.tv_season_id = tv_seasons.id
+            JOIN tv_shows ON
+                tv_episodes.tv_show_id = tv_shows.id
+            WHERE
+                video_files.video_type = 3
+                AND video_files.id = ?
+            LIMIT 1
+		`,
+		videoId,
+	)
+	var entry TvExportEntry
+	if err := result.Scan(
+		&entry.TvTitle,
+		&entry.TvReleaseYear,
+		&entry.TvTmdb,
+		&entry.SeasonNumber,
+		&entry.EpisodeTitle,
+		&entry.EpisodeNumber,
+		&entry.EpisodeTmdb,
+		&entry.EpisodeBlob,
+	); err != nil {
+		return TvExportEntry{}, err
+	}
+
+	return entry, nil
 }

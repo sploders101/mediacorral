@@ -3,6 +3,8 @@ module github.com/sploders101/mediacorral/backend
 go 1.24.4
 
 require (
+	github.com/agnivade/levenshtein v1.0.3
+	github.com/cyruzin/golang-tmdb v1.9.0
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/twitchtv/twirp v8.1.3+incompatible
@@ -11,6 +13,7 @@ require (
 )
 
 require (
+	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
