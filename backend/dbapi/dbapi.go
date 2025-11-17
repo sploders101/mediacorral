@@ -32,12 +32,12 @@ func NewDb(dbPath string) (Db, error) {
 	return Db{db: db}, nil
 }
 
-func (db Db) Begin() (DbTx, error) {
+func (db Db) Begin() (*DbTx, error) {
 	dbTx, err := db.db.Begin()
 	if err != nil {
-		return DbTx{}, err
+		return nil, err
 	}
-	return DbTx{tx: dbTx}, nil
+	return &DbTx{tx: dbTx}, nil
 }
 
 func (db Db) BeginTx(ctx context.Context, opts *sql.TxOptions) (DbTx, error) {

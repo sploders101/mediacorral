@@ -425,7 +425,7 @@ func (importer *OstImporter) GetSubtitles(
 		return GetSubtitlesResult{}, err
 	}
 	newSubsItem, err := blobController.AddOstSubtitles(
-		&dbTx,
+		dbTx,
 		videoType,
 		videoId,
 		subsResult.Filename,

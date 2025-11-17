@@ -154,7 +154,7 @@ func (importer *TmdbImporter) ImportMovie(
 
 	var posterBlob sql.NullInt64
 	if blobStorage != nil && results.PosterPath != "" {
-		posterItem, err := importer.getPoster(&db, results.PosterPath, *blobStorage)
+		posterItem, err := importer.getPoster(db, results.PosterPath, *blobStorage)
 		if err != nil {
 			slog.Error(
 				"An error occurred while fetching poster",
@@ -248,7 +248,7 @@ func (importer *TmdbImporter) ImportTv(
 
 	var posterBlob sql.NullInt64
 	if blobStorage != nil && results.PosterPath != "" {
-		posterItem, err := importer.getPoster(&db, results.PosterPath, *blobStorage)
+		posterItem, err := importer.getPoster(db, results.PosterPath, *blobStorage)
 		if err != nil {
 			slog.Error(
 				"An error occurred while fetching poster",
@@ -289,7 +289,7 @@ func (importer *TmdbImporter) ImportTv(
 
 		var posterBlob sql.NullInt64
 		if blobStorage != nil && results.PosterPath != "" {
-			posterItem, err := importer.getPoster(&db, seasonDetails.PosterPath, *blobStorage)
+			posterItem, err := importer.getPoster(db, seasonDetails.PosterPath, *blobStorage)
 			if err != nil {
 				slog.Error(
 					"An error occurred while fetching poster",
@@ -330,7 +330,7 @@ func (importer *TmdbImporter) ImportTv(
 			var thumbnailBlob sql.NullInt64
 			if blobStorage != nil && results.PosterPath != "" {
 				thumbnailItem, err := importer.getPoster(
-					&db,
+					db,
 					episodeDetails.StillPath,
 					*blobStorage,
 				)

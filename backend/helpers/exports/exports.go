@@ -86,6 +86,8 @@ func (exporter *ExportsManager) RebuildDir(
 		if err != nil {
 			return err
 		}
+		defer func() { _ = dbTx.Rollback() }()
+
 		if err := dbTx.ProcessTvExportsInfo(addTvEpisode(blobController, exportDir, exportConfig)); err != nil {
 			return err
 		}
