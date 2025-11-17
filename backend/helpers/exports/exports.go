@@ -24,7 +24,7 @@ type ExportsManager struct {
 	exportsBaseDir string
 	db             dbapi.Db
 
-	configMutex       sync.RWMutex
+	usageMutex        sync.RWMutex
 	configuredExports map[string]config.ExportsDir
 }
 
@@ -53,8 +53,8 @@ func (exporter *ExportsManager) RebuildDir(
 	exportName string,
 	blobController blobs.BlobStorageController,
 ) error {
-	exporter.configMutex.RLock()
-	defer exporter.configMutex.RUnlock()
+	exporter.usageMutex.RLock()
+	defer exporter.usageMutex.RUnlock()
 
 	exportDir := path.Join(exporter.exportsBaseDir, exportName)
 	exportConfig, ok := exporter.configuredExports[exportName]
@@ -106,8 +106,8 @@ func (exporter *ExportsManager) SpliceContent(
 		return err
 	}
 	defer func() { _ = dbTx.Rollback() }()
-	exporter.configMutex.RLock()
-	defer exporter.configMutex.RUnlock()
+	exporter.usageMutex.RLock()
+	defer exporter.usageMutex.RUnlock()
 
 	// Add media to filesystem
 	switch videoType {
