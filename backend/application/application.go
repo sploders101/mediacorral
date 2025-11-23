@@ -59,11 +59,11 @@ type Application struct {
 	db                 dbapi.Db
 	settings           applicationSettings
 	ripDir             string
-	analysisController *analysis.AnalysisController
-	blobStorage        *blobs.BlobStorageController
-	tmdbImporter       *tmdb.TmdbImporter
-	ostImporter        *opensubtitles.OstImporter
-	exportsManager     *exports.ExportsManager
+	AnalysisController *analysis.AnalysisController
+	BlobStorage        *blobs.BlobStorageController
+	TmdbImporter       *tmdb.TmdbImporter
+	OstImporter        *opensubtitles.OstImporter
+	ExportsManager     *exports.ExportsManager
 }
 
 func NewApplication(configData config.ConfigFile) (*Application, error) {
@@ -134,11 +134,11 @@ func NewApplication(configData config.ConfigFile) (*Application, error) {
 			driveControllers: driveControllers,
 		},
 		ripDir:             ripDir,
-		analysisController: analysisController,
-		blobStorage:        blobStorage,
-		tmdbImporter:       tmdbImporter,
-		ostImporter:        ostImporter,
-		exportsManager:     exportsManager,
+		AnalysisController: analysisController,
+		BlobStorage:        blobStorage,
+		TmdbImporter:       tmdbImporter,
+		OstImporter:        ostImporter,
+		ExportsManager:     exportsManager,
 	}, nil
 }
 
@@ -152,15 +152,15 @@ func (app *Application) GetDriveController(
 }
 
 func (app *Application) ImportTmdbTv(tmdbId int) (dbapi.TvShowsItem, error) {
-	return app.tmdbImporter.ImportTv(tmdbId, app.blobStorage)
+	return app.TmdbImporter.ImportTv(tmdbId, app.BlobStorage)
 }
 
 func (app *Application) ImportTmdbMovie(tmdbId int) (dbapi.MoviesItem, error) {
-	return app.tmdbImporter.ImportMovie(tmdbId, app.blobStorage)
+	return app.TmdbImporter.ImportMovie(tmdbId, app.BlobStorage)
 }
 
 func (app *Application) RebuildExportsDir(exportsDir string) error {
-	return app.exportsManager.RebuildDir(exportsDir, *app.blobStorage)
+	return app.ExportsManager.RebuildDir(exportsDir, *app.BlobStorage)
 }
 
 func (app *Application) GetAutorip() bool {
@@ -286,7 +286,7 @@ func (app *Application) ImportJob(jobId int64) error {
 				return nil
 			}
 
-			if err := app.blobStorage.AddVideoFile(dbTx, filePath, &jobId); err != nil {
+			if err := app.BlobStorage.AddVideoFile(dbTx, filePath, &jobId); err != nil {
 				slog.Error(
 					"An error occurred while importing job.",
 					"job", jobId,
@@ -341,7 +341,7 @@ func (app *Application) AutoimportMovie(tmdbId int32) (dbapi.MoviesItem, error) 
 	}
 
 	// No movie found, so let's import it
-	moviesItem, err = app.tmdbImporter.ImportMovie(int(tmdbId), app.blobStorage)
+	moviesItem, err = app.TmdbImporter.ImportMovie(int(tmdbId), app.BlobStorage)
 	if err != nil {
 		return dbapi.MoviesItem{}, err
 	}
@@ -388,7 +388,7 @@ func (app *Application) AnalyzeJob(jobId int64) error {
 		}
 		return nil
 	case suspectedContents.HasTvEpisodes():
-		if err := compareTvOstSubs(dbTx, app.ostImporter, app.blobStorage, jobId, suspectedContents.GetTvEpisodes()); err != nil {
+		if err := compareTvOstSubs(dbTx, app.OstImporter, app.BlobStorage, jobId, suspectedContents.GetTvEpisodes()); err != nil {
 			return fmt.Errorf("failed to analyze tv show: %w", err)
 		}
 		if err := dbTx.Commit(); err != nil {
@@ -420,7 +420,7 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 	var extractWg sync.WaitGroup
 	for _, videoFile := range videoFiles {
 		// Start new analysis job (to be joined later)
-		videoFilePath := app.blobStorage.GetFilePath(videoFile.BlobId)
+		videoFilePath := app.BlobStorage.GetFilePath(videoFile.BlobId)
 		extractWg.Add(1)
 		go func() {
 			dbTx, err := app.db.Begin()
@@ -441,7 +441,7 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 				return
 			}
 			for _, subtitleFile := range subtitleFiles {
-				if err := app.blobStorage.DeleteBlob(dbTx, subtitleFile.BlobId); err != nil {
+				if err := app.BlobStorage.DeleteBlob(dbTx, subtitleFile.BlobId); err != nil {
 					slog.Error(
 						"Failed to delete subtitles",
 						"error", err.Error(),
@@ -454,7 +454,7 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 			}
 
 			defer extractWg.Done()
-			result, err := app.analysisController.AnalyzeMkv(videoFilePath)
+			result, err := app.AnalysisController.AnalyzeMkv(videoFilePath)
 			if err != nil {
 				slog.Error(
 					"Failed to run analysis on video file",
@@ -505,7 +505,7 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 			}
 
 			if result.Subtitles != nil {
-				err := app.blobStorage.AddSubtitlesFile(dbTx, videoFile.Id, *result.Subtitles)
+				err := app.BlobStorage.AddSubtitlesFile(dbTx, videoFile.Id, *result.Subtitles)
 				if err != nil {
 					slog.Error(
 						"Failed to add subtitles file",
@@ -546,11 +546,11 @@ func (app *Application) PruneRipJob(jobId int64) error {
 	}
 
 	for _, blob := range untaggedBlobs {
-		if err := app.blobStorage.DeleteBlob(dbTx, blob.VideoBlob); err != nil {
+		if err := app.BlobStorage.DeleteBlob(dbTx, blob.VideoBlob); err != nil {
 			return fmt.Errorf("failed to delete video blob %s: %w", blob.VideoBlob, err)
 		}
 		if blob.SubtitleBlob.Valid {
-			if err := app.blobStorage.DeleteBlob(dbTx, blob.SubtitleBlob.String); err != nil {
+			if err := app.BlobStorage.DeleteBlob(dbTx, blob.SubtitleBlob.String); err != nil {
 				return fmt.Errorf(
 					"failed to delete subtitle blob %s: %w",
 					blob.SubtitleBlob.String,
