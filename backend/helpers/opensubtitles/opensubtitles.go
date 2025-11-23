@@ -390,18 +390,12 @@ func (importer *OstImporter) FindBestSubtitles(tmdbId int32) (FindBestSubtitlesR
 }
 
 func (importer *OstImporter) GetSubtitles(
-	db dbapi.Db,
-	blobController blobs.BlobStorageController,
+	dbTx *dbapi.DbTx,
+	blobController *blobs.BlobStorageController,
 	videoType proto.VideoType,
 	videoId int64,
 	tmdbId int32,
 ) (GetSubtitlesResult, error) {
-	dbTx, err := db.Begin()
-	if err != nil {
-		return GetSubtitlesResult{}, err
-	}
-	defer func() { _ = dbTx.Rollback() }()
-
 	results, err := dbTx.GetOstDownloadItemsByMatch(videoType, videoId)
 	if err != nil {
 		return GetSubtitlesResult{}, err
@@ -432,9 +426,6 @@ func (importer *OstImporter) GetSubtitles(
 		subsResult.Subtitles,
 	)
 	if err != nil {
-		return GetSubtitlesResult{}, err
-	}
-	if err := dbTx.Commit(); err != nil {
 		return GetSubtitlesResult{}, err
 	}
 	return GetSubtitlesResult{
