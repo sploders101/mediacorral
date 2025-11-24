@@ -159,10 +159,6 @@ func (app *Application) ImportTmdbMovie(tmdbId int) (dbapi.MoviesItem, error) {
 	return app.TmdbImporter.ImportMovie(tmdbId, app.BlobStorage)
 }
 
-func (app *Application) RebuildExportsDir(exportsDir string) error {
-	return app.ExportsManager.RebuildDir(exportsDir, *app.BlobStorage)
-}
-
 func (app *Application) GetAutorip() bool {
 	app.settings.mutex.RLock()
 	defer app.settings.mutex.RUnlock()

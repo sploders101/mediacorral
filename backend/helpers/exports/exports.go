@@ -51,7 +51,7 @@ func NewExportsManager(
 
 func (exporter *ExportsManager) RebuildDir(
 	exportName string,
-	blobController blobs.BlobStorageController,
+	blobController *blobs.BlobStorageController,
 ) error {
 	exporter.usageMutex.RLock()
 	defer exporter.usageMutex.RUnlock()
@@ -99,7 +99,7 @@ func (exporter *ExportsManager) RebuildDir(
 func (exporter *ExportsManager) SpliceContent(
 	videoType proto.VideoType,
 	videoId int64,
-	blobController blobs.BlobStorageController,
+	blobController *blobs.BlobStorageController,
 ) error {
 	dbTx, err := exporter.db.Begin()
 	if err != nil {
@@ -131,7 +131,7 @@ func (exporter *ExportsManager) SpliceContent(
 }
 
 func addTvEpisode(
-	blobController blobs.BlobStorageController,
+	blobController *blobs.BlobStorageController,
 	exportsDir string,
 	exportConfig config.ExportsDir,
 ) func(dbapi.TvExportEntry) error {
