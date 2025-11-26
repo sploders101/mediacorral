@@ -9,13 +9,23 @@ import (
 	"github.com/sploders101/mediacorral/backend/application"
 	drive_controller_v1 "github.com/sploders101/mediacorral/backend/gen/mediacorral/drive_controller/v1"
 	server_pb "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
+
 	"github.com/twitchtv/twirp"
+	gcodes "google.golang.org/grpc/codes"
+	gstatus "google.golang.org/grpc/status"
 )
 
 func convertError(err error) error {
-	switch {
-	case errors.Is(err, application.ErrNotFound):
+	if errors.Is(err, application.ErrNotFound) {
 		return twirp.NotFound.Error(err.Error())
+	}
+	if status, ok := gstatus.FromError(err); ok {
+		switch status.Code() {
+		case gcodes.NotFound:
+			return twirp.NotFound.Error(status.Message())
+		case gcodes.Unknown:
+			return twirp.Unknown.Error(status.Message())
+		}
 	}
 	return twirp.Unknown.Error(err.Error())
 }
@@ -297,13 +307,13 @@ func (server ApiServer) ListDrives(
 	var drives []*server_pb.DiscDrive
 
 	if err := server.app.ForeachDriveController(
-		func(controller string, client drive_controller_v1.DriveControllerServiceClient) error {
+		func(controller string, client drive_controller_v1.DriveControllerServiceClient) (bool, error) {
 			results, err := client.GetDriveCount(
 				ctx,
 				drive_controller_v1.GetDriveCountRequest_builder{}.Build(),
 			)
 			if err != nil {
-				return err
+				return false, err
 			}
 			driveCount := results.GetDriveCount()
 			for driveNum := range driveCount {
@@ -314,7 +324,7 @@ func (server ApiServer) ListDrives(
 					}.Build(),
 				)
 				if err != nil {
-					return err
+					return false, err
 				}
 
 				drives = append(drives, server_pb.DiscDrive_builder{
@@ -323,7 +333,7 @@ func (server ApiServer) ListDrives(
 					Name:       driveMeta.GetName(),
 				}.Build())
 			}
-			return nil
+			return true, nil
 		},
 	); err != nil {
 		return nil, convertError(err)
@@ -339,7 +349,17 @@ func (server ApiServer) StartRipJob(
 	ctx context.Context,
 	request *server_pb.StartRipJobRequest,
 ) (*server_pb.StartRipJobResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	drive := request.GetDrive()
+	ripJobItem, err := server.app.RipMedia(
+		drive.GetController(),
+		drive.GetDriveId(),
+		request.GetSuspectedContents(),
+		request.GetAutoeject(),
+	)
+	if err != nil {
+		return nil, convertError(err)
+	}
+	return server_pb.StartRipJobResponse_builder{JobId: ripJobItem.Id}.Build(), nil
 }
 
 // Gets the current status of a rip job
@@ -347,7 +367,34 @@ func (server ApiServer) GetRipJobStatus(
 	ctx context.Context,
 	request *server_pb.GetRipJobStatusRequest,
 ) (*server_pb.GetRipJobStatusResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	var status *drive_controller_v1.RipStatus
+	if err := server.app.ForeachDriveController(
+		func(driveController string, client drive_controller_v1.DriveControllerServiceClient) (bool, error) {
+			resp, err := client.GetJobStatus(
+				ctx,
+				drive_controller_v1.GetJobStatusRequest_builder{
+					JobId: request.GetJobId(),
+				}.Build(),
+			)
+			if err != nil {
+				if gstatus.Code(err) == gcodes.NotFound {
+					return true, nil
+				}
+				return false, err
+			}
+			status = resp
+			return false, nil
+		},
+	); err != nil {
+		return nil, convertError(err)
+	}
+
+	if status == nil {
+		return nil, twirp.NotFound.Error("The requested job was not found on any drive controller.")
+	}
+	return server_pb.GetRipJobStatusResponse_builder{
+		Status: status,
+	}.Build(), nil
 }
 
 // Ejects a disc
@@ -355,7 +402,21 @@ func (server ApiServer) Eject(
 	ctx context.Context,
 	request *server_pb.EjectRequest,
 ) (*server_pb.EjectResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	drive := request.GetDrive()
+	controller, ok := server.app.GetDriveController(drive.GetController())
+	if !ok {
+		return nil, twirp.NotFound.Error("The requested drive controller was not found.")
+	}
+	_, err := controller.Eject(
+		ctx,
+		drive_controller_v1.EjectRequest_builder{
+			DriveId: drive.GetDriveId(),
+		}.Build(),
+	)
+	if err != nil {
+		return nil, convertError(err)
+	}
+	return server_pb.EjectResponse_builder{}.Build(), nil
 }
 
 // Retracts a disc
@@ -363,7 +424,21 @@ func (server ApiServer) Retract(
 	ctx context.Context,
 	request *server_pb.RetractRequest,
 ) (*server_pb.RetractResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	drive := request.GetDrive()
+	controller, ok := server.app.GetDriveController(drive.GetController())
+	if !ok {
+		return nil, twirp.NotFound.Error("The requested drive controller was not found.")
+	}
+	_, err := controller.Retract(
+		ctx,
+		drive_controller_v1.RetractRequest_builder{
+			DriveId: drive.GetDriveId(),
+		}.Build(),
+	)
+	if err != nil {
+		return nil, convertError(err)
+	}
+	return server_pb.RetractResponse_builder{}.Build(), nil
 }
 
 // Gets the current state of the drive
@@ -371,7 +446,20 @@ func (server ApiServer) GetDriveState(
 	ctx context.Context,
 	request *server_pb.GetDriveStateRequest,
 ) (*drive_controller_v1.DriveState, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	controller, ok := server.app.GetDriveController(request.GetControllerId())
+	if !ok {
+		return nil, twirp.NotFound.Error("The requested drive controller was not found.")
+	}
+	resp, err := controller.GetDriveState(
+		ctx,
+		drive_controller_v1.GetDriveStateRequest_builder{
+			DriveId: request.GetDriveId(),
+		}.Build(),
+	)
+	if err != nil {
+		return nil, convertError(err)
+	}
+	return resp, nil
 }
 
 // Lists the movies in the database

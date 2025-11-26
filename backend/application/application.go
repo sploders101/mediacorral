@@ -146,14 +146,24 @@ func NewApplication(configData config.ConfigFile) (*Application, error) {
 	}, nil
 }
 
+// Iterate over each drive controller while respecting the locks that guard them
+//
+// `cb` is run for each drive controller. If it returns `false` or an error, the loop will cease.
+// If `cb` returned an error, it will be returned by this function.
+// The loop will run sequentially, so synchronization primitives are not necessary for accessing
+// variables in the immediately-surrounding scope.
 func (app *Application) ForeachDriveController(
-	cb func(controller string, client drive_control.DriveControllerServiceClient) error,
+	cb func(controller string, client drive_control.DriveControllerServiceClient) (cont bool, err error),
 ) error {
 	app.settings.mutex.RLock()
 	defer app.settings.mutex.RUnlock()
 	for controller, client := range app.settings.driveControllers {
-		if err := cb(controller, client); err != nil {
+		cont, err := cb(controller, client)
+		if err != nil {
 			return err
+		}
+		if !cont {
+			break
 		}
 	}
 	return nil
