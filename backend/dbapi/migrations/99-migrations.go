@@ -13,12 +13,12 @@ func InitDb(db *sql.DB) error {
 	for {
 		err := db.QueryRow(`SELECT value FROM migrations WHERE key = 'version'`).Scan(&version)
 		if err != nil {
-			if err, ok := err.(sqlite3.Error); ok {
-				switch err.Code {
+			if sqliteErr, ok := err.(sqlite3.Error); ok {
+				switch sqliteErr.Code {
 				case sqlite3.ErrError:
 					version = 0
 				default:
-					return err
+					return sqliteErr
 				}
 			} else {
 				return err
@@ -30,7 +30,7 @@ func InitDb(db *sql.DB) error {
 			slog.Info("Initializing database")
 			err := MigrationInit(db)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to initialize migration: %w", err)
 			}
 		case 1:
 			return nil

@@ -3,7 +3,6 @@ package exports
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"os"
 	"path"
 	"strings"
@@ -158,23 +157,24 @@ func addTvEpisode(
 		episodePath := path.Join(seasonFolder, episodeFilename)
 
 		var err error
-		switch exportConfig.LinkType {
-		case config.EXPORT_LINK_TYPE_SYMBOLIC:
-			err = blobController.SymbolicLink(entry.EpisodeBlob, episodePath)
-		case config.EXPORT_LINK_TYPE_HARD:
-			err = blobController.HardLink(entry.EpisodeBlob, episodePath)
-		}
-		if errors.Is(err, os.ErrNotExist) {
-			// Don't return an error here. Just log it and move on.
-			slog.Error(
-				"Blob not found while building exports directory.",
-				"type",
-				"MissingBlob",
-				"blob",
-				entry.EpisodeBlob,
-				"filePath",
-				episodePath,
-			)
+		for {
+			switch exportConfig.LinkType {
+			case config.EXPORT_LINK_TYPE_SYMBOLIC:
+				err = blobController.SymbolicLink(entry.EpisodeBlob, episodePath)
+			case config.EXPORT_LINK_TYPE_HARD:
+				err = blobController.HardLink(entry.EpisodeBlob, episodePath)
+			}
+			if errors.Is(err, os.ErrNotExist) {
+				if err := os.MkdirAll(seasonFolder, 0755); err != nil {
+					if errors.Is(err, os.ErrExist) {
+						return err
+					} else {
+						return fmt.Errorf("couldn't create season folder: %w", err)
+					}
+				}
+				continue
+			}
+			break
 		}
 		if err != nil {
 			return err

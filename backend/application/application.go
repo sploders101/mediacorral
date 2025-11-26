@@ -26,6 +26,7 @@ import (
 	"github.com/sploders101/mediacorral/backend/helpers/opensubtitles"
 	"github.com/sploders101/mediacorral/backend/helpers/tmdb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -75,18 +76,18 @@ func NewApplication(configData config.ConfigFile) (*Application, error) {
 	// Set up DB
 	db, err := dbapi.NewDb(sqlitePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open db: %w", err)
 	}
 
 	// Create data directories
 	for _, dir := range []string{ripDir, blobDir, exportsDir} {
 		if err := os.Mkdir(dir, 0755); err != nil && !errors.Is(err, os.ErrExist) {
-			return nil, err
+			return nil, fmt.Errorf("failed to make directories: %w", err)
 		}
 	}
 
 	// Set up helpers
-	analysisController, err := analysis.NewController(configData.AnalysisCli)
+	analysisController, err := analysis.NewController(*configData.AnalysisCli)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set up analysis controller: %w", err)
 	}
@@ -116,7 +117,10 @@ func NewApplication(configData config.ConfigFile) (*Application, error) {
 		len(configData.DriveControllers),
 	)
 	for controllerName, controllerUrl := range configData.DriveControllers {
-		conn, err := grpc.NewClient(controllerUrl)
+		conn, err := grpc.NewClient(
+			controllerUrl,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
 		if err != nil {
 			return nil, fmt.Errorf(
 				"failed create drive controller client for \"%s\": %w",
@@ -142,6 +146,18 @@ func NewApplication(configData config.ConfigFile) (*Application, error) {
 	}, nil
 }
 
+func (app *Application) ForeachDriveController(
+	cb func(controller string, client drive_control.DriveControllerServiceClient) error,
+) error {
+	app.settings.mutex.RLock()
+	defer app.settings.mutex.RUnlock()
+	for controller, client := range app.settings.driveControllers {
+		if err := cb(controller, client); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 func (app *Application) GetDriveController(
 	controller string,
 ) (drive_control.DriveControllerServiceClient, bool) {

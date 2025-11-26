@@ -26,7 +26,7 @@ func NewDb(dbPath string) (Db, error) {
 		return Db{}, fmt.Errorf("an error occurred while opening the database: %w", err)
 	}
 	if err := migrations.InitDb(db); err != nil {
-		return Db{}, err
+		return Db{}, fmt.Errorf("failed to initialize database: %w", err)
 	}
 
 	return Db{db: db}, nil

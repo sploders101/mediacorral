@@ -49,10 +49,14 @@ func (server ApiServer) SearchTmdbMulti(
 	ctx context.Context,
 	request *server_pb.SearchTmdbMultiRequest,
 ) (*server_pb.SearchTmdbMultiResponse, error) {
+	var page uint32 = 1
+	if request.HasPage() {
+		page = request.GetPage()
+	}
 	resp, err := server.app.TmdbImporter.QueryAny(
 		request.GetQuery(),
 		request.GetLanguage(),
-		request.GetPage(),
+		page,
 	)
 	if err != nil {
 		return nil, convertError(err)
@@ -290,7 +294,44 @@ func (server ApiServer) ListDrives(
 	ctx context.Context,
 	request *server_pb.ListDrivesRequest,
 ) (*server_pb.ListDrivesResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	var drives []*server_pb.DiscDrive
+
+	if err := server.app.ForeachDriveController(
+		func(controller string, client drive_controller_v1.DriveControllerServiceClient) error {
+			results, err := client.GetDriveCount(
+				ctx,
+				drive_controller_v1.GetDriveCountRequest_builder{}.Build(),
+			)
+			if err != nil {
+				return err
+			}
+			driveCount := results.GetDriveCount()
+			for driveNum := range driveCount {
+				driveMeta, err := client.GetDriveMeta(
+					ctx,
+					drive_controller_v1.GetDriveMetaRequest_builder{
+						DriveId: driveNum,
+					}.Build(),
+				)
+				if err != nil {
+					return err
+				}
+
+				drives = append(drives, server_pb.DiscDrive_builder{
+					Controller: controller,
+					DriveId:    driveNum,
+					Name:       driveMeta.GetName(),
+				}.Build())
+			}
+			return nil
+		},
+	); err != nil {
+		return nil, convertError(err)
+	}
+
+	return server_pb.ListDrivesResponse_builder{
+		Drives: drives,
+	}.Build(), nil
 }
 
 // Starts a rip job
@@ -485,7 +526,7 @@ func (server ApiServer) PruneRipJob(
 	return nil, twirp.Unimplemented.Error("TODO")
 }
 
-func RegisterApiService(server *http.ServeMux, apiServer ApiServer) {
-	apiHandler := server_pb.NewCoordinatorApiServiceServer(apiServer)
-	server.Handle("PUT "+apiHandler.PathPrefix(), apiHandler)
+func RegisterApiService(server *http.ServeMux, app *application.Application) {
+	apiHandler := server_pb.NewCoordinatorApiServiceServer(ApiServer{app: app})
+	server.Handle("POST "+apiHandler.PathPrefix(), apiHandler)
 }

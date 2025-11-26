@@ -265,22 +265,7 @@ func (controller *BlobStorageController) HardLink(blobId string, destination str
 	sourcePath := controller.GetFilePath(blobId)
 	err := os.Link(sourcePath, destination)
 	if err != nil {
-		if errors.Is(err, os.ErrExist) {
-			err := os.Remove(destination)
-			if err != nil {
-				return fmt.Errorf(
-					"failed to delete existing hard link for \"%s\": %w",
-					destination,
-					err,
-				)
-			}
-			err = os.Link(sourcePath, destination)
-			if err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
+		return err
 	}
 	return nil
 }

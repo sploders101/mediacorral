@@ -9,27 +9,27 @@ import (
 )
 
 type ConfigFile struct {
-	AnalysisCli      string                `yaml:"analysis_cli"`
-	BasePath         *string               `yaml:"base_path"`
-	DataDirectory    string                `yaml:"data_directory"`
-	TmdbApiKey       string                `yaml:"tmdb_api_key"`
-	OstLogin         OstLoginConfig        `yaml:"ost_login"`
-	WebServeAddress  string                `yaml:"web_serve_address"`
-	GrpcServeAddress string                `yaml:"grpc_serve_address"`
-	ExportsDirs      map[string]ExportsDir `yaml:"exports_dirs"`
-	EnableAutorip    bool                  `yaml:"enable_autorip"`
-	DriveControllers map[string]string     `yaml:"drive_controllers"`
+	AnalysisCli      *string               `json:"analysis_cli"`
+	BasePath         *string               `json:"base_path"`
+	DataDirectory    string                `json:"data_directory"`
+	TmdbApiKey       string                `json:"tmdb_api_key"`
+	OstLogin         OstLoginConfig        `json:"ost_login"`
+	WebServeAddress  string                `json:"web_serve_address"`
+	GrpcServeAddress string                `json:"grpc_serve_address"`
+	ExportsDirs      map[string]ExportsDir `json:"exports_dirs"`
+	EnableAutorip    bool                  `json:"enable_autorip"`
+	DriveControllers map[string]string     `json:"drive_controllers"`
 }
 
 type OstLoginConfig struct {
-	ApiKey   string `yaml:"api_key"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	ApiKey   string `json:"api_key"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type ExportsDir struct {
-	MediaType ExportMediaType `yaml:"media_type"`
-	LinkType  ExportLinkType  `yaml:"link_type"`
+	MediaType ExportMediaType `json:"media_type"`
+	LinkType  ExportLinkType  `json:"link_type"`
 }
 
 type ExportMediaType string
@@ -72,18 +72,19 @@ func LoadConfig() (ConfigFile, error) {
 		config.DataDirectory = path.Join(*config.BasePath, config.DataDirectory)
 	}
 
-	if config.AnalysisCli == "" {
-		config.AnalysisCli = "mediacorral-analysis-cli"
+	if config.AnalysisCli == nil {
+		defaultAnalysisCli := "mediacorral-analysis-cli"
+		config.AnalysisCli = &defaultAnalysisCli
 	}
 
 	for _, details := range config.ExportsDirs {
-		if slices.Contains([]ExportMediaType{
+		if !slices.Contains([]ExportMediaType{
 			EXPORT_MEDIA_TYPE_TV,
 			EXPORT_MEDIA_TYPE_MOVIES,
 		}, details.MediaType) {
 			return ConfigFile{}, fmt.Errorf("invalid media_type %s", details.MediaType)
 		}
-		if slices.Contains([]ExportLinkType{
+		if !slices.Contains([]ExportLinkType{
 			EXPORT_LINK_TYPE_SYMBOLIC,
 			EXPORT_LINK_TYPE_HARD,
 		}, details.LinkType) {
