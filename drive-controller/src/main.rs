@@ -265,7 +265,7 @@ impl DriveControllerService for DriveController {
 
         let (sender, receiver) = watch::channel(RipStatus {
             job_id: request.job_id,
-            status: JobStatus::Unspecified.into(),
+            status: JobStatus::Running.into(),
             cprog_title: String::from("Starting Rip..."),
             tprog_title: String::from("Starting Rip..."),
             progress: Some(Progress {
