@@ -2,7 +2,6 @@ package blobs
 
 import (
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -77,7 +76,7 @@ func (controller *BlobStorageController) AddVideoFile(
 		ripJobSql.Valid = true
 		ripJobSql.Int64 = *ripJob
 	}
-	record, err := db.InsertVideoFile(
+	_, err := db.InsertVideoFile(
 		proto.VideoType_VIDEO_TYPE_UNSPECIFIED,
 		sql.NullInt64{},
 		videoUuid,
@@ -90,44 +89,6 @@ func (controller *BlobStorageController) AddVideoFile(
 	)
 	if err != nil {
 		return err
-	}
-
-	// Collect metadata & subtitles
-
-	metadata, err := controller.analysisController.AnalyzeMkv(newPath)
-	if err != nil {
-		return fmt.Errorf("error running analyzer: %w", err)
-	}
-
-	// Insert Metadata
-
-	videoHash, err := hex.DecodeString(metadata.VideoHash)
-	if err != nil {
-		return fmt.Errorf("error decoding video hash from analyzer: %w", err)
-	}
-	var extendedMetadata sql.Null[*proto.VideoExtendedMetadata]
-	if metadata.ExtendedMetadata != nil {
-		extendedMetadata.Valid = true
-		extendedMetadata.V = metadata.ExtendedMetadata.IntoProto()
-	}
-	if err := db.AddVideoMetadata(
-		record.Id,
-		metadata.ResolutionWidth,
-		metadata.ResolutionHeight,
-		metadata.Duration,
-		videoHash,
-		extendedMetadata,
-	); err != nil {
-		return err
-	}
-
-	// Insert Subtitles
-
-	if metadata.Subtitles != nil {
-		err := controller.AddSubtitlesFile(db, record.Id, *metadata.Subtitles)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

@@ -203,10 +203,7 @@ func (app *Application) RipMedia(
 	suspectedContents *server_proto.SuspectedContents,
 	autoeject bool,
 ) (dbapi.RipJobsItem, error) {
-	app.settings.mutex.RLock()
-	defer app.settings.mutex.RUnlock()
-
-	controller, ok := app.settings.driveControllers[driveController]
+	controller, ok := app.GetDriveController(driveController)
 	if !ok {
 		return dbapi.RipJobsItem{}, ErrNotFound
 	}
@@ -344,6 +341,10 @@ func (app *Application) ImportJob(jobId int64) error {
 		return fmt.Errorf("failed to commit changes to db: %w", err)
 	}
 
+	go func() {
+		_ = app.ReprocessRipJob(jobId, true)
+	}()
+
 	return nil
 }
 
@@ -411,7 +412,13 @@ func (app *Application) AnalyzeJob(jobId int64) error {
 		}
 		return nil
 	case suspectedContents.HasTvEpisodes():
-		if err := compareTvOstSubs(dbTx, app.OstImporter, app.BlobStorage, jobId, suspectedContents.GetTvEpisodes()); err != nil {
+		if err := compareTvOstSubs(
+			dbTx,
+			app.OstImporter,
+			app.BlobStorage,
+			jobId,
+			suspectedContents.GetTvEpisodes(),
+		); err != nil {
 			return fmt.Errorf("failed to analyze tv show: %w", err)
 		}
 		if err := dbTx.Commit(); err != nil {

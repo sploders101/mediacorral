@@ -21,8 +21,20 @@ func (server CoordinatorNotificationService) DiscInserted(
 	ctx context.Context,
 	request *server_pb.DiscInsertedRequest,
 ) (*server_pb.DiscInsertedResponse, error) {
+	slog.Debug(
+		"Disc inserted",
+		"controller", request.GetControllerId(),
+		"driveId", request.GetDriveId(),
+		"discName", request.GetName(),
+	)
 	if server.app.GetAutorip() {
 		if _, err := server.app.RipMedia(request.GetControllerId(), request.GetDriveId(), nil, true); err != nil {
+			slog.Error(
+				"An error occurred while dispatching rip job",
+				"controllerId", request.GetControllerId(),
+				"driveId", request.GetDriveId(),
+				"error", err.Error(),
+			)
 			return nil, status.Errorf(
 				codes.Unknown,
 				"an unknown error occurred while ripping: %s",
@@ -30,6 +42,12 @@ func (server CoordinatorNotificationService) DiscInserted(
 			)
 		}
 	}
+	slog.Debug(
+		"Finished processing disc insertion",
+		"controller", request.GetControllerId(),
+		"driveId", request.GetDriveId(),
+		"discName", request.GetName(),
+	)
 	return server_pb.DiscInsertedResponse_builder{}.Build(), nil
 }
 
@@ -37,6 +55,11 @@ func (server CoordinatorNotificationService) RipFinished(
 	ctx context.Context,
 	request *server_pb.RipFinishedRequest,
 ) (*server_pb.RipFinishedResponse, error) {
+	slog.Debug(
+		"Rip finished",
+		"controller", request.GetControllerId(),
+		"ripJob", request.GetJobId(),
+	)
 	bgCtx := context.Background()
 	controller, ok := server.app.GetDriveController(request.GetControllerId())
 	if !ok {
@@ -48,6 +71,11 @@ func (server CoordinatorNotificationService) RipFinished(
 		drive_controllerv1.GetJobStatusRequest_builder{JobId: request.GetJobId()}.Build(),
 	)
 	if err != nil {
+		slog.Error(
+			"Controller GetJobStatus failed",
+			"controller", request.GetControllerId(),
+			"ripJob", request.GetJobId(),
+		)
 		return nil, status.Errorf(
 			codes.Unknown,
 			"controller failed to respond with job status: %s",
@@ -91,6 +119,11 @@ func (server CoordinatorNotificationService) RipFinished(
 		)
 	}
 
+	slog.Debug(
+		"Finished processing rip job",
+		"controller", request.GetControllerId(),
+		"ripJob", request.GetJobId(),
+	)
 	return server_pb.RipFinishedResponse_builder{}.Build(), nil
 }
 

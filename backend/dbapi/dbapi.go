@@ -21,7 +21,7 @@ type DbTx struct {
 }
 
 func NewDb(dbPath string) (Db, error) {
-	db, err := sql.Open("sqlite3", dbPath + "?_timeout=60000")
+	db, err := sql.Open("sqlite3", dbPath+"?_timeout=60000")
 	if err != nil {
 		return Db{}, fmt.Errorf("an error occurred while opening the database: %w", err)
 	}
@@ -1927,7 +1927,8 @@ func (db *DbTx) ProcessTvExportsInfo(cb func(TvExportEntry) error) error {
                 tv_episodes.tv_season_id = tv_seasons.id
             JOIN tv_shows ON
                 tv_episodes.tv_show_id = tv_shows.id
-            WHERE video_type = 3
+            WHERE
+            	video_files.video_type = 3
             ORDER BY tv_episodes.id
 		`,
 	)
