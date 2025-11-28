@@ -93,6 +93,9 @@ service CoordinatorApiService {
   // Adds a suspicion to a job
   rpc SuspectJob (SuspectJobRequest) returns (SuspectJobResponse);
 
+  // Re-analyzes a job based on suspicion
+  rpc ReanalyzeJob (ReanalyzeJobRequest) returns (ReanalyzeJobResponse);
+
   // Gets a list of jobs containing untagged files
   rpc GetUntaggedJobs (GetUntaggedJobsRequest) returns (GetUntaggedJobsResponse);
 
@@ -385,6 +388,11 @@ message SuspectJobRequest {
   SuspectedContents suspicion = 2;
 }
 message SuspectJobResponse {}
+
+message ReanalyzeJobRequest {
+  int64 job_id = 1;
+}
+message ReanalyzeJobResponse {}
 
 message GetUntaggedJobsRequest {
   uint32 skip = 1;

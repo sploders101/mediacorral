@@ -823,7 +823,15 @@ func (server ApiServer) SuspectJob(
 	return server_pb.SuspectJobResponse_builder{}.Build(), nil
 }
 
-// TODO: Include commit f38a12e: Allow re-analyzing jobs
+func (server ApiServer) ReanalyzeJob(
+	ctx context.Context,
+	request *server_pb.ReanalyzeJobRequest,
+) (*server_pb.ReanalyzeJobResponse, error) {
+	if err := server.app.AnalyzeJob(request.GetJobId()); err != nil {
+		return nil, convertError(err)
+	}
+	return server_pb.ReanalyzeJobResponse_builder{}.Build(), nil
+}
 
 // Gets a list of jobs containing untagged files
 func (server ApiServer) GetUntaggedJobs(

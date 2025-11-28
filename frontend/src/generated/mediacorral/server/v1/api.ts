@@ -812,6 +812,20 @@ export interface SuspectJobRequest {
 export interface SuspectJobResponse {
 }
 /**
+ * @generated from protobuf message mediacorral.server.v1.ReanalyzeJobRequest
+ */
+export interface ReanalyzeJobRequest {
+    /**
+     * @generated from protobuf field: int64 job_id = 1
+     */
+    jobId: bigint;
+}
+/**
+ * @generated from protobuf message mediacorral.server.v1.ReanalyzeJobResponse
+ */
+export interface ReanalyzeJobResponse {
+}
+/**
  * @generated from protobuf message mediacorral.server.v1.GetUntaggedJobsRequest
  */
 export interface GetUntaggedJobsRequest {
@@ -4493,6 +4507,91 @@ class SuspectJobResponse$Type extends MessageType<SuspectJobResponse> {
  */
 export const SuspectJobResponse = new SuspectJobResponse$Type();
 // @generated message type with reflection information, may provide speed optimized methods
+class ReanalyzeJobRequest$Type extends MessageType<ReanalyzeJobRequest> {
+    constructor() {
+        super("mediacorral.server.v1.ReanalyzeJobRequest", [
+            { no: 1, name: "job_id", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
+        ]);
+    }
+    create(value?: PartialMessage<ReanalyzeJobRequest>): ReanalyzeJobRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.jobId = 0n;
+        if (value !== undefined)
+            reflectionMergePartial<ReanalyzeJobRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ReanalyzeJobRequest): ReanalyzeJobRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* int64 job_id */ 1:
+                    message.jobId = reader.int64().toBigInt();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ReanalyzeJobRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* int64 job_id = 1; */
+        if (message.jobId !== 0n)
+            writer.tag(1, WireType.Varint).int64(message.jobId);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.ReanalyzeJobRequest
+ */
+export const ReanalyzeJobRequest = new ReanalyzeJobRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ReanalyzeJobResponse$Type extends MessageType<ReanalyzeJobResponse> {
+    constructor() {
+        super("mediacorral.server.v1.ReanalyzeJobResponse", []);
+    }
+    create(value?: PartialMessage<ReanalyzeJobResponse>): ReanalyzeJobResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<ReanalyzeJobResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ReanalyzeJobResponse): ReanalyzeJobResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ReanalyzeJobResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.ReanalyzeJobResponse
+ */
+export const ReanalyzeJobResponse = new ReanalyzeJobResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
 class GetUntaggedJobsRequest$Type extends MessageType<GetUntaggedJobsRequest> {
     constructor() {
         super("mediacorral.server.v1.GetUntaggedJobsRequest", [
@@ -5370,6 +5469,7 @@ export const CoordinatorApiService = new ServiceType("mediacorral.server.v1.Coor
     { name: "RenameJob", options: {}, I: RenameJobRequest, O: RenameJobResponse },
     { name: "DeleteJob", options: {}, I: DeleteJobRequest, O: DeleteJobResponse },
     { name: "SuspectJob", options: {}, I: SuspectJobRequest, O: SuspectJobResponse },
+    { name: "ReanalyzeJob", options: {}, I: ReanalyzeJobRequest, O: ReanalyzeJobResponse },
     { name: "GetUntaggedJobs", options: {}, I: GetUntaggedJobsRequest, O: GetUntaggedJobsResponse },
     { name: "GetJobCatalogueInfo", options: {}, I: GetJobCatalogueInfoRequest, O: GetJobCatalogueInfoResponse },
     { name: "ReprocessJob", options: {}, I: ReprocessJobRequest, O: ReprocessJobResponse },

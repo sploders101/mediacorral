@@ -49,6 +49,7 @@ const (
 	CoordinatorApiService_RenameJob_FullMethodName            = "/mediacorral.server.v1.CoordinatorApiService/RenameJob"
 	CoordinatorApiService_DeleteJob_FullMethodName            = "/mediacorral.server.v1.CoordinatorApiService/DeleteJob"
 	CoordinatorApiService_SuspectJob_FullMethodName           = "/mediacorral.server.v1.CoordinatorApiService/SuspectJob"
+	CoordinatorApiService_ReanalyzeJob_FullMethodName         = "/mediacorral.server.v1.CoordinatorApiService/ReanalyzeJob"
 	CoordinatorApiService_GetUntaggedJobs_FullMethodName      = "/mediacorral.server.v1.CoordinatorApiService/GetUntaggedJobs"
 	CoordinatorApiService_GetJobCatalogueInfo_FullMethodName  = "/mediacorral.server.v1.CoordinatorApiService/GetJobCatalogueInfo"
 	CoordinatorApiService_ReprocessJob_FullMethodName         = "/mediacorral.server.v1.CoordinatorApiService/ReprocessJob"
@@ -117,6 +118,8 @@ type CoordinatorApiServiceClient interface {
 	DeleteJob(ctx context.Context, in *DeleteJobRequest, opts ...grpc.CallOption) (*DeleteJobResponse, error)
 	// Adds a suspicion to a job
 	SuspectJob(ctx context.Context, in *SuspectJobRequest, opts ...grpc.CallOption) (*SuspectJobResponse, error)
+	// Re-analyzes a job based on suspicion
+	ReanalyzeJob(ctx context.Context, in *ReanalyzeJobRequest, opts ...grpc.CallOption) (*ReanalyzeJobResponse, error)
 	// Gets a list of jobs containing untagged files
 	GetUntaggedJobs(ctx context.Context, in *GetUntaggedJobsRequest, opts ...grpc.CallOption) (*GetUntaggedJobsResponse, error)
 	// Gets all info needed to catalog a job
@@ -425,6 +428,16 @@ func (c *coordinatorApiServiceClient) SuspectJob(ctx context.Context, in *Suspec
 	return out, nil
 }
 
+func (c *coordinatorApiServiceClient) ReanalyzeJob(ctx context.Context, in *ReanalyzeJobRequest, opts ...grpc.CallOption) (*ReanalyzeJobResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReanalyzeJobResponse)
+	err := c.cc.Invoke(ctx, CoordinatorApiService_ReanalyzeJob_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *coordinatorApiServiceClient) GetUntaggedJobs(ctx context.Context, in *GetUntaggedJobsRequest, opts ...grpc.CallOption) (*GetUntaggedJobsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetUntaggedJobsResponse)
@@ -527,6 +540,8 @@ type CoordinatorApiServiceServer interface {
 	DeleteJob(context.Context, *DeleteJobRequest) (*DeleteJobResponse, error)
 	// Adds a suspicion to a job
 	SuspectJob(context.Context, *SuspectJobRequest) (*SuspectJobResponse, error)
+	// Re-analyzes a job based on suspicion
+	ReanalyzeJob(context.Context, *ReanalyzeJobRequest) (*ReanalyzeJobResponse, error)
 	// Gets a list of jobs containing untagged files
 	GetUntaggedJobs(context.Context, *GetUntaggedJobsRequest) (*GetUntaggedJobsResponse, error)
 	// Gets all info needed to catalog a job
@@ -630,6 +645,9 @@ func (UnimplementedCoordinatorApiServiceServer) DeleteJob(context.Context, *Dele
 }
 func (UnimplementedCoordinatorApiServiceServer) SuspectJob(context.Context, *SuspectJobRequest) (*SuspectJobResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SuspectJob not implemented")
+}
+func (UnimplementedCoordinatorApiServiceServer) ReanalyzeJob(context.Context, *ReanalyzeJobRequest) (*ReanalyzeJobResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReanalyzeJob not implemented")
 }
 func (UnimplementedCoordinatorApiServiceServer) GetUntaggedJobs(context.Context, *GetUntaggedJobsRequest) (*GetUntaggedJobsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUntaggedJobs not implemented")
@@ -1185,6 +1203,24 @@ func _CoordinatorApiService_SuspectJob_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CoordinatorApiService_ReanalyzeJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReanalyzeJobRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoordinatorApiServiceServer).ReanalyzeJob(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoordinatorApiService_ReanalyzeJob_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoordinatorApiServiceServer).ReanalyzeJob(ctx, req.(*ReanalyzeJobRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _CoordinatorApiService_GetUntaggedJobs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetUntaggedJobsRequest)
 	if err := dec(in); err != nil {
@@ -1379,6 +1415,10 @@ var CoordinatorApiService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SuspectJob",
 			Handler:    _CoordinatorApiService_SuspectJob_Handler,
+		},
+		{
+			MethodName: "ReanalyzeJob",
+			Handler:    _CoordinatorApiService_ReanalyzeJob_Handler,
 		},
 		{
 			MethodName: "GetUntaggedJobs",
