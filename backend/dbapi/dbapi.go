@@ -502,7 +502,7 @@ func (db *DbTx) GetTvSeasons(seriesId int64) ([]TvSeasonsItem, error) {
 				season_number,
 				poster_blob,
 				title,
-				description,
+				description
 			FROM tv_seasons
 			WHERE tv_show_id = ?
 			LIMIT 1000
@@ -1753,6 +1753,7 @@ func (db *DbTx) GetVideosFromRip(ripJob int64) ([]VideoFilesItem, error) {
 			&video.MatchId,
 			&video.BlobId,
 			&video.ResolutionWidth,
+			&video.ResolutionHeight,
 			&video.Length,
 			&video.OriginalVideoHash,
 			&video.RipJob,

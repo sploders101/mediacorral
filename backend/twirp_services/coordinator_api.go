@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -850,33 +851,33 @@ func (server ApiServer) GetJobCatalogueInfo(
 ) (*server_pb.GetJobCatalogueInfoResponse, error) {
 	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, convertError(err)
+		return nil, convertError(fmt.Errorf("error starting transaction: %w", err))
 	}
 	defer func() { _ = dbTx.Rollback() }()
 
 	jobInfo, err := dbTx.GetRipJob(request.GetJobId())
 	if err != nil {
-		return nil, convertError(err)
+		return nil, convertError(fmt.Errorf("error getting rip job: %w", err))
 	}
 
 	videoFiles, err := dbTx.GetVideosFromRip(request.GetJobId())
 	if err != nil {
-		return nil, convertError(err)
+		return nil, convertError(fmt.Errorf("error getting videos from rip: %w", err))
 	}
 
 	matches, err := dbTx.GetMatchesFromRip(request.GetJobId())
 	if err != nil {
-		return nil, convertError(err)
+		return nil, convertError(fmt.Errorf("error getting matches from rip: %w", err))
 	}
 
 	subtitleMaps, err := dbTx.GetRipVideoBlobs(request.GetJobId())
 	if err != nil {
-		return nil, convertError(err)
+		return nil, convertError(fmt.Errorf("error getting rip video blobs: %w", err))
 	}
 
 	ostSubtitleFiles, err := dbTx.GetOstSubtitlesFromRip(request.GetJobId())
 	if err != nil {
-		return nil, convertError(err)
+		return nil, convertError(fmt.Errorf("error getting ost subtitles from rip: %w", err))
 	}
 
 	var discTitle *string
