@@ -423,7 +423,7 @@ func (app *Application) AnalyzeJob(jobId int64) error {
 	return nil
 }
 
-// Re-runs analysis on video files in rip job. Useful for debugging or backfilling metadata
+// Re-runs import analysis on video files in rip job. Useful for debugging or backfilling metadata
 func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 	dbRoTx, err := app.Db.Begin()
 	if err != nil {
@@ -659,9 +659,9 @@ func compareTvOstSubs(
 				}
 				workQueue <- SubsInstruction{
 					ostDownloadId: ostSubs.SubtitlesItem.Id,
-					ostSubs:       ostSubs.Subtitles,
+					ostSubs:       opensubtitles.StripSubtitles(ostSubs.Subtitles),
 					videoFileId:   videoFile.VideoId,
-					discSubs:      string(discSubString),
+					discSubs:      opensubtitles.StripSubtitles(string(discSubString)),
 				}
 			}
 		}

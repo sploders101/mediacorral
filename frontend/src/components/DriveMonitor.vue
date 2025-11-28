@@ -158,7 +158,7 @@ function trackJob() {
 	}
 	jobStatus.value = RipStatus.create();
 	let inflight = false;
-	jobTrackerInterval.value = setInterval(async () => {
+	const update = async () => {
 		if (inflight) return;
 		if (jobInfo.value === undefined) return;
 		inflight = true;
@@ -171,7 +171,9 @@ function trackJob() {
 		} finally {
 			inflight = false;
 		}
-	}, 1000);
+	};
+	jobTrackerInterval.value = setInterval(update, 1000);
+	update();
 }
 watch(
 	() => props.visible,

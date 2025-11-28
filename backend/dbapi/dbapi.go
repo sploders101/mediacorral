@@ -1448,7 +1448,7 @@ func (db *DbTx) InsertMatchInfoItem(
 				ost_download_id,
 				distance,
 				max_distance
-			) VALUES (?, ?, ?, ?, ?)
+			) VALUES (?, ?, ?, ?)
 			RETURNING id
 		`,
 		videoFileId,

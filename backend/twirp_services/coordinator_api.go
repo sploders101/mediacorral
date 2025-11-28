@@ -703,8 +703,15 @@ func (server ApiServer) TagFile(
 	); err != nil {
 		return nil, convertError(err)
 	}
-
 	if err := dbTx.Commit(); err != nil {
+		return nil, convertError(err)
+	}
+
+	if err := server.app.ExportsManager.SpliceContent(
+		request.GetVideoType(),
+		request.GetFile(),
+		server.app.BlobStorage,
+	); err != nil {
 		return nil, convertError(err)
 	}
 
@@ -786,7 +793,7 @@ func (server ApiServer) SuspectJob(
 	ctx context.Context,
 	request *server_pb.SuspectJobRequest,
 ) (*server_pb.SuspectJobResponse, error) {
-	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return nil, convertError(err)
 	}
@@ -806,6 +813,10 @@ func (server ApiServer) SuspectJob(
 	}
 
 	if err := dbTx.Commit(); err != nil {
+		return nil, convertError(err)
+	}
+
+	if err := server.app.AnalyzeJob(request.GetJobId()); err != nil {
 		return nil, convertError(err)
 	}
 

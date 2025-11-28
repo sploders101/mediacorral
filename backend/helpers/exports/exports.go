@@ -3,6 +3,7 @@ package exports
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"strings"
@@ -146,7 +147,7 @@ func addTvEpisode(
 		)
 		seasonFolder := path.Join(showFolder, fmt.Sprintf("Season %02d", entry.SeasonNumber))
 		episodeFilename := fmt.Sprintf(
-			"%s (%s) - S%02dE%02d - %s - {tmdb-%d}",
+			"%s (%s) - S%02dE%02d - %s - {tmdb-%d}.mkv",
 			pathEscape(entry.TvTitle),
 			pathEscape(entry.TvReleaseYear),
 			entry.SeasonNumber,
@@ -166,6 +167,7 @@ func addTvEpisode(
 			}
 			if errors.Is(err, os.ErrNotExist) {
 				if err := os.MkdirAll(seasonFolder, 0755); err != nil {
+					slog.Error("Error making directory", "error", err.Error())
 					if errors.Is(err, os.ErrExist) {
 						return err
 					} else {
@@ -173,6 +175,19 @@ func addTvEpisode(
 					}
 				}
 				continue
+			} else if errors.Is(err, blobs.ErrBlobMissing) {
+				slog.Error(
+					"Blob missing from filesystem",
+					"blobId", entry.EpisodeBlob,
+					"tvShow", entry.TvTitle,
+					"seasonNumber", entry.SeasonNumber,
+					"episodeNumber", entry.EpisodeNumber,
+					"episodeTitle", entry.EpisodeTitle,
+					"episodeTmdb", entry.EpisodeTmdb,
+				)
+				// This is an okay-ish error. We already logged. Discard it for now.
+				err = nil
+				break
 			}
 			break
 		}

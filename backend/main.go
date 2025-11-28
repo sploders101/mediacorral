@@ -1,6 +1,8 @@
 package main
 
 import (
+	"embed"
+	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
@@ -11,11 +13,19 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/sploders101/mediacorral/backend/application"
+	grpcservices "github.com/sploders101/mediacorral/backend/grpc_services"
 	"github.com/sploders101/mediacorral/backend/helpers/config"
 	twirpservices "github.com/sploders101/mediacorral/backend/twirp_services"
 )
 
+//go:embed all:frontend
+var frontendFiles embed.FS
+
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})))
+
 	config, err := config.LoadConfig()
 	if err != nil {
 		slog.Error("An error occurred while reading the config file.", "error", err.Error())
@@ -30,14 +40,22 @@ func main() {
 
 	// Set up HTTP server & services
 	router := http.NewServeMux()
-	twirpservices.RegisterApiService(router, app)
-	if err := http.ListenAndServe(config.WebServeAddress, router); err != nil {
-		slog.Error("An error occurred while starting the web server.", "error", err.Error())
-		os.Exit(1)
+	subFs, err := fs.Sub(frontendFiles, "frontend")
+	if err != nil {
+		panic("Could not get frontend directory")
 	}
+	router.Handle("GET /", http.FileServerFS(subFs))
+	twirpservices.RegisterApiService(router, app)
+	go func() {
+		if err := http.ListenAndServe(config.WebServeAddress, router); err != nil {
+			slog.Error("An error occurred while starting the web server.", "error", err.Error())
+			os.Exit(1)
+		}
+	}()
 
 	// Set up gRPC server & services
 	grpcServer := grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
+	grpcservices.RegisterNotificationService(grpcServer, app)
 	reflection.Register(grpcServer)
 	grpcListener, err := net.Listen("tcp", config.GrpcServeAddress)
 	if err != nil {
@@ -49,3 +67,5 @@ func main() {
 		os.Exit(1)
 	}
 }
+
+// TODO: Clear exports directories before rebuild

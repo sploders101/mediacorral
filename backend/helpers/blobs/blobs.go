@@ -19,6 +19,10 @@ import (
 	proto "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
 )
 
+var (
+	ErrBlobMissing = errors.New("blob is missing from filesystem")
+)
+
 // Wraps the database and uses it to keep track of files on the filesystem
 type BlobStorageController struct {
 	blobDir            string
@@ -265,6 +269,12 @@ func (controller *BlobStorageController) HardLink(blobId string, destination str
 	sourcePath := controller.GetFilePath(blobId)
 	err := os.Link(sourcePath, destination)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			_, err := os.Stat(sourcePath)
+			if errors.Is(err, os.ErrNotExist) {
+				return ErrBlobMissing
+			}
+		}
 		return err
 	}
 	return nil

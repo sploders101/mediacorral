@@ -2,10 +2,12 @@ package opensubtitles
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"regexp"
@@ -170,10 +172,20 @@ func (importer *OstImporter) makeRequest(req *http.Request, respValue any) error
 	defer func() {
 		_ = resp.Body.Close()
 	}()
-	if resp.Header.Get("content-type") != "application/json" {
+	if !slices.Contains(
+		[]string{"application/json", "application/json; charset=utf-8"},
+		resp.Header.Get("content-type"),
+	) {
+		bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		slog.Debug(
+			"Received non-json response from OST API",
+			"url", req.URL.String(),
+			"contentType", resp.Header.Get("content-type"),
+			"response", base64.RawStdEncoding.EncodeToString(bodyBytes),
+		)
 		return fmt.Errorf("received non-json response from %s", req.URL.String())
 	}
-	if err := json.NewDecoder(req.Body).Decode(respValue); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(respValue); err != nil {
 		return err
 	}
 	return nil
@@ -314,7 +326,7 @@ func (importer *OstImporter) FindBestSubtitles(tmdbId int32) (FindBestSubtitlesR
 		subtitles = append(subtitles, FindBestSubtitlesResult{
 			Filename:          subtitle.Name,
 			Subtitles:         subs,
-			minifiedSubtitles: stripSubtitles(subs),
+			minifiedSubtitles: StripSubtitles(subs),
 		})
 	}
 
@@ -437,7 +449,7 @@ func (importer *OstImporter) GetSubtitles(
 // Strips subtitles into a long sequence of words with HTML formatting removed
 // (using a naive regex approach), removing extra information not relevant for
 // comparison
-func stripSubtitles(subsText string) string {
+func StripSubtitles(subsText string) string {
 	subsText = STRIP_SUBTITLE_REGEX.ReplaceAllLiteralString(subsText, "")
 	return STRIP_WHITESPACE_REGEX.ReplaceAllLiteralString(subsText, " ")
 }

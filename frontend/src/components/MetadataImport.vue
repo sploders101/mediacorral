@@ -1,10 +1,9 @@
 <script lang="ts" setup>
-import type { TmdbAnyTitle } from "@/generated/mediacorral/common/tmdb/v1/main";
+import type { TmdbAnyTitle } from "@/generated/mediacorral/server/v1/tmdb";
 import type {
 	SearchTmdbMovieResponse,
 	SearchTmdbMultiResponse,
 	SearchTmdbTvResponse,
-	VideoType,
 } from "@/generated/mediacorral/server/v1/api";
 import { SearchType } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
@@ -142,7 +141,7 @@ async function importItem() {
 							rpc.importTmdbTv({
 								tmdbId: multiValue.id,
 							}),
-							"Error reporting TV series"
+							"Error importing TV series"
 						);
 						emit("dataImported", {
 							type: "tv",

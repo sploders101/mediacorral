@@ -94,6 +94,8 @@ func (server CoordinatorNotificationService) RipFinished(
 	return server_pb.RipFinishedResponse_builder{}.Build(), nil
 }
 
-func RegisterNotificationService(server *grpc.Server, coordinator CoordinatorNotificationService) {
-	server_pb.RegisterCoordinatorNotificationServiceServer(server, coordinator)
+func RegisterNotificationService(server *grpc.Server, app *application.Application) {
+	server_pb.RegisterCoordinatorNotificationServiceServer(server, CoordinatorNotificationService{
+		app: app,
+	})
 }

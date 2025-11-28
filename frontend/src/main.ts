@@ -12,7 +12,7 @@ registerPlugins(app);
 
 const transport = new TwirpFetchTransport({
 	baseUrl: "/twirp",
-	format: "binary",
+	sendJson: import.meta.env.DEV,
 });
 const rpc = new CoordinatorApiServiceClient(transport);
 app.provide(injectKeys.rpc, rpc);

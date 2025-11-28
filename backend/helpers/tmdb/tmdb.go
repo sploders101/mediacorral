@@ -125,9 +125,6 @@ func (importer *TmdbImporter) getPoster(
 	if err != nil {
 		return dbapi.ImageFilesItem{}, err
 	}
-	if err := db.Commit(); err != nil {
-		return dbapi.ImageFilesItem{}, err
-	}
 	return imageItem, nil
 }
 
@@ -144,17 +141,17 @@ func (importer *TmdbImporter) ImportMovie(
 		return dbapi.MoviesItem{}, errors.New("cannot import movie with no title")
 	}
 
-	db, err := importer.db.Begin()
+	dbTx, err := importer.db.Begin()
 	if err != nil {
 		return dbapi.MoviesItem{}, err
 	}
 	defer func() {
-		_ = db.Rollback()
+		_ = dbTx.Rollback()
 	}()
 
 	var posterBlob sql.NullInt64
 	if blobStorage != nil && results.PosterPath != "" {
-		posterItem, err := importer.getPoster(db, results.PosterPath, *blobStorage)
+		posterItem, err := importer.getPoster(dbTx, results.PosterPath, *blobStorage)
 		if err != nil {
 			slog.Error(
 				"An error occurred while fetching poster",
@@ -192,7 +189,7 @@ func (importer *TmdbImporter) ImportMovie(
 		runtime.V = uint32(results.Runtime)
 	}
 
-	moviesItem, err := db.UpsertTmdbMovie(
+	moviesItem, err := dbTx.UpsertTmdbMovie(
 		sql.NullInt32{Valid: true, Int32: int32(results.ID)},
 		posterBlob,
 		results.Title,
@@ -203,7 +200,7 @@ func (importer *TmdbImporter) ImportMovie(
 	if err != nil {
 		return dbapi.MoviesItem{}, nil
 	}
-	if err := db.Commit(); err != nil {
+	if err := dbTx.Commit(); err != nil {
 		return dbapi.MoviesItem{}, err
 	}
 
@@ -219,12 +216,12 @@ func (importer *TmdbImporter) ImportTv(
 		return dbapi.TvShowsItem{}, fmt.Errorf("error fetching tv show: %w", err)
 	}
 
-	db, err := importer.db.Begin()
+	dbTx, err := importer.db.Begin()
 	if err != nil {
 		return dbapi.TvShowsItem{}, err
 	}
 	defer func() {
-		_ = db.Rollback()
+		_ = dbTx.Rollback()
 	}()
 
 	if results.Name == "" {
@@ -248,7 +245,7 @@ func (importer *TmdbImporter) ImportTv(
 
 	var posterBlob sql.NullInt64
 	if blobStorage != nil && results.PosterPath != "" {
-		posterItem, err := importer.getPoster(db, results.PosterPath, *blobStorage)
+		posterItem, err := importer.getPoster(dbTx, results.PosterPath, *blobStorage)
 		if err != nil {
 			slog.Error(
 				"An error occurred while fetching poster",
@@ -265,7 +262,7 @@ func (importer *TmdbImporter) ImportTv(
 		}
 	}
 
-	seriesEntry, err := db.UpsertTmdbTvShow(
+	seriesEntry, err := dbTx.UpsertTmdbTvShow(
 		int32(results.ID),
 		posterBlob,
 		results.Name,
@@ -289,7 +286,7 @@ func (importer *TmdbImporter) ImportTv(
 
 		var posterBlob sql.NullInt64
 		if blobStorage != nil && results.PosterPath != "" {
-			posterItem, err := importer.getPoster(db, seasonDetails.PosterPath, *blobStorage)
+			posterItem, err := importer.getPoster(dbTx, seasonDetails.PosterPath, *blobStorage)
 			if err != nil {
 				slog.Error(
 					"An error occurred while fetching poster",
@@ -314,7 +311,7 @@ func (importer *TmdbImporter) ImportTv(
 			overview.String = results.Overview
 		}
 
-		seasonitem, err := db.UpsertTmdbTvSeason(
+		seasonitem, err := dbTx.UpsertTmdbTvSeason(
 			int32(seasonDetails.ID),
 			seriesEntry.Id,
 			uint32(season.SeasonNumber),
@@ -330,7 +327,7 @@ func (importer *TmdbImporter) ImportTv(
 			var thumbnailBlob sql.NullInt64
 			if blobStorage != nil && results.PosterPath != "" {
 				thumbnailItem, err := importer.getPoster(
-					db,
+					dbTx,
 					episodeDetails.StillPath,
 					*blobStorage,
 				)
@@ -366,7 +363,7 @@ func (importer *TmdbImporter) ImportTv(
 				runtime.V = uint32(episodeDetails.Runtime)
 			}
 
-			_, err := db.UpsertTmdbTvEpisode(
+			_, err := dbTx.UpsertTmdbTvEpisode(
 				int32(episodeDetails.ID),
 				seriesEntry.Id,
 				seasonitem.Id,
@@ -381,7 +378,7 @@ func (importer *TmdbImporter) ImportTv(
 			}
 		}
 	}
-	if err := db.Commit(); err != nil {
+	if err := dbTx.Commit(); err != nil {
 		return dbapi.TvShowsItem{}, err
 	}
 
