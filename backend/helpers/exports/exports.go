@@ -81,6 +81,16 @@ func (exporter *ExportsManager) RebuildDir(
 
 	// Populate new contents
 	switch exportConfig.MediaType {
+	case config.EXPORT_MEDIA_TYPE_MOVIES:
+		dbTx, err := exporter.db.Begin()
+		if err != nil {
+			return err
+		}
+		defer func() { _ = dbTx.Rollback() }()
+
+		if err := dbTx.ProcessMovieExportsInfo(addMovie(blobController, exportDir, exportConfig)); err != nil {
+			return err
+		}
 	case config.EXPORT_MEDIA_TYPE_TV:
 		dbTx, err := exporter.db.Begin()
 		if err != nil {
@@ -111,16 +121,30 @@ func (exporter *ExportsManager) SpliceContent(
 
 	// Add media to filesystem
 	switch videoType {
+	case proto.VideoType_VIDEO_TYPE_MOVIE:
+		result, err := dbTx.FetchOneMovieExportInfo(videoId)
+		if err != nil {
+			return err
+		}
+		for exportName, exportConfig := range exporter.configuredExports {
+			if exportConfig.MediaType != config.EXPORT_MEDIA_TYPE_MOVIES {
+				continue
+			}
+			exportDir := path.Join(exporter.exportsBaseDir, exportName)
+			if err := addMovie(blobController, exportDir, exportConfig)(result); err != nil {
+				return err
+			}
+		}
 	case proto.VideoType_VIDEO_TYPE_TV_EPISODE:
 		result, err := dbTx.FetchOneTvExportInfo(videoId)
 		if err != nil {
 			return err
 		}
-		for export_name, exportConfig := range exporter.configuredExports {
+		for exportName, exportConfig := range exporter.configuredExports {
 			if exportConfig.MediaType != config.EXPORT_MEDIA_TYPE_TV {
 				continue
 			}
-			exportDir := path.Join(exporter.exportsBaseDir, export_name)
+			exportDir := path.Join(exporter.exportsBaseDir, exportName)
 			if err := addTvEpisode(blobController, exportDir, exportConfig)(result); err != nil {
 				return err
 			}
@@ -184,6 +208,68 @@ func addTvEpisode(
 					"episodeNumber", entry.EpisodeNumber,
 					"episodeTitle", entry.EpisodeTitle,
 					"episodeTmdb", entry.EpisodeTmdb,
+				)
+				// This is an okay-ish error. We already logged. Discard it for now.
+				err = nil
+				break
+			}
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
+func addMovie(
+	blobController *blobs.BlobStorageController,
+	exportsDir string,
+	exportConfig config.ExportsDir,
+) func(dbapi.MovieExportEntry) error {
+	return func(entry dbapi.MovieExportEntry) error {
+		movieFolder := path.Join(
+			exportsDir,
+			fmt.Sprintf(
+				"%s (%s) {tmdb-%d}",
+				pathEscape(entry.MovieTitle),
+				pathEscape(entry.MovieReleaseYear),
+				entry.MovieTmdb,
+			),
+		)
+		movieFilename := fmt.Sprintf(
+			"%s (%s) - {tmdb-%d}.mkv",
+			pathEscape(entry.MovieTitle),
+			pathEscape(entry.MovieReleaseYear),
+			entry.MovieTmdb,
+		)
+		moviePath := path.Join(movieFolder, movieFilename)
+
+		var err error
+		for {
+			switch exportConfig.LinkType {
+			case config.EXPORT_LINK_TYPE_SYMBOLIC:
+				err = blobController.SymbolicLink(entry.MovieBlob, moviePath)
+			case config.EXPORT_LINK_TYPE_HARD:
+				err = blobController.HardLink(entry.MovieBlob, moviePath)
+			}
+			if errors.Is(err, os.ErrNotExist) {
+				if err := os.MkdirAll(movieFolder, 0755); err != nil {
+					slog.Error("Error making directory", "error", err.Error())
+					if errors.Is(err, os.ErrExist) {
+						return err
+					} else {
+						return fmt.Errorf("couldn't create season folder: %w", err)
+					}
+				}
+				continue
+			} else if errors.Is(err, blobs.ErrBlobMissing) {
+				slog.Error(
+					"Blob missing from filesystem",
+					"blobId", entry.MovieBlob,
+					"movie", entry.MovieTitle,
+					"movieTmdb", entry.MovieTmdb,
 				)
 				// This is an okay-ish error. We already logged. Discard it for now.
 				err = nil

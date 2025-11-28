@@ -1956,6 +1956,45 @@ func (db *DbTx) ProcessTvExportsInfo(cb func(TvExportEntry) error) error {
 	return nil
 }
 
+// This function is used to stream information for TV show exports and act on them.
+// For each row, `cb` is called with the results. If `cb` or the sql driver returns
+// an error, it is immediately returned by this function.
+func (db *DbTx) ProcessMovieExportsInfo(cb func(MovieExportEntry) error) error {
+	result, err := db.tx.Query(
+		`
+            SELECT
+            	movies.title,
+            	movies.release_year,
+            	movies.tmdb_id,
+            	video_files.blob_id
+            FROM video_files
+            JOIN movies ON
+                video_files.match_id = movies.id
+            WHERE
+            	video_files.video_type = 1
+		`,
+	)
+	if err != nil {
+		return err
+	}
+	for result.Next() {
+		var entry MovieExportEntry
+		if err := result.Scan(
+			&entry.MovieTitle,
+			&entry.MovieReleaseYear,
+			&entry.MovieTmdb,
+			&entry.MovieBlob,
+		); err != nil {
+			return err
+		}
+		if err := cb(entry); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // This function is used to retrieve information for one TV show export and act on it.
 func (db *DbTx) FetchOneTvExportInfo(videoId int64) (TvExportEntry, error) {
 	result := db.tx.QueryRow(
@@ -1995,6 +2034,38 @@ func (db *DbTx) FetchOneTvExportInfo(videoId int64) (TvExportEntry, error) {
 		&entry.EpisodeBlob,
 	); err != nil {
 		return TvExportEntry{}, err
+	}
+
+	return entry, nil
+}
+
+// This function is used to retrieve information for one TV show export and act on it.
+func (db *DbTx) FetchOneMovieExportInfo(videoId int64) (MovieExportEntry, error) {
+	result := db.tx.QueryRow(
+		`
+            SELECT
+            	movies.title,
+            	movies.release_year,
+            	movies.tmdb_id,
+            	video_files.blob_id
+            FROM video_files
+            JOIN movies ON
+                video_files.match_id = movies.id
+            WHERE
+            	video_files.video_type = 1
+                AND video_files.id = ?
+            LIMIT 1
+		`,
+		videoId,
+	)
+	var entry MovieExportEntry
+	if err := result.Scan(
+		&entry.MovieTitle,
+		&entry.MovieReleaseYear,
+		&entry.MovieTmdb,
+		&entry.MovieBlob,
+	); err != nil {
+		return MovieExportEntry{}, err
 	}
 
 	return entry, nil

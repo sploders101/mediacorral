@@ -274,3 +274,10 @@ type TvExportEntry struct {
 	EpisodeTmdb   int32
 	EpisodeBlob   string
 }
+
+type MovieExportEntry struct {
+	MovieTitle       string
+	MovieReleaseYear string
+	MovieTmdb        int32
+	MovieBlob        string
+}
