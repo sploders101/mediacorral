@@ -21,7 +21,7 @@ type DbTx struct {
 }
 
 func NewDb(dbPath string) (Db, error) {
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite3", dbPath + "?_timeout=60000")
 	if err != nil {
 		return Db{}, fmt.Errorf("an error occurred while opening the database: %w", err)
 	}
@@ -1224,6 +1224,7 @@ func (db *DbTx) AddVideoMetadata(
 		length,
 		originalVideoHash,
 		extMetaSerialized,
+		videoId,
 	)
 	if err != nil {
 		return err
@@ -1286,7 +1287,7 @@ func (db *DbTx) GetSubtitlesForVideo(videoId int64) ([]SubtitleFilesItem, error)
 			SELECT
 				id,
 				blob_id,
-				video_file,
+				video_file
 			FROM subtitle_files
 			WHERE
 				video_file = ?

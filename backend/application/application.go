@@ -302,11 +302,12 @@ func (app *Application) ImportJob(jobId int64) error {
 	deleteJob := true
 	if err := fs.WalkDir(
 		ripDirFS.FS(),
-		"/",
+		".",
 		func(filePath string, d fs.DirEntry, err error) error {
 			if path.Ext(filePath) != ".mkv" {
 				return nil
 			}
+			filePath = path.Join(ripDir, filePath)
 
 			if err := app.BlobStorage.AddVideoFile(dbTx, filePath, &jobId); err != nil {
 				slog.Error(
@@ -445,36 +446,6 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 		videoFilePath := app.BlobStorage.GetFilePath(videoFile.BlobId)
 		extractWg.Add(1)
 		go func() {
-			dbTx, err := app.Db.Begin()
-			if err != nil {
-				slog.Error("Failed to start db transaction", "error", err.Error())
-				return
-			}
-			defer func() { _ = dbTx.Rollback() }()
-
-			// Delete existing subtitles for video
-			subtitleFiles, err := dbTx.GetSubtitlesForVideo(videoFile.Id)
-			if err != nil {
-				slog.Error(
-					"Failed to get subtitles for video",
-					"error", err.Error(),
-					"videoFileId", videoFile.Id,
-				)
-				return
-			}
-			for _, subtitleFile := range subtitleFiles {
-				if err := app.BlobStorage.DeleteBlob(dbTx, subtitleFile.BlobId); err != nil {
-					slog.Error(
-						"Failed to delete subtitles",
-						"error", err.Error(),
-						"videoFileId", videoFile.Id,
-						"subtitleFileId", subtitleFile.Id,
-						"subtitleFileBlobId", subtitleFile.BlobId,
-					)
-					return
-				}
-			}
-
 			defer extractWg.Done()
 			result, err := app.AnalysisController.AnalyzeMkv(videoFilePath)
 			if err != nil {
@@ -506,6 +477,36 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 			if result.ExtendedMetadata != nil {
 				extendedMetadata.Valid = true
 				extendedMetadata.V = result.ExtendedMetadata.IntoProto()
+			}
+
+			dbTx, err := app.Db.Begin()
+			if err != nil {
+				slog.Error("Failed to start db transaction", "error", err.Error())
+				return
+			}
+			defer func() { _ = dbTx.Rollback() }()
+
+			// Delete existing subtitles for video
+			subtitleFiles, err := dbTx.GetSubtitlesForVideo(videoFile.Id)
+			if err != nil {
+				slog.Error(
+					"Failed to get subtitles for video",
+					"error", err.Error(),
+					"videoFileId", videoFile.Id,
+				)
+				return
+			}
+			for _, subtitleFile := range subtitleFiles {
+				if err := app.BlobStorage.DeleteBlob(dbTx, subtitleFile.BlobId); err != nil {
+					slog.Error(
+						"Failed to delete subtitles",
+						"error", err.Error(),
+						"videoFileId", videoFile.Id,
+						"subtitleFileId", subtitleFile.Id,
+						"subtitleFileBlobId", subtitleFile.BlobId,
+					)
+					return
+				}
 			}
 
 			if err := dbTx.AddVideoMetadata(
@@ -580,6 +581,10 @@ func (app *Application) PruneRipJob(jobId int64) error {
 				)
 			}
 		}
+	}
+
+	if err := dbTx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit prune: %w", err)
 	}
 
 	return nil
