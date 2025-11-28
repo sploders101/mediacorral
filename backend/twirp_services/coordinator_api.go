@@ -2,33 +2,21 @@ package twirpservices
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"net/http"
 	"os"
 
 	"github.com/sploders101/mediacorral/backend/application"
+	"github.com/sploders101/mediacorral/backend/dbapi"
 	drive_controller_v1 "github.com/sploders101/mediacorral/backend/gen/mediacorral/drive_controller/v1"
 	server_pb "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
 
 	"github.com/twitchtv/twirp"
 	gcodes "google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
-
-func convertError(err error) error {
-	if errors.Is(err, application.ErrNotFound) {
-		return twirp.NotFound.Error(err.Error())
-	}
-	if status, ok := gstatus.FromError(err); ok {
-		switch status.Code() {
-		case gcodes.NotFound:
-			return twirp.NotFound.Error(status.Message())
-		case gcodes.Unknown:
-			return twirp.Unknown.Error(status.Message())
-		}
-	}
-	return twirp.Unknown.Error(err.Error())
-}
 
 type ApiServer struct {
 	app *application.Application
@@ -467,7 +455,22 @@ func (server ApiServer) ListMovies(
 	ctx context.Context,
 	request *server_pb.ListMoviesRequest,
 ) (*server_pb.ListMoviesResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+	movies, err := dbTx.GetMovies()
+	if err != nil {
+		return nil, convertError(err)
+	}
+	var protoMovies []*server_pb.Movie
+	for _, movie := range movies {
+		protoMovies = append(protoMovies, movieDbToProto(movie))
+	}
+	return server_pb.ListMoviesResponse_builder{
+		Movies: protoMovies,
+	}.Build(), nil
 }
 
 // Gets a movie by id
@@ -475,7 +478,20 @@ func (server ApiServer) GetMovie(
 	ctx context.Context,
 	request *server_pb.GetMovieRequest,
 ) (*server_pb.GetMovieResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	movie, err := dbTx.GetMovieById(request.GetMovieId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	return server_pb.GetMovieResponse_builder{
+		Movie: movieDbToProto(movie),
+	}.Build(), nil
 }
 
 // Gets a movie from the database by its TMDB ID
@@ -483,7 +499,20 @@ func (server ApiServer) GetMovieByTmdbId(
 	ctx context.Context,
 	request *server_pb.GetMovieByTmdbIdRequest,
 ) (*server_pb.GetMovieByTmdbIdResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	movie, err := dbTx.GetMovieByTmdbId(request.GetTmdbId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	return server_pb.GetMovieByTmdbIdResponse_builder{
+		Movie: movieDbToProto(movie),
+	}.Build(), nil
 }
 
 // Lists the TV shows in the database
@@ -491,7 +520,25 @@ func (server ApiServer) ListTvShows(
 	ctx context.Context,
 	request *server_pb.ListTvShowsRequest,
 ) (*server_pb.ListTvShowsResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	tvShows, err := dbTx.GetTvShows()
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	var protoTvShows []*server_pb.TvShow
+	for _, dbTvShow := range tvShows {
+		protoTvShows = append(protoTvShows, tvShowDbToProto(dbTvShow))
+	}
+
+	return server_pb.ListTvShowsResponse_builder{
+		TvShows: protoTvShows,
+	}.Build(), nil
 }
 
 // Lists the seasons for a given TV show
@@ -499,7 +546,26 @@ func (server ApiServer) ListTvSeasons(
 	ctx context.Context,
 	request *server_pb.ListTvSeasonsRequest,
 ) (*server_pb.ListTvSeasonsResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	seasons, err := dbTx.GetTvSeasons(request.GetSeriesId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	var protoSeasons []*server_pb.TvSeason
+	for _, season := range seasons {
+		protoSeasons = append(protoSeasons, tvSeasonDbToProto(season))
+	}
+
+	return server_pb.ListTvSeasonsResponse_builder{
+		SeriesId:  request.GetSeriesId(),
+		TvSeasons: protoSeasons,
+	}.Build(), nil
 }
 
 // Lists the episodes for a given season
@@ -507,7 +573,26 @@ func (server ApiServer) ListTvEpisodes(
 	ctx context.Context,
 	request *server_pb.ListTvEpisodesRequest,
 ) (*server_pb.ListTvEpisodesResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	episodes, err := dbTx.GetTvEpisodes(request.GetTvSeasonId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	var protoEpisodes []*server_pb.TvEpisode
+	for _, episode := range episodes {
+		protoEpisodes = append(protoEpisodes, tvEpisodeDbToProto(episode))
+	}
+
+	return server_pb.ListTvEpisodesResponse_builder{
+		TvSeasonId: request.GetTvSeasonId(),
+		TvEpisodes: protoEpisodes,
+	}.Build(), nil
 }
 
 // Gets a TV show by id
@@ -515,7 +600,20 @@ func (server ApiServer) GetTvShow(
 	ctx context.Context,
 	request *server_pb.GetTvShowRequest,
 ) (*server_pb.GetTvShowResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	tvShow, err := dbTx.GetTvShowById(request.GetShowId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	return server_pb.GetTvShowResponse_builder{
+		TvShow: tvShowDbToProto(tvShow),
+	}.Build(), nil
 }
 
 // Gets a TV series by id
@@ -523,7 +621,20 @@ func (server ApiServer) GetTvSeason(
 	ctx context.Context,
 	request *server_pb.GetTvSeasonRequest,
 ) (*server_pb.GetTvSeasonResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	tvSeason, err := dbTx.GetTvSeasonById(request.GetSeasonId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	return server_pb.GetTvSeasonResponse_builder{
+		TvSeason: tvSeasonDbToProto(tvSeason),
+	}.Build(), nil
 }
 
 // Gets a particular TV episode
@@ -531,7 +642,20 @@ func (server ApiServer) GetTvEpisode(
 	ctx context.Context,
 	request *server_pb.GetTvEpisodeRequest,
 ) (*server_pb.GetTvEpisodeResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	tvEpisode, err := dbTx.GetTvEpisodeById(request.GetEpisodeId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	return server_pb.GetTvEpisodeResponse_builder{
+		Episode: tvEpisodeDbToProto(tvEpisode),
+	}.Build(), nil
 }
 
 // Gets a particular TV episode by TMDB id
@@ -539,7 +663,20 @@ func (server ApiServer) GetTvEpisodeByTmdbId(
 	ctx context.Context,
 	request *server_pb.GetTvEpisodeByTmdbIdRequest,
 ) (*server_pb.GetTvEpisodeByTmdbIdResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	episode, err := dbTx.GetTvEpisodeByTmdbId(request.GetTmdbId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	return server_pb.GetTvEpisodeByTmdbIdResponse_builder{
+		Episode: tvEpisodeDbToProto(episode),
+	}.Build(), nil
 }
 
 // Tags a video file with metadata
@@ -547,7 +684,30 @@ func (server ApiServer) TagFile(
 	ctx context.Context,
 	request *server_pb.TagFileRequest,
 ) (*server_pb.TagFileResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	var matchId sql.NullInt64
+	if request.HasMatchId() {
+		matchId.Valid = true
+		matchId.Int64 = request.GetMatchId()
+	}
+	if err := dbTx.TagVideoFile(
+		request.GetFile(),
+		request.GetVideoType(),
+		matchId,
+	); err != nil {
+		return nil, convertError(err)
+	}
+
+	if err := dbTx.Commit(); err != nil {
+		return nil, convertError(err)
+	}
+
+	return server_pb.TagFileResponse_builder{}.Build(), nil
 }
 
 // Gets a particular job
@@ -555,7 +715,25 @@ func (server ApiServer) GetJobInfo(
 	ctx context.Context,
 	request *server_pb.GetJobInfoRequest,
 ) (*server_pb.GetJobInfoResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	ripJob, err := dbTx.GetRipJob(request.GetJobId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	protoRipJob, err := ripJobDbToProto(ripJob)
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	return server_pb.GetJobInfoResponse_builder{
+		Details: protoRipJob,
+	}.Build(), nil
 }
 
 // Renames a job
@@ -563,7 +741,21 @@ func (server ApiServer) RenameJob(
 	ctx context.Context,
 	request *server_pb.RenameJobRequest,
 ) (*server_pb.RenameJobResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	if err := dbTx.RenameRipJob(request.GetJobId(), request.GetNewName()); err != nil {
+		return nil, convertError(err)
+	}
+
+	if err := dbTx.Commit(); err != nil {
+		return nil, convertError(err)
+	}
+
+	return server_pb.RenameJobResponse_builder{}.Build(), nil
 }
 
 // Deletes a job
@@ -571,7 +763,21 @@ func (server ApiServer) DeleteJob(
 	ctx context.Context,
 	request *server_pb.DeleteJobRequest,
 ) (*server_pb.DeleteJobResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	if err := dbTx.DeleteRipJob(request.GetJobId()); err != nil {
+		return nil, convertError(err)
+	}
+
+	if err := dbTx.Commit(); err != nil {
+		return nil, convertError(err)
+	}
+
+	return server_pb.DeleteJobResponse_builder{}.Build(), nil
 }
 
 // Adds a suspicion to a job
@@ -579,15 +785,62 @@ func (server ApiServer) SuspectJob(
 	ctx context.Context,
 	request *server_pb.SuspectJobRequest,
 ) (*server_pb.SuspectJobResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	var suspicionBytes sql.Null[[]byte]
+	if request.HasSuspicion() {
+		suspicionBytes.Valid = true
+		bytes, err := proto.Marshal(request.GetSuspicion())
+		if err != nil {
+			return nil, convertError(err)
+		}
+		suspicionBytes.V = bytes
+	}
+	if err := dbTx.SetRipSuspicion(request.GetJobId(), suspicionBytes); err != nil {
+		return nil, convertError(err)
+	}
+
+	if err := dbTx.Commit(); err != nil {
+		return nil, convertError(err)
+	}
+
+	return server_pb.SuspectJobResponse_builder{}.Build(), nil
 }
+
+// TODO: Include commit f38a12e: Allow re-analyzing jobs
 
 // Gets a list of jobs containing untagged files
 func (server ApiServer) GetUntaggedJobs(
 	ctx context.Context,
 	request *server_pb.GetUntaggedJobsRequest,
 ) (*server_pb.GetUntaggedJobsResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	ripJobs, err := dbTx.GetRipJobsWithUntaggedVideos(request.GetSkip(), request.GetLimit())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	var protoRipJobs []*server_pb.RipJob
+	for _, job := range ripJobs {
+		protoRipJob, err := ripJobDbToProto(job)
+		if err != nil {
+			return nil, convertError(err)
+		}
+		protoRipJobs = append(protoRipJobs, protoRipJob)
+	}
+
+	return server_pb.GetUntaggedJobsResponse_builder{
+		RipJobs: protoRipJobs,
+	}.Build(), nil
 }
 
 // Gets all info needed to catalog a job
@@ -595,7 +848,87 @@ func (server ApiServer) GetJobCatalogueInfo(
 	ctx context.Context,
 	request *server_pb.GetJobCatalogueInfoRequest,
 ) (*server_pb.GetJobCatalogueInfoResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	dbTx, err := server.app.Db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, convertError(err)
+	}
+	defer func() { _ = dbTx.Rollback() }()
+
+	jobInfo, err := dbTx.GetRipJob(request.GetJobId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	videoFiles, err := dbTx.GetVideosFromRip(request.GetJobId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	matches, err := dbTx.GetMatchesFromRip(request.GetJobId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	subtitleMaps, err := dbTx.GetRipVideoBlobs(request.GetJobId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	ostSubtitleFiles, err := dbTx.GetOstSubtitlesFromRip(request.GetJobId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	var discTitle *string
+	if jobInfo.DiscTitle.Valid {
+		discTitle = &jobInfo.DiscTitle.String
+	}
+
+	var suspectedContents *server_pb.SuspectedContents
+	if jobInfo.SuspectedContents.Valid {
+		suspectedContents = &server_pb.SuspectedContents{}
+		if err := proto.Unmarshal(jobInfo.SuspectedContents.V, suspectedContents); err != nil {
+			return nil, convertError(err)
+		}
+	}
+
+	var protoVideoFiles []*server_pb.VideoFile
+	for _, videoFile := range videoFiles {
+		protoVideoFile, err := videoFileDbToProto(videoFile)
+		if err != nil {
+			return nil, convertError(err)
+		}
+		protoVideoFiles = append(protoVideoFiles, protoVideoFile)
+	}
+
+	var protoMatches []*server_pb.MatchInfoItem
+	for _, matchItem := range matches {
+		protoMatches = append(protoMatches, matchInfoItemDbToProto(matchItem))
+	}
+
+	var protoSubtitleMaps []*server_pb.RipVideoBlobs
+	for _, subtitleMap := range subtitleMaps {
+		protoSubtitleMaps = append(protoSubtitleMaps, ripVideoBlobsDbToProto(subtitleMap))
+	}
+
+	var protoOstSubtitleFiles []*server_pb.OstDownloadsItem
+	for _, ostSubtitleFile := range ostSubtitleFiles {
+		protoOstSubtitleFiles = append(
+			protoOstSubtitleFiles,
+			ostSubtitleFileDbToProto(ostSubtitleFile),
+		)
+	}
+
+	return server_pb.GetJobCatalogueInfoResponse_builder{
+		Id:                jobInfo.Id,
+		StartTime:         jobInfo.StartTime,
+		DiscTitle:         discTitle,
+		SuspectedContents: suspectedContents,
+		VideoFiles:        protoVideoFiles,
+		Matches:           protoMatches,
+		SubtitleMaps:      protoSubtitleMaps,
+		OstSubtitleFiles:  protoOstSubtitleFiles,
+	}.Build(), nil
 }
 
 // Re-processes all video files in a rip job
@@ -603,7 +936,11 @@ func (server ApiServer) ReprocessJob(
 	ctx context.Context,
 	request *server_pb.ReprocessJobRequest,
 ) (*server_pb.ReprocessJobResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	err := server.app.ReprocessRipJob(request.GetJobId(), true)
+	if err != nil {
+		return nil, convertError(err)
+	}
+	return server_pb.ReprocessJobResponse_builder{}.Build(), nil
 }
 
 // Prunes a rip job, removing all untagged content
@@ -611,10 +948,250 @@ func (server ApiServer) PruneRipJob(
 	ctx context.Context,
 	request *server_pb.PruneRipJobRequest,
 ) (*server_pb.PruneRipJobResponse, error) {
-	return nil, twirp.Unimplemented.Error("TODO")
+	err := server.app.PruneRipJob(request.GetJobId())
+	if err != nil {
+		return nil, convertError(err)
+	}
+	return server_pb.PruneRipJobResponse_builder{}.Build(), nil
 }
 
 func RegisterApiService(server *http.ServeMux, app *application.Application) {
 	apiHandler := server_pb.NewCoordinatorApiServiceServer(ApiServer{app: app})
 	server.Handle("POST "+apiHandler.PathPrefix(), apiHandler)
+}
+
+func convertError(err error) error {
+	if errors.Is(err, application.ErrNotFound) {
+		return twirp.NotFound.Error(err.Error())
+	}
+	if status, ok := gstatus.FromError(err); ok {
+		switch status.Code() {
+		case gcodes.NotFound:
+			return twirp.NotFound.Error(status.Message())
+		case gcodes.Unknown:
+			return twirp.Unknown.Error(status.Message())
+		}
+	}
+	return twirp.Unknown.Error(err.Error())
+}
+
+func movieDbToProto(movie dbapi.MoviesItem) *server_pb.Movie {
+	var tmdbId *int32
+	if movie.TmdbId.Valid {
+		tmdbId = &movie.TmdbId.Int32
+	}
+	var posterBlob *int64
+	if movie.PosterBlob.Valid {
+		posterBlob = &movie.PosterBlob.Int64
+	}
+	var releaseYear *string
+	if movie.ReleaseYear.Valid {
+		releaseYear = &movie.ReleaseYear.String
+	}
+	var description *string
+	if movie.Description.Valid {
+		description = &movie.Description.String
+	}
+	var runtime *uint32
+	if movie.Runtime.Valid {
+		runtime = &movie.Runtime.V
+	}
+
+	return server_pb.Movie_builder{
+		Id:          movie.Id,
+		TmdbId:      tmdbId,
+		PosterBlob:  posterBlob,
+		Title:       movie.Title,
+		ReleaseYear: releaseYear,
+		Description: description,
+		Runtime:     runtime,
+	}.Build()
+}
+
+func tvShowDbToProto(tvShow dbapi.TvShowsItem) *server_pb.TvShow {
+	var tmdbId *int32
+	if tvShow.TmdbId.Valid {
+		tmdbId = &tvShow.TmdbId.Int32
+	}
+	var posterBlob *int64
+	if tvShow.PosterBlob.Valid {
+		posterBlob = &tvShow.PosterBlob.Int64
+	}
+	var originalReleaseYear *string
+	if tvShow.OriginalReleaseYear.Valid {
+		originalReleaseYear = &tvShow.OriginalReleaseYear.String
+	}
+	var description *string
+	if tvShow.Description.Valid {
+		description = &tvShow.Description.String
+	}
+
+	return server_pb.TvShow_builder{
+		Id:                  tvShow.Id,
+		TmdbId:              tmdbId,
+		PosterBlob:          posterBlob,
+		Title:               tvShow.Title,
+		OriginalReleaseYear: originalReleaseYear,
+		Description:         description,
+	}.Build()
+}
+
+func tvSeasonDbToProto(tvSeason dbapi.TvSeasonsItem) *server_pb.TvSeason {
+	var tmdbId *int32
+	if tvSeason.TmdbId.Valid {
+		tmdbId = &tvSeason.TmdbId.Int32
+	}
+	var posterBlob *int64
+	if tvSeason.PosterBlob.Valid {
+		posterBlob = &tvSeason.PosterBlob.Int64
+	}
+	var description *string
+	if tvSeason.Description.Valid {
+		description = &tvSeason.Description.String
+	}
+
+	return server_pb.TvSeason_builder{
+		Id:           tvSeason.Id,
+		TmdbId:       tmdbId,
+		TvShowId:     tvSeason.TvShowId,
+		SeasonNumber: tvSeason.SeasonNumber,
+		PosterBlob:   posterBlob,
+		Title:        tvSeason.Title,
+		Description:  description,
+	}.Build()
+}
+
+func tvEpisodeDbToProto(tvEpisode dbapi.TvEpisodesItem) *server_pb.TvEpisode {
+	var tmdbId *int32
+	if tvEpisode.TmdbId.Valid {
+		tmdbId = &tvEpisode.TmdbId.Int32
+	}
+	var thumbnailBlob *int64
+	if tvEpisode.ThumbnailBlob.Valid {
+		thumbnailBlob = &tvEpisode.ThumbnailBlob.Int64
+	}
+	var description *string
+	if tvEpisode.Description.Valid {
+		description = &tvEpisode.Description.String
+	}
+	var runtime *uint32
+	if tvEpisode.Runtime.Valid {
+		runtime = &tvEpisode.Runtime.V
+	}
+
+	return server_pb.TvEpisode_builder{
+		Id:            tvEpisode.Id,
+		TmdbId:        tmdbId,
+		TvShowId:      tvEpisode.TvShowId,
+		TvSeasonId:    tvEpisode.TvSeasonId,
+		EpisodeNumber: tvEpisode.EpisodeNumber,
+		ThumbnailBlob: thumbnailBlob,
+		Title:         tvEpisode.Title,
+		Description:   description,
+		Runtime:       runtime,
+	}.Build()
+}
+
+func ripJobDbToProto(ripJob dbapi.RipJobsItem) (*server_pb.RipJob, error) {
+	var discTitle *string
+	if ripJob.DiscTitle.Valid {
+		discTitle = &ripJob.DiscTitle.String
+	}
+	var suspectedContents *server_pb.SuspectedContents
+	if ripJob.SuspectedContents.Valid {
+		suspectedContents = &server_pb.SuspectedContents{}
+		if err := proto.Unmarshal(ripJob.SuspectedContents.V, suspectedContents); err != nil {
+			return nil, convertError(err)
+		}
+	}
+
+	return server_pb.RipJob_builder{
+		Id:                ripJob.Id,
+		StartTime:         ripJob.StartTime,
+		DiscTitle:         discTitle,
+		SuspectedContents: suspectedContents,
+		RipFinished:       ripJob.RipFinished,
+		Imported:          ripJob.Imported,
+	}.Build(), nil
+}
+
+func videoFileDbToProto(videoFile dbapi.VideoFilesItem) (*server_pb.VideoFile, error) {
+	var matchId *int64
+	if videoFile.MatchId.Valid {
+		matchId = &videoFile.MatchId.Int64
+	}
+	var resolutionWidth *uint32
+	if videoFile.ResolutionWidth.Valid {
+		resolutionWidth = &videoFile.ResolutionWidth.V
+	}
+	var resolutionHeight *uint32
+	if videoFile.ResolutionHeight.Valid {
+		resolutionHeight = &videoFile.ResolutionHeight.V
+	}
+	var length *uint32
+	if videoFile.Length.Valid {
+		length = &videoFile.Length.V
+	}
+	var originalVideoHash []byte
+	if videoFile.OriginalVideoHash.Valid {
+		originalVideoHash = videoFile.OriginalVideoHash.V
+	}
+	var ripJob *int64
+	if videoFile.RipJob.Valid {
+		ripJob = &videoFile.RipJob.Int64
+	}
+	var extendedMetadata *server_pb.VideoExtendedMetadata
+	if videoFile.ExtendedMetadata.Valid {
+		metadata := &server_pb.VideoExtendedMetadata{}
+		if err := proto.Unmarshal(videoFile.ExtendedMetadata.V, metadata); err != nil {
+			return nil, convertError(err)
+		}
+		extendedMetadata = metadata
+	}
+
+	return server_pb.VideoFile_builder{
+		Id:                videoFile.Id,
+		VideoType:         videoFile.VideoType,
+		MatchId:           matchId,
+		BlobId:            videoFile.BlobId,
+		ResolutionWidth:   resolutionWidth,
+		ResolutionHeight:  resolutionHeight,
+		Length:            length,
+		OriginalVideoHash: originalVideoHash,
+		RipJob:            ripJob,
+		ExtendedMetadata:  extendedMetadata,
+	}.Build(), nil
+}
+
+func matchInfoItemDbToProto(matchItem dbapi.MatchInfoItem) *server_pb.MatchInfoItem {
+	return server_pb.MatchInfoItem_builder{
+		Id:            matchItem.Id,
+		VideoFileId:   matchItem.VideoFileId,
+		OstDownloadId: matchItem.OstDownloadId,
+		Distance:      matchItem.Distance,
+		MaxDistance:   matchItem.MaxDistance,
+	}.Build()
+}
+
+func ripVideoBlobsDbToProto(ripVideoBlob dbapi.RipVideoBlobs) *server_pb.RipVideoBlobs {
+	var subtitleBlob *string
+	if ripVideoBlob.SubtitleBlob.Valid {
+		subtitleBlob = &ripVideoBlob.SubtitleBlob.String
+	}
+	return server_pb.RipVideoBlobs_builder{
+		Id:           ripVideoBlob.Id,
+		JobId:        ripVideoBlob.JobId,
+		VideoBlob:    ripVideoBlob.VideoBlob,
+		SubtitleBlob: subtitleBlob,
+	}.Build()
+}
+
+func ostSubtitleFileDbToProto(subtitleFile dbapi.OstDownloadsItem) *server_pb.OstDownloadsItem {
+	return server_pb.OstDownloadsItem_builder{
+		Id:        subtitleFile.Id,
+		VideoType: subtitleFile.VideoType,
+		MatchId:   subtitleFile.MatchId,
+		Filename:  subtitleFile.Filename,
+		BlobId:    subtitleFile.BlobId,
+	}.Build()
 }
