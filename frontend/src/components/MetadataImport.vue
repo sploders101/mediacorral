@@ -64,6 +64,7 @@ async function submit() {
 			const { response: responseMulti } = await reportErrors(
 				rpc.searchTmdbMulti({
 					query: query.value,
+					page: 1,
 				}),
 				"Error searching TMDB"
 			);
@@ -73,6 +74,7 @@ async function submit() {
 			const { response: responseMovie } = await reportErrors(
 				rpc.searchTmdbMovie({
 					query: query.value,
+					page: 1,
 				}),
 				"Error searching TMDB"
 			);
@@ -82,6 +84,7 @@ async function submit() {
 			const { response: responseTvSeries } = await reportErrors(
 				rpc.searchTmdbTv({
 					query: query.value,
+					page: 1,
 				}),
 				"Error searching TMDB"
 			);

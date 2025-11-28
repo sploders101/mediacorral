@@ -158,7 +158,7 @@ function trackJob() {
 	}
 	jobStatus.value = RipStatus.create();
 	let inflight = false;
-	setInterval(async () => {
+	jobTrackerInterval.value = setInterval(async () => {
 		if (inflight) return;
 		if (jobInfo.value === undefined) return;
 		inflight = true;
@@ -173,6 +173,15 @@ function trackJob() {
 		}
 	}, 1000);
 }
+watch(
+	() => props.visible,
+	() => {
+		if (!props.visible && jobTrackerInterval.value !== undefined) {
+			clearInterval(jobTrackerInterval.value);
+			jobTrackerInterval.value = undefined;
+		}
+	}
+)
 watch(
 	() => jobInfo.value?.id,
 	(id) => {
@@ -189,7 +198,7 @@ watch(
 	{ immediate: true }
 );
 onBeforeUnmount(() => {
-	if (jobTrackerInterval.value === undefined) {
+	if (jobTrackerInterval.value !== undefined) {
 		clearInterval(jobTrackerInterval.value)
 		jobTrackerInterval.value = undefined;
 	}
@@ -235,7 +244,7 @@ async function renameJob() {
 				<v-label :text="`Current: ${jobStatus.cprogTitle}`" />
 				<v-progress-linear
 					:model-value="
-						(jobStatus.progress!.cprogValue / jobStatus.progress!.maxValue) *
+						((jobStatus.progress?.cprogValue || 0) / (jobStatus.progress?.maxValue || 1)) *
 						100
 					"
 					buffer-value="0"
@@ -245,7 +254,7 @@ async function renameJob() {
 				<v-label :text="`Total: ${jobStatus.tprogTitle}`" />
 				<v-progress-linear
 					:model-value="
-						(jobStatus.progress!.tprogValue / jobStatus.progress!.maxValue) *
+						((jobStatus.progress?.tprogValue || 0) / (jobStatus.progress?.maxValue || 1)) *
 						100
 					"
 					buffer-value="0"

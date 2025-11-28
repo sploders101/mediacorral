@@ -13,8 +13,8 @@
 	},
 	"dependencies": {
 		"@mdi/font": "7.4.47",
-		"@protobuf-ts/grpcweb-transport": "^2.11.1",
 		"@protobuf-ts/runtime": "^2.11.1",
+		"@protobuf-ts/twirp-transport": "^2.11.1",
 		"core-js": "^3.37.1",
 		"roboto-fontface": "*",
 		"vue": "^3.4.31",
