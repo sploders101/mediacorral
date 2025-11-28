@@ -57,7 +57,7 @@ type applicationSettings struct {
 // This is the application service layer, which separates the all-encompassing
 // application logic from the API layer.
 type Application struct {
-	db                 dbapi.Db
+	Db                 dbapi.Db
 	settings           applicationSettings
 	ripDir             string
 	AnalysisController *analysis.AnalysisController
@@ -132,7 +132,7 @@ func NewApplication(configData config.ConfigFile) (*Application, error) {
 	}
 
 	return &Application{
-		db: db,
+		Db: db,
 		settings: applicationSettings{
 			autoripEnabled:   configData.EnableAutorip,
 			driveControllers: driveControllers,
@@ -240,7 +240,7 @@ func (app *Application) RipMedia(
 		return dbapi.RipJobsItem{}, ErrBusy
 	}
 
-	dbTx, err := app.db.Begin()
+	dbTx, err := app.Db.Begin()
 	if err != nil {
 		return dbapi.RipJobsItem{}, fmt.Errorf("failed to start db transaction: %w", err)
 	}
@@ -282,7 +282,7 @@ func (app *Application) RipMedia(
 
 // Imports a rip job from the `rips` directory
 func (app *Application) ImportJob(jobId int64) error {
-	dbTx, err := app.db.Begin()
+	dbTx, err := app.Db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to start db transaction: %w", err)
 	}
@@ -347,7 +347,7 @@ func (app *Application) ImportJob(jobId int64) error {
 }
 
 func (app *Application) AutoimportMovie(tmdbId int32) (dbapi.MoviesItem, error) {
-	dbTx, err := app.db.Begin()
+	dbTx, err := app.Db.Begin()
 	if err != nil {
 		return dbapi.MoviesItem{}, fmt.Errorf("failed to create db transaction: %w", err)
 	}
@@ -375,7 +375,7 @@ func (app *Application) AutoimportMovie(tmdbId int32) (dbapi.MoviesItem, error) 
 }
 
 func (app *Application) AnalyzeJob(jobId int64) error {
-	dbTx, err := app.db.Begin()
+	dbTx, err := app.Db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to start db transaction: %w", err)
 	}
@@ -425,7 +425,7 @@ func (app *Application) AnalyzeJob(jobId int64) error {
 
 // Re-runs analysis on video files in rip job. Useful for debugging or backfilling metadata
 func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
-	dbRoTx, err := app.db.Begin()
+	dbRoTx, err := app.Db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to start db transaction: %w", err)
 	}
@@ -445,7 +445,7 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 		videoFilePath := app.BlobStorage.GetFilePath(videoFile.BlobId)
 		extractWg.Add(1)
 		go func() {
-			dbTx, err := app.db.Begin()
+			dbTx, err := app.Db.Begin()
 			if err != nil {
 				slog.Error("Failed to start db transaction", "error", err.Error())
 				return
@@ -556,7 +556,7 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 
 // Prunes a rip job, deleting any files that aren't tagged, and their references
 func (app *Application) PruneRipJob(jobId int64) error {
-	dbTx, err := app.db.Begin()
+	dbTx, err := app.Db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to start db tx: %w", err)
 	}
