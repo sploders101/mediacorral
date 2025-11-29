@@ -50,6 +50,8 @@ pub enum PgsError {
     RleFormatError,
     #[error("Invalid PGS segment found.")]
     FormatError,
+    #[error("Display set is incomplete.")]
+    DsIncomplete,
 }
 
 fn render_into_image<'a>(
@@ -123,6 +125,7 @@ pub struct PgsParser {
     /// palette_id -> color_id -> color
     palette_table: HashMap<u8, HashMap<u8, LumaA<u8>>>,
     object_table: HashMap<u16, ObjectDefinition>,
+    incomplete_ds: Vec<u8>,
 }
 impl PgsParser {
     pub fn new() -> Self {
@@ -136,7 +139,17 @@ impl PgsParser {
     ) -> Result<Option<image::GrayAlphaImage>, PgsError> {
         // Parse display set
         let mut data = PacketReader::new(&frame.data);
-        let display_set = read_display_set(&mut data)?;
+        let display_set = match read_display_set(&mut data) {
+            Ok(display_set) => display_set,
+            Err(PgsError::DsIncomplete) => {
+                self.incomplete_ds.extend_from_slice(&frame.data);
+                return Ok(None);
+            }
+            Err(err) => {
+                return Err(err);
+            }
+        };
+        self.incomplete_ds.clear();
 
         // Clear cache if requested
         if display_set.pcs.composition_state == CompositionState::EpochStart {
@@ -362,6 +375,10 @@ fn parse_ods(data: &[u8]) -> Result<ObjectDefinition, PgsError> {
     .saturating_sub(4); // Subtract size of width & height
     let width = data.read_u16().ok_or(PgsError::FormatError)?;
     let height = data.read_u16().ok_or(PgsError::FormatError)?;
+    if (object_data_length as usize) > data.get_remaining_bytes() {
+        // dbg!(&data);
+        return Err(PgsError::DsIncomplete);
+    }
     let rle_data = Vec::from(
         data.take_bytes(object_data_length as usize)
             .ok_or(PgsError::FormatError)?,

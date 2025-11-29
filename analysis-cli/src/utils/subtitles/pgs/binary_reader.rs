@@ -71,6 +71,7 @@ impl PacketWriter {
 }
 
 /// Builds packets via manual assembly
+#[derive(Debug)]
 pub struct PacketReader<'a> {
     cursor: usize,
     packet: &'a [u8],

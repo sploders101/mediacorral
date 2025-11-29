@@ -68,12 +68,18 @@ impl PgsProcessor {
         });
     }
     pub fn push_frame(&mut self, frame: &matroska_demuxer::Frame) -> Result<(), PgsError> {
-        if let Some(image) = self.pgs_parser.process_mkv_frame(frame)? {
-            self.rayon_pool.push_data((
-                frame.timestamp / 1000,
-                frame.duration.map(|duration| duration / 1000),
-                image,
-            ));
+        match self.pgs_parser.process_mkv_frame(frame) {
+            Ok(Some(image)) => {
+                self.rayon_pool.push_data((
+                    frame.timestamp / 1000,
+                    frame.duration.map(|duration| duration / 1000),
+                    image,
+                ));
+            }
+            Ok(None) => {}
+            Err(err) => {
+                eprintln!("Error in frame at {}ms: {}. Ignoring...", frame.timestamp, err);
+            }
         }
         return Ok(());
     }
