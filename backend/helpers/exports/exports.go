@@ -171,13 +171,14 @@ func addTvEpisode(
 		)
 		seasonFolder := path.Join(showFolder, fmt.Sprintf("Season %02d", entry.SeasonNumber))
 		episodeFilename := fmt.Sprintf(
-			"%s (%s) - S%02dE%02d - %s - {tmdb-%d}.mkv",
+			"%s (%s) - S%02dE%02d - %s - {tmdb-%d} {mcorral-%d}.mkv",
 			pathEscape(entry.TvTitle),
 			pathEscape(entry.TvReleaseYear),
 			entry.SeasonNumber,
 			entry.EpisodeNumber,
 			pathEscape(entry.EpisodeTitle),
 			entry.EpisodeTmdb,
+			entry.FileId,
 		)
 		episodePath := path.Join(seasonFolder, episodeFilename)
 
@@ -203,6 +204,7 @@ func addTvEpisode(
 				slog.Error(
 					"Blob missing from filesystem",
 					"blobId", entry.EpisodeBlob,
+					"fileId", entry.FileId,
 					"tvShow", entry.TvTitle,
 					"seasonNumber", entry.SeasonNumber,
 					"episodeNumber", entry.EpisodeNumber,
@@ -239,10 +241,11 @@ func addMovie(
 			),
 		)
 		movieFilename := fmt.Sprintf(
-			"%s (%s) - {tmdb-%d}.mkv",
+			"%s (%s) - {tmdb-%d} {mcorral-%d}.mkv",
 			pathEscape(entry.MovieTitle),
 			pathEscape(entry.MovieReleaseYear),
 			entry.MovieTmdb,
+			entry.FileId,
 		)
 		moviePath := path.Join(movieFolder, movieFilename)
 
@@ -268,6 +271,7 @@ func addMovie(
 				slog.Error(
 					"Blob missing from filesystem",
 					"blobId", entry.MovieBlob,
+					"fileId", entry.FileId,
 					"movie", entry.MovieTitle,
 					"movieTmdb", entry.MovieTmdb,
 				)

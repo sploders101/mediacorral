@@ -1920,7 +1920,8 @@ func (db *DbTx) ProcessTvExportsInfo(cb func(TvExportEntry) error) error {
                 tv_episodes.title as episode_title,
                 tv_episodes.episode_number as episode_number,
                 tv_episodes.tmdb_id as episode_tmdb,
-                video_files.blob_id as episode_blob
+                video_files.blob_id as episode_blob,
+                video_files.id as file_id
             FROM video_files
             JOIN tv_episodes ON
                 video_files.match_id = tv_episodes.id
@@ -1947,6 +1948,7 @@ func (db *DbTx) ProcessTvExportsInfo(cb func(TvExportEntry) error) error {
 			&entry.EpisodeNumber,
 			&entry.EpisodeTmdb,
 			&entry.EpisodeBlob,
+			&entry.FileId,
 		); err != nil {
 			return err
 		}
@@ -1968,7 +1970,8 @@ func (db *DbTx) ProcessMovieExportsInfo(cb func(MovieExportEntry) error) error {
             	movies.title,
             	movies.release_year,
             	movies.tmdb_id,
-            	video_files.blob_id
+            	video_files.blob_id,
+            	video_files.id
             FROM video_files
             JOIN movies ON
                 video_files.match_id = movies.id
@@ -1986,6 +1989,7 @@ func (db *DbTx) ProcessMovieExportsInfo(cb func(MovieExportEntry) error) error {
 			&entry.MovieReleaseYear,
 			&entry.MovieTmdb,
 			&entry.MovieBlob,
+			&entry.FileId,
 		); err != nil {
 			return err
 		}
@@ -2009,7 +2013,8 @@ func (db *DbTx) FetchOneTvExportInfo(videoId int64) (TvExportEntry, error) {
                 tv_episodes.title as episode_title,
                 tv_episodes.episode_number as episode_number,
                 tv_episodes.tmdb_id as episode_tmdb,
-                video_files.blob_id as episode_blob
+                video_files.blob_id as episode_blob,
+                video_files.id as file_id
             FROM video_files
             JOIN tv_episodes ON
                 video_files.match_id = tv_episodes.id
@@ -2034,6 +2039,7 @@ func (db *DbTx) FetchOneTvExportInfo(videoId int64) (TvExportEntry, error) {
 		&entry.EpisodeNumber,
 		&entry.EpisodeTmdb,
 		&entry.EpisodeBlob,
+		&entry.FileId,
 	); err != nil {
 		return TvExportEntry{}, err
 	}
