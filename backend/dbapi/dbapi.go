@@ -2055,7 +2055,8 @@ func (db *DbTx) FetchOneMovieExportInfo(videoId int64) (MovieExportEntry, error)
             	movies.title,
             	movies.release_year,
             	movies.tmdb_id,
-            	video_files.blob_id
+            	video_files.blob_id,
+            	video_files.id
             FROM video_files
             JOIN movies ON
                 video_files.match_id = movies.id
@@ -2072,6 +2073,7 @@ func (db *DbTx) FetchOneMovieExportInfo(videoId int64) (MovieExportEntry, error)
 		&entry.MovieReleaseYear,
 		&entry.MovieTmdb,
 		&entry.MovieBlob,
+		&entry.FileId,
 	); err != nil {
 		return MovieExportEntry{}, err
 	}
