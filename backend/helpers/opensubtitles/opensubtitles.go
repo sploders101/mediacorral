@@ -25,9 +25,11 @@ import (
 )
 
 const (
-	LOGIN_URL                 string        = "https://api.opensubtitles.com/api/v1/login"
-	SEARCH_URL                string        = "https://api.opensubtitles.com/api/v1/subtitles"
-	DOWNLOAD_URL              string        = "https://api.opensubtitles.com/api/v1/download"
+	USER_AGENT                string        = "Mediacorral v1.0.0"
+	BASE_URL                  string        = "https://api.opensubtitles.com"
+	LOGIN_URL                 string        = BASE_URL + "/api/v1/login"
+	SEARCH_URL                string        = BASE_URL + "/api/v1/subtitles"
+	DOWNLOAD_URL              string        = BASE_URL + "/api/v1/download"
 	DEFAULT_TIMEOUT           time.Duration = time.Minute
 	SUBTITLE_COMPARISON_LIMIT int           = 3
 )
@@ -81,13 +83,24 @@ func (importer *OstImporter) login() error {
 		return err
 	}
 
-	res, err := http.Post(LOGIN_URL, "application/json", bytes.NewBuffer(loginCredsBuf))
+	req, err := http.NewRequest("POST", LOGIN_URL, bytes.NewBuffer(loginCredsBuf))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("user-agent", USER_AGENT)
+	req.Header.Set("api-key", importer.apiKey)
+	res, err := http.DefaultClient.Do(req)
+	// res, err := http.Post(LOGIN_URL, "application/json", bytes.NewBuffer(loginCredsBuf))
 	if err != nil {
 		return err
 	}
 	defer func() {
 		_ = res.Body.Close()
 	}()
+	if res.StatusCode != 200 {
+		return fmt.Errorf("error logging into OST api. status code=%d", res.StatusCode)
+	}
 
 	var response struct {
 		Token string `json:"token"`
@@ -124,7 +137,8 @@ func (importer *OstImporter) runAuthenticated(
 
 	for {
 		// Make request
-		req.Header.Set("user-agent", "Mediacorral v1.0.0")
+		req.Host = "api.opensubtitles.com"
+		req.Header.Set("user-agent", USER_AGENT)
 		req.Header.Set("api-key", importer.apiKey)
 		req.Header.Set("authorization", "Bearer "+authToken)
 		res, err := importer.client.Do(req)
@@ -272,6 +286,8 @@ func (importer *OstImporter) DownloadSubtitles(fileId uint32) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "*/*")
 
 	var results struct {
 		Link string `json:"link"`
@@ -292,6 +308,7 @@ func (importer *OstImporter) DownloadSubtitles(fileId uint32) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer func() { _ = res.Body.Close() }()
 
 	subs, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -314,7 +331,7 @@ func (importer *OstImporter) FindBestSubtitles(tmdbId int32) (FindBestSubtitlesR
 	}
 
 	// Download subtitles
-	subtitles := make([]FindBestSubtitlesResult, SUBTITLE_COMPARISON_LIMIT)
+	var subtitles []FindBestSubtitlesResult
 	for i, subtitle := range subtitleResults {
 		if i >= SUBTITLE_COMPARISON_LIMIT {
 			break
@@ -346,10 +363,13 @@ func (importer *OstImporter) FindBestSubtitles(tmdbId int32) (FindBestSubtitlesR
 		bIndex   int
 		distance int
 	}
+	var computeWg sync.WaitGroup
 	var resultChan = make(chan comparison)
 	for aIndex, resultA := range subtitles {
 		for bIndex, resultB := range subtitles[aIndex+1:] {
+			computeWg.Add(1)
 			go func() {
+				defer computeWg.Done()
 				distance := levenshtein.ComputeDistance(
 					resultA.minifiedSubtitles,
 					resultB.minifiedSubtitles,
@@ -362,6 +382,10 @@ func (importer *OstImporter) FindBestSubtitles(tmdbId int32) (FindBestSubtitlesR
 			}()
 		}
 	}
+	go func() {
+		computeWg.Wait()
+		close(resultChan)
+	}()
 
 	distancesByIndex := make(map[int][]int)
 	for result := range resultChan {
@@ -385,7 +409,7 @@ func (importer *OstImporter) FindBestSubtitles(tmdbId int32) (FindBestSubtitlesR
 	topAverage := slices.MinFunc(averagedResults, func(a, b averagedComparison) int {
 		return a.averagedDistance - b.averagedDistance
 	})
-	topResult := subtitles[topAverage.averagedDistance]
+	topResult := subtitles[topAverage.index]
 
 	// Check that the results are at least somewhat similar
 	maxDistance := len(slices.MaxFunc(subtitles, func(a, b FindBestSubtitlesResult) int {
