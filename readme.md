@@ -7,15 +7,15 @@ disaster recovery.
 
 ## Todo
 
-[x] Rewrite backend in Go to avoid Rust's unfortunate async scaling complexities
-[ ] Add Ollama-based AI chat to ask questions about rip jobs & subtitles
-  * This will assist in scenarios when little information is available for matching
-[ ] Use whisper-rs to generate subtitles for analysis when there aren't any
-[ ] Add precalculated AI matching recommendations
-[ ] Add rudimentary streaming capability (just good enough for identification)
-[ ] Add mkvtoolnix-based chapter splitting feature for master tracks
-[ ] Add transcoding support to decrease file sizes (without losing disaster recovery info)
-[ ] Add ahead-of-time upscaling for high-quality video (since some content can only be purchased in low resolution)
+- [x] Rewrite backend in Go to avoid Rust's unfortunate async scaling complexities
+- [ ] Add Ollama-based AI chat to ask questions about rip jobs & subtitles
+  - This will assist in scenarios when little information is available for matching
+- [ ] Use whisper-rs to generate subtitles for analysis when there aren't any
+- [ ] Add precalculated AI matching recommendations
+- [ ] Add rudimentary streaming capability (just good enough for identification)
+- [ ] Add mkvtoolnix-based chapter splitting feature for master tracks
+- [ ] Add transcoding support to decrease file sizes (without losing disaster recovery info)
+- [ ] Add ahead-of-time upscaling for high-quality video (since some content can only be purchased in low resolution)
 
 
 ## Preamble
