@@ -5,6 +5,19 @@ cataloging tools. This will be a one-stop-shop for managing my media
 collection, supporting automated ripping, identification, cataloging, and
 disaster recovery.
 
+## Todo
+
+[x] Rewrite backend in Go to avoid Rust's unfortunate async scaling complexities
+[ ] Add Ollama-based AI chat to ask questions about rip jobs & subtitles
+  * This will assist in scenarios when little information is available for matching
+[ ] Use whisper-rs to generate subtitles for analysis when there aren't any
+[ ] Add precalculated AI matching recommendations
+[ ] Add rudimentary streaming capability (just good enough for identification)
+[ ] Add mkvtoolnix-based chapter splitting feature for master tracks
+[ ] Add transcoding support to decrease file sizes (without losing disaster recovery info)
+[ ] Add ahead-of-time upscaling for high-quality video (since some content can only be purchased in low resolution)
+
+
 ## Preamble
 
 Managing an ethically-obtained media collection is hard. Like, REALLY hard.
@@ -34,68 +47,50 @@ all I need to back up is those hashes.
 ## What does it do?
 
 Mediacorral is a ripping, storage, cataloging, and renaming tool all rolled
-into one with a fancy web UI and integration with Home Assistant.
+into one with a fancy web UI.
 
 ### Ripping & Cataloging
 
-Upon triggering Mediacorral's ripping process, you will be asked what files you
-expect to find on the disc. It will invoke MakeMKV to extract media from the
-disc, and save them into a temporary "rips" directory.
+Upon triggering Mediacorral's ripping process, it will invoke MakeMKV to
+extract media from the disc, and save them into a temporary "rips" directory.
 
-At this point, Mediacorral will do different things based on whether the
-content is expected to be a TV show or a Movie.
+Once this is finished the rip will be moved into blob storage and tracked in
+a sqlite database. Next, each file will be analyzed, yielding a variety of
+information including runtime, resolution, and subtitles.
+
+Next, these files will show up in the "catalogue" section of the web UI, where
+you can inform Mediacorral what it might find on the disc. Mediacorral will do
+different things based on whether the content is expected to be a TV show or a
+Movie.
 
 #### TV Shows
 
-Once ripping has finished, Mediacorral will extract subtitles using a variety
-of tools and run OCR on them to get them into a textual format that's easier to
-work with for analysis. It will then look up subtitles for the desired episodes
-online and download them for comparison. Mediacorral will attempt to identify
-episodes based on their similarity to the subtitles it found, and present its
-findings to you for final confirmation. Upon confirming the match, a link will
-be made in the database between the file and the episode it contains, and the
-episode will be made available to any configured exports directories (more on
-these later).
+Supported matching strategies:
+* OST subtitle similarity scoring
+  * This integration downloads subtitles from opensubtitles and scores the
+  similarity of each subtitle track ripped from the disc with a subtitle track
+  for each possible episode found on opensubtitles.
 
 #### Movies
 
-Once ripping has finished, Mediacorral will attempt to identify the movie by
-video length and number of tracks (the more tracks there are, the more likely
-that file is to be the primary movie track). It will then present its findings
-to you for final confirmation. During confirmation, Mediacorral will also give
-you the option to catalogue special features and store them in the database.
-Upon confirming the match, a link will be made in the database between the file
-and the movie it contains, and the movie will be made available to any
-configured exports directories (more on these later).
+No movie matching strategies exist yet, as it is usually easy to tell which
+track is the main feature from metadata alone. This feature will come, but is
+low on the priority list.
 
 ### Storage & Renaming
 
-Sometimes, the filesystem just doesn't cut it for organization. There are many
-different methods of organizing files out there, and each media server
-recommends a different strategy. Instead, what if we adopted a more
-BLOB-oriented style of organization, where every file is issued a unique ID in
-a flat structure, and associations are made to that ID with extra information.
-This gives us a lot more flexibility in how we organize our content.
+Instead of storing files in user-generated heirarchies, Mediacorral owns the
+content and manages it internally in the "blob storage controller". This allows
+mediacorral to associate many data points with each file and track them in a
+relational database rather than filenames.
 
 #### Exports directories
 
-Unfortunately, I'm probably not going to get Plex, Emby, and Jellyfin on board
-(maybe Jellyfin, but still...), and even if I could, I need something
-backwards-compatible until the idea comes to fruition. I need to match the
-directory structure that these media servers want. This is where exports
-directories come in.
-
-An exports directory is a directory intended to match the pattern expected by a
-given media player. This will start off as hard-coded options, but will be
-expanded to add user-configurable options later. These directories will be
-scrapped and re-assembled from entries in the database upon request, with
-differential updates when new content is added. Essentially, they are just file
-trees of either symbolic or hard links to the original content in the blob
-storage directory.
-
-The goal of this is to allow me to easily restructure my files with no risk of
-losing the original content, as well as provide different "views" of the
-content for Plex, Emby, and Possibly Jellyfin. Plex is more polished, but Emby
-actually works reliably. Even so, I'm having trouble getting my family to see
-eye-to-eye with me on this, so I maintain both, and it's pretty tedious.
-Mediacorral will allow you to catalogue once, and export for both servers.
+An exports directory is Mediacorral's way of interfacing with media servers
+like Plex, Emby, and Jellyfin. Mediacorral can create link trees using either
+symbolic or hard links that utilize standard naming conventions as recognized
+by 3rd party media servers. There is no risk to deleting and recreating these
+directories, as all data is stored in Mediacorral's "blobs" directory. This
+simplifies the process of changing naming schemes and reduces the effect of any
+bugs that may exist in Mediacorral's synchronization between database state and
+filesystem trees. If an error occurs, just delete it and start again!
