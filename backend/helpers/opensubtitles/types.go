@@ -36,6 +36,7 @@ type GetSubtitlesResult struct {
 }
 
 type FindBestSubtitlesResult struct {
+	downloadLink      string
 	Filename          string
 	Subtitles         string
 	minifiedSubtitles string

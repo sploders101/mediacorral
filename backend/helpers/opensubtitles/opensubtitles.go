@@ -250,10 +250,12 @@ func (importer *OstImporter) FindSubtitles(tmdbId int32) ([]SubtitleSummary, err
 	}
 
 	slices.SortFunc(files, func(a, b SubtitleSummary) int {
+		aRank := strings.ToLower(a.Uploader.Rank)
+		bRank := strings.ToLower(b.Uploader.Rank)
 		switch {
-		case a.Uploader.Rank == "Admin Warning":
+		case aRank == "admin warning" && bRank != "admin warning":
 			return 1
-		case b.Uploader.Rank == "Admin Warning":
+		case bRank == "admin warning" && aRank != "admin warning":
 			return -1
 		case a.NewDownloadCount < b.NewDownloadCount:
 			return 1
@@ -273,18 +275,18 @@ func (importer *OstImporter) FindSubtitles(tmdbId int32) ([]SubtitleSummary, err
 }
 
 // Downloads a set of subtitles, returning them as a string
-func (importer *OstImporter) DownloadSubtitles(fileId uint32) (string, error) {
+func (importer *OstImporter) DownloadSubtitles(fileId uint32) (string, string, error) {
 	bodyBuf, err := json.Marshal(struct {
 		FileId uint32 `json:"file_id"`
 	}{
 		FileId: fileId,
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	req, err := http.NewRequest("POST", DOWNLOAD_URL, bytes.NewReader(bodyBuf))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "*/*")
@@ -293,28 +295,28 @@ func (importer *OstImporter) DownloadSubtitles(fileId uint32) (string, error) {
 		Link string `json:"link"`
 	}
 	if err := importer.makeRequest(req, &results); err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if results.Link == "" {
-		return "", errors.New("OST returned an empty link")
+		return "", "", errors.New("OST returned an empty link")
 	}
 
 	req, err = http.NewRequest("GET", results.Link, nil)
 	if err != nil {
-		return "", err
+		return "", results.Link, err
 	}
 	res, err := importer.runAuthenticated(req, false)
 	if err != nil {
-		return "", err
+		return "", results.Link, err
 	}
 	defer func() { _ = res.Body.Close() }()
 
 	subs, err := io.ReadAll(res.Body)
 	if err != nil {
-		return "", err
+		return "", results.Link, err
 	}
-	return string(subs), nil
+	return string(subs), results.Link, nil
 }
 
 // Finds the best subtitles by grabbing up to 3 and comparing them. One of the subtitles
@@ -336,15 +338,21 @@ func (importer *OstImporter) FindBestSubtitles(tmdbId int32) (FindBestSubtitlesR
 		if i >= SUBTITLE_COMPARISON_LIMIT {
 			break
 		}
-		subs, err := importer.DownloadSubtitles(subtitle.FileId)
+		subs, downloadLink, err := importer.DownloadSubtitles(subtitle.FileId)
 		if err != nil {
 			return FindBestSubtitlesResult{}, err
 		}
 		subtitles = append(subtitles, FindBestSubtitlesResult{
+			downloadLink:      downloadLink,
 			Filename:          subtitle.Name,
 			Subtitles:         subs,
 			minifiedSubtitles: StripSubtitles(subs),
 		})
+	}
+
+	if len(subtitles) == 1 {
+		slog.Debug("Picked subtitles.", "mode", "default", "tmdbId", tmdbId, "url", subtitles[0].downloadLink)
+		return subtitles[0], nil
 	}
 
 	// Compare subtitles
@@ -419,6 +427,7 @@ func (importer *OstImporter) FindBestSubtitles(tmdbId int32) (FindBestSubtitlesR
 		return FindBestSubtitlesResult{}, ErrUnreliableSubtitles
 	}
 
+	slog.Debug("Picked subtitles.", "mode", "bestOf", "tmdbId", tmdbId, "url", topResult.downloadLink)
 	return FindBestSubtitlesResult{
 		Filename:  topResult.Filename,
 		Subtitles: topResult.Subtitles,
@@ -484,12 +493,12 @@ func numericRank(rank string) int {
 	switch strings.ToLower(rank) {
 	case "administrator":
 		return 0
-	case "application developers":
-		return 10
 	case "gold member":
 		return 20
 	case "bronze member":
 		return 30
+	case "application developers":
+		return 90
 	case "anonymous":
 		return 100
 	case "admin warning":
