@@ -9,7 +9,10 @@ export interface ProcessedVideoItem {
 	likelyOstMatch: MatchInfoItem | undefined;
 	existingMatchType: VideoType;
 	existingMatch: bigint | undefined;
-	features: {
+	attributes: {
+		hash: string | undefined;
+		hashColor: string | undefined;
+		dupCount: number;
 		subtitles: boolean;
 	};
 }
@@ -194,8 +197,36 @@ async function refreshData() {
 	loading.value = false;
 }
 
+const colorCodes = [
+	"#1AEB69",
+	"#EBC51A",
+	"#1A1AEB",
+	"#EB241A",
+	"#3E3EAB",
+	"#403396",
+	"#339666",
+	"#968933",
+	"#6B3D37",
+	"#2E2C41",
+];
+
 const tableItems = computed<ProcessedVideoItem[]>(() => {
 	if (jobInfo.value === undefined || catInfo.value === undefined) return [];
+
+	const hashCounts: Record<string, number> = {};
+	catInfo.value.videoFiles.forEach((videoFile) => {
+		if (videoFile.originalVideoHash === undefined) return;
+		let hash = toHex(videoFile.originalVideoHash);
+		hashCounts[hash] = (hashCounts[hash] || 0) + 1;
+	});
+	const hashBadge = Object.fromEntries(
+		Object.entries(hashCounts)
+			.filter(([_hash, count]) => count > 1)
+			.map(([hash, count], i) => [
+				hash,
+				[colorCodes[i % colorCodes.length], count] as const,
+			])
+	);
 
 	return catInfo.value.videoFiles.map<ProcessedVideoItem>((videoFile) => {
 		const runtime =
@@ -245,6 +276,9 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 			}
 		}
 
+		const hashHex =
+			videoFile.originalVideoHash && toHex(videoFile.originalVideoHash);
+		const hashBadgeInfo = hashHex ? hashBadge[hashHex] : undefined;
 		return {
 			id: videoFile.id,
 			runtime,
@@ -257,7 +291,10 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 				likelyOstMatches.length === 1 ? likelyOstMatches[0] : undefined,
 			existingMatchType: videoFile.videoType,
 			existingMatch: videoFile.matchId,
-			features: {
+			attributes: {
+				hash: hashHex,
+				hashColor: hashBadgeInfo && hashBadgeInfo[0],
+				dupCount: (hashBadgeInfo && hashBadgeInfo[1]) || 1,
 				subtitles:
 					catInfo.value?.subtitleMaps.find(
 						(subtitle) => subtitle.id === videoFile.id
@@ -266,6 +303,13 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 		};
 	});
 });
+
+function toHex(buf: Uint8Array) {
+	return Array.prototype.map
+		.call(buf, (n: number) => n.toString(16).padStart(2, "0"))
+		.join("")
+		.toUpperCase();
+}
 
 function formatMatch(matchCount: number, match: MatchInfoItem | undefined) {
 	if (matchCount > 1) return "Multiple matches";
@@ -480,7 +524,7 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 						{ title: 'ID', value: 'id', sortable: false },
 						{ title: 'Runtime', value: 'runtime', sortable: false },
 						{ title: 'Resolution', value: 'resolution', sortable: false },
-						{ title: 'Features', key: 'features', sortable: false },
+						{ title: 'Attributes', key: 'attributes', sortable: false },
 						{
 							title: 'Subtitle Match',
 							key: 'likelyOstMatch',
@@ -497,9 +541,19 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 					]"
 					hide-default-footer
 				>
-					<template v-slot:item.features="{ item }">
-						<template v-if="item.features.subtitles">
-							<v-tooltip text="Subtitles">
+					<template v-slot:item.attributes="{ item }">
+						<template v-if="item.attributes">
+							<v-tooltip
+								v-if="item.attributes.dupCount > 1"
+								:text="`Duplicate (x${item.attributes.dupCount})\nVideo Hash: ${item.attributes.hash?.substring(0, 6)}`"
+							>
+								<template v-slot:activator="{ props }">
+									<v-icon v-bind="props" :color="item.attributes.hashColor">
+										mdi-pound-box
+									</v-icon>
+								</template>
+							</v-tooltip>
+							<v-tooltip v-if="item.attributes.subtitles" text="Subtitles">
 								<template v-slot:activator="{ props }">
 									<v-icon v-bind="props">mdi-subtitles</v-icon>
 								</template>
