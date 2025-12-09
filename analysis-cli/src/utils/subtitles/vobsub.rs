@@ -314,7 +314,6 @@ fn parse_data(
                 return None;
             }
             if next_rle.length == 0 {
-                this_stream.byte_align();
                 next_rle.length = width - x;
             }
             for _ in 0..next_rle.length {
@@ -336,6 +335,7 @@ fn parse_data(
                 x += 1;
             }
         }
+        this_stream.byte_align();
         y += 1;
     }
 
