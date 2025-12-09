@@ -70,6 +70,13 @@ async function rerunAnalysis() {
 	refreshData();
 }
 
+async function rescanMedia() {
+	loading.value = true;
+	let jobId = BigInt(route.params.id);
+	await reportErrors(rpc.reprocessJob({ jobId }), "Failed to process job");
+	refreshData();
+}
+
 watch(() => route.params.id, refreshData, { immediate: true });
 
 async function refreshData() {
@@ -499,6 +506,17 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 								flat
 								icon="mdi-head-sync"
 								@click="rerunAnalysis()"
+							/>
+						</template>
+					</v-tooltip>
+					<v-tooltip text="Rescan Media">
+						<template v-slot:activator="{ props }">
+							<v-btn
+								v-bind="props"
+								density="compact"
+								flat
+								icon="mdi-magnify-scan"
+								@click="rescanMedia()"
 							/>
 						</template>
 					</v-tooltip>
