@@ -2,5 +2,5 @@
 resolver = "3"
 members = [
   "drive-controller",
-  "analysis-cli",
+  "analysis-service",
 ]

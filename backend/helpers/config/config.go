@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -9,7 +10,7 @@ import (
 )
 
 type ConfigFile struct {
-	AnalysisCli      *string               `json:"analysis_cli"`
+	AnalysisUrl      string                `json:"analysis_url"`
 	BasePath         *string               `json:"base_path"`
 	DataDirectory    string                `json:"data_directory"`
 	TmdbApiKey       string                `json:"tmdb_api_key"`
@@ -72,9 +73,8 @@ func LoadConfig() (ConfigFile, error) {
 		config.DataDirectory = path.Join(*config.BasePath, config.DataDirectory)
 	}
 
-	if config.AnalysisCli == nil {
-		defaultAnalysisCli := "mediacorral-analysis-cli"
-		config.AnalysisCli = &defaultAnalysisCli
+	if config.AnalysisUrl == "" {
+		return ConfigFile{}, errors.New("missing analysis service URL in config")
 	}
 
 	for _, details := range config.ExportsDirs {

@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -17,9 +16,9 @@ import (
 
 	"github.com/agnivade/levenshtein"
 	"github.com/sploders101/mediacorral/backend/dbapi"
+	analysis_proto "github.com/sploders101/mediacorral/backend/gen/mediacorral/analysis/v1"
 	drive_control "github.com/sploders101/mediacorral/backend/gen/mediacorral/drive_controller/v1"
 	server_proto "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
-	"github.com/sploders101/mediacorral/backend/helpers/analysis"
 	"github.com/sploders101/mediacorral/backend/helpers/blobs"
 	"github.com/sploders101/mediacorral/backend/helpers/config"
 	"github.com/sploders101/mediacorral/backend/helpers/exports"
@@ -60,7 +59,7 @@ type Application struct {
 	Db                 dbapi.Db
 	settings           applicationSettings
 	ripDir             string
-	AnalysisController *analysis.AnalysisController
+	AnalysisController analysis_proto.MediaAnalysisServiceClient
 	BlobStorage        *blobs.BlobStorageController
 	TmdbImporter       *tmdb.TmdbImporter
 	OstImporter        *opensubtitles.OstImporter
@@ -87,10 +86,14 @@ func NewApplication(configData config.ConfigFile) (*Application, error) {
 	}
 
 	// Set up helpers
-	analysisController, err := analysis.NewController(*configData.AnalysisCli)
+	analysisConn, err := grpc.NewClient(
+		configData.AnalysisUrl,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to set up analysis controller: %w", err)
+		return nil, fmt.Errorf("failed to set up analysis grpc connection: %w", err)
 	}
+	analysisController := analysis_proto.NewMediaAnalysisServiceClient(analysisConn)
 	blobStorage, err := blobs.NewController(blobDir, analysisController)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set up blob storage: %w", err)
@@ -450,11 +453,15 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 	var extractWg sync.WaitGroup
 	for _, videoFile := range videoFiles {
 		// Start new analysis job (to be joined later)
-		videoFilePath := app.BlobStorage.GetFilePath(videoFile.BlobId)
 		extractWg.Add(1)
 		go func() {
 			defer extractWg.Done()
-			result, err := app.AnalysisController.AnalyzeMkv(videoFilePath)
+			result, err := app.AnalysisController.AnalyzeMkv(
+				context.TODO(),
+				analysis_proto.AnalyzeMkvRequest_builder{
+					BlobId: videoFile.BlobId,
+				}.Build(),
+			)
 			if err != nil {
 				slog.Error(
 					"Failed to run analysis on video file",
@@ -465,25 +472,22 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 				return
 			}
 
+			mediaDetails := result.GetMediaDetails()
+			videoTracks := mediaDetails.GetVideoTracks()
+
+			var resolutionWidth uint32
+			var resolutionHeight uint32
+			if len(videoTracks) > 0 {
+				track := videoTracks[0]
+				resolutionWidth = uint32(track.GetDisplayWidth())
+				resolutionHeight = uint32(track.GetDisplayHeight())
+			}
+
 			var videoHash []byte
-			if updateHash {
-				videoHash, err = hex.DecodeString(result.VideoHash)
-				if err != nil {
-					slog.Error(
-						"Error decoding video hash from analyzer",
-						"error", err.Error(),
-						"videoFileId", videoFile.Id,
-						"videoFileBlobId", videoFile.BlobId,
-					)
-					return
-				}
+			if updateHash && len(videoTracks) > 0 {
+				videoHash = videoTracks[0].GetHash()
 			} else if videoFile.OriginalVideoHash.Valid {
 				videoHash = videoFile.OriginalVideoHash.V
-			}
-			var extendedMetadata sql.Null[*server_proto.VideoExtendedMetadata]
-			if result.ExtendedMetadata != nil {
-				extendedMetadata.Valid = true
-				extendedMetadata.V = result.ExtendedMetadata.IntoProto()
 			}
 
 			dbTx, err := app.Db.Begin()
@@ -518,11 +522,14 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 
 			if err := dbTx.AddVideoMetadata(
 				videoFile.Id,
-				result.ResolutionWidth,
-				result.ResolutionHeight,
-				result.Duration,
+				resolutionWidth,
+				resolutionHeight,
+				mediaDetails.GetDuration(),
 				videoHash,
-				extendedMetadata,
+				sql.Null[*analysis_proto.MediaDetails]{
+					Valid: true,
+					V:     mediaDetails,
+				},
 			); err != nil {
 				slog.Error(
 					"Failed to add video metadata",
@@ -534,8 +541,13 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 				return
 			}
 
-			if result.Subtitles != nil {
-				err := app.BlobStorage.AddSubtitlesFile(dbTx, videoFile.Id, *result.Subtitles)
+			if result.HasAggregatedSubtitles() {
+				subtitles := result.GetAggregatedSubtitles()
+				err := app.BlobStorage.AddSubtitlesFile(
+					dbTx,
+					videoFile.Id,
+					subtitles.GetSubtitles(),
+				)
 				if err != nil {
 					slog.Error(
 						"Failed to add subtitles file",

@@ -8,6 +8,7 @@ import (
 	"github.com/sploders101/mediacorral/backend/dbapi/migrations"
 	gproto "google.golang.org/protobuf/proto"
 
+	analysis_proto "github.com/sploders101/mediacorral/backend/gen/mediacorral/analysis/v1"
 	proto "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
 )
 
@@ -1197,7 +1198,7 @@ func (db *DbTx) AddVideoMetadata(
 	resolutionHeight uint32,
 	length uint32,
 	originalVideoHash []byte,
-	extendedMetadata sql.Null[*proto.VideoExtendedMetadata],
+	extendedMetadata sql.Null[*analysis_proto.MediaDetails],
 ) error {
 	var extMetaSerialized sql.Null[[]byte]
 	if extendedMetadata.Valid {

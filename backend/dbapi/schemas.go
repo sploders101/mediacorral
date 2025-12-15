@@ -3,6 +3,7 @@ package dbapi
 import (
 	"database/sql"
 
+	analysis_proto "github.com/sploders101/mediacorral/backend/gen/mediacorral/analysis/v1"
 	proto "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
 	gproto "google.golang.org/protobuf/proto"
 )
@@ -205,7 +206,7 @@ func (videoFile VideoFilesItem) IntoProto() (*proto.VideoFile, error) {
 		builder.RipJob = &videoFile.RipJob.Int64
 	}
 	if videoFile.ExtendedMetadata.Valid {
-		extendedMetadata := &proto.VideoExtendedMetadata{}
+		extendedMetadata := &analysis_proto.MediaDetails{}
 		if err := gproto.Unmarshal(videoFile.ExtendedMetadata.V, extendedMetadata); err != nil {
 			return nil, err
 		}

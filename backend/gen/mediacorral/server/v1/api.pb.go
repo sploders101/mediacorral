@@ -7,6 +7,7 @@
 package serverv1
 
 import (
+	v11 "github.com/sploders101/mediacorral/backend/gen/mediacorral/analysis/v1"
 	v1 "github.com/sploders101/mediacorral/backend/gen/mediacorral/drive_controller/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -5817,7 +5818,7 @@ type VideoFile struct {
 	xxx_hidden_Length            uint32                 `protobuf:"varint,7,opt,name=length,proto3,oneof"`
 	xxx_hidden_OriginalVideoHash []byte                 `protobuf:"bytes,8,opt,name=original_video_hash,json=originalVideoHash,proto3,oneof"`
 	xxx_hidden_RipJob            int64                  `protobuf:"varint,9,opt,name=rip_job,json=ripJob,proto3,oneof"`
-	xxx_hidden_ExtendedMetadata  *VideoExtendedMetadata `protobuf:"bytes,10,opt,name=extended_metadata,json=extendedMetadata,proto3,oneof"`
+	xxx_hidden_ExtendedMetadata  *v11.MediaDetails      `protobuf:"bytes,10,opt,name=extended_metadata,json=extendedMetadata,proto3,oneof"`
 	XXX_raceDetectHookData       protoimpl.RaceDetectHookData
 	XXX_presence                 [1]uint32
 	unknownFields                protoimpl.UnknownFields
@@ -5912,7 +5913,7 @@ func (x *VideoFile) GetRipJob() int64 {
 	return 0
 }
 
-func (x *VideoFile) GetExtendedMetadata() *VideoExtendedMetadata {
+func (x *VideoFile) GetExtendedMetadata() *v11.MediaDetails {
 	if x != nil {
 		return x.xxx_hidden_ExtendedMetadata
 	}
@@ -5964,7 +5965,7 @@ func (x *VideoFile) SetRipJob(v int64) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 10)
 }
 
-func (x *VideoFile) SetExtendedMetadata(v *VideoExtendedMetadata) {
+func (x *VideoFile) SetExtendedMetadata(v *v11.MediaDetails) {
 	x.xxx_hidden_ExtendedMetadata = v
 }
 
@@ -6064,7 +6065,7 @@ type VideoFile_builder struct {
 	Length            *uint32
 	OriginalVideoHash []byte
 	RipJob            *int64
-	ExtendedMetadata  *VideoExtendedMetadata
+	ExtendedMetadata  *v11.MediaDetails
 }
 
 func (b0 VideoFile_builder) Build() *VideoFile {
@@ -6766,7 +6767,7 @@ var File_mediacorral_server_v1_api_proto protoreflect.FileDescriptor
 
 const file_mediacorral_server_v1_api_proto_rawDesc = "" +
 	"\n" +
-	"\x1fmediacorral/server/v1/api.proto\x12\x15mediacorral.server.v1\x1a mediacorral/server/v1/tmdb.proto\x1a*mediacorral/drive_controller/v1/main.proto\x1a$mediacorral/server/v1/metadata.proto\".\n" +
+	"\x1fmediacorral/server/v1/api.proto\x12\x15mediacorral.server.v1\x1a mediacorral/server/v1/tmdb.proto\x1a*mediacorral/drive_controller/v1/main.proto\x1a\"mediacorral/analysis/v1/main.proto\".\n" +
 	"\x13GetSubtitlesRequest\x12\x17\n" +
 	"\ablob_id\x18\x01 \x01(\tR\x06blobId\"4\n" +
 	"\x14GetSubtitlesResponse\x12\x1c\n" +
@@ -7037,7 +7038,7 @@ const file_mediacorral_server_v1_api_proto_rawDesc = "" +
 	"\rsubtitle_maps\x18\a \x03(\v2$.mediacorral.server.v1.RipVideoBlobsR\fsubtitleMaps\x12U\n" +
 	"\x12ost_subtitle_files\x18\b \x03(\v2'.mediacorral.server.v1.OstDownloadsItemR\x10ostSubtitleFilesB\r\n" +
 	"\v_disc_titleB\x15\n" +
-	"\x13_suspected_contents\"\xc4\x04\n" +
+	"\x13_suspected_contents\"\xbd\x04\n" +
 	"\tVideoFile\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12?\n" +
 	"\n" +
@@ -7048,9 +7049,9 @@ const file_mediacorral_server_v1_api_proto_rawDesc = "" +
 	"\x11resolution_height\x18\x06 \x01(\rH\x02R\x10resolutionHeight\x88\x01\x01\x12\x1b\n" +
 	"\x06length\x18\a \x01(\rH\x03R\x06length\x88\x01\x01\x123\n" +
 	"\x13original_video_hash\x18\b \x01(\fH\x04R\x11originalVideoHash\x88\x01\x01\x12\x1c\n" +
-	"\arip_job\x18\t \x01(\x03H\x05R\x06ripJob\x88\x01\x01\x12^\n" +
+	"\arip_job\x18\t \x01(\x03H\x05R\x06ripJob\x88\x01\x01\x12W\n" +
 	"\x11extended_metadata\x18\n" +
-	" \x01(\v2,.mediacorral.server.v1.VideoExtendedMetadataH\x06R\x10extendedMetadata\x88\x01\x01B\v\n" +
+	" \x01(\v2%.mediacorral.analysis.v1.MediaDetailsH\x06R\x10extendedMetadata\x88\x01\x01B\v\n" +
 	"\t_match_idB\x13\n" +
 	"\x11_resolution_widthB\x14\n" +
 	"\x12_resolution_heightB\t\n" +
@@ -7224,7 +7225,7 @@ var file_mediacorral_server_v1_api_proto_goTypes = []any{
 	(*TmdbTvResult)(nil),                 // 83: mediacorral.server.v1.TmdbTvResult
 	(*TmdbMovieResult)(nil),              // 84: mediacorral.server.v1.TmdbMovieResult
 	(*v1.RipStatus)(nil),                 // 85: mediacorral.drive_controller.v1.RipStatus
-	(*VideoExtendedMetadata)(nil),        // 86: mediacorral.server.v1.VideoExtendedMetadata
+	(*v11.MediaDetails)(nil),             // 86: mediacorral.analysis.v1.MediaDetails
 	(*v1.DriveState)(nil),                // 87: mediacorral.drive_controller.v1.DriveState
 }
 var file_mediacorral_server_v1_api_proto_depIdxs = []int32{
@@ -7262,7 +7263,7 @@ var file_mediacorral_server_v1_api_proto_depIdxs = []int32{
 	74, // 31: mediacorral.server.v1.GetJobCatalogueInfoResponse.subtitle_maps:type_name -> mediacorral.server.v1.RipVideoBlobs
 	75, // 32: mediacorral.server.v1.GetJobCatalogueInfoResponse.ost_subtitle_files:type_name -> mediacorral.server.v1.OstDownloadsItem
 	1,  // 33: mediacorral.server.v1.VideoFile.video_type:type_name -> mediacorral.server.v1.VideoType
-	86, // 34: mediacorral.server.v1.VideoFile.extended_metadata:type_name -> mediacorral.server.v1.VideoExtendedMetadata
+	86, // 34: mediacorral.server.v1.VideoFile.extended_metadata:type_name -> mediacorral.analysis.v1.MediaDetails
 	1,  // 35: mediacorral.server.v1.OstDownloadsItem.video_type:type_name -> mediacorral.server.v1.VideoType
 	2,  // 36: mediacorral.server.v1.CoordinatorApiService.GetSubtitles:input_type -> mediacorral.server.v1.GetSubtitlesRequest
 	4,  // 37: mediacorral.server.v1.CoordinatorApiService.SearchTmdbMulti:input_type -> mediacorral.server.v1.SearchTmdbMultiRequest
@@ -7345,7 +7346,6 @@ func file_mediacorral_server_v1_api_proto_init() {
 		return
 	}
 	file_mediacorral_server_v1_tmdb_proto_init()
-	file_mediacorral_server_v1_metadata_proto_init()
 	file_mediacorral_server_v1_api_proto_msgTypes[2].OneofWrappers = []any{}
 	file_mediacorral_server_v1_api_proto_msgTypes[4].OneofWrappers = []any{}
 	file_mediacorral_server_v1_api_proto_msgTypes[6].OneofWrappers = []any{}

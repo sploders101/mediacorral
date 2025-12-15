@@ -10,6 +10,7 @@ import (
 
 	"github.com/sploders101/mediacorral/backend/application"
 	"github.com/sploders101/mediacorral/backend/dbapi"
+	analysis_pb "github.com/sploders101/mediacorral/backend/gen/mediacorral/analysis/v1"
 	drive_controller_v1 "github.com/sploders101/mediacorral/backend/gen/mediacorral/drive_controller/v1"
 	server_pb "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
 
@@ -1160,9 +1161,9 @@ func videoFileDbToProto(videoFile dbapi.VideoFilesItem) (*server_pb.VideoFile, e
 	if videoFile.RipJob.Valid {
 		ripJob = &videoFile.RipJob.Int64
 	}
-	var extendedMetadata *server_pb.VideoExtendedMetadata
+	var extendedMetadata *analysis_pb.MediaDetails
 	if videoFile.ExtendedMetadata.Valid {
-		metadata := &server_pb.VideoExtendedMetadata{}
+		metadata := &analysis_pb.MediaDetails{}
 		if err := proto.Unmarshal(videoFile.ExtendedMetadata.V, metadata); err != nil {
 			return nil, convertError(err)
 		}

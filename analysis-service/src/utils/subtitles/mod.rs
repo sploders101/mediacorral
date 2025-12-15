@@ -19,7 +19,6 @@ pub fn get_subtitle_track(
     let candidates: Vec<_> = tracks
         .into_iter()
         .filter(StContext::supported_tracks)
-        .filter(|track| track.track_type() == TrackType::Subtitle)
         .filter(|track| track.flag_enabled())
         .collect();
     return Ok(match candidates.len() {
@@ -55,7 +54,8 @@ pub enum StContext {
 impl StContext {
     #[inline]
     pub fn supported_tracks(track: &&TrackEntry) -> bool {
-        return matches!(track.codec_id(), "S_VOBSUB" | "S_SUBRIP" | "S_HDMV/PGS")
+        return track.track_type() == TrackType::Subtitle
+            && matches!(track.codec_id(), "S_VOBSUB" | "S_SUBRIP" | "S_HDMV/PGS")
             && matches!(
                 track.language_bcp47().or(track.language()),
                 Some("eng") | Some("en") | Some("en-US") | Some("en-GB")

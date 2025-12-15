@@ -17,5 +17,5 @@ cargo build --release || exit
 rm dist/*
 test -d dist || mkdir dist || exit
 mv backend/backend dist/backend || exit
-mv target/release/mediacorral-analysis-cli dist/analysis-cli || exit
+mv target/release/mediacorral-analysis-service dist/analysis-service || exit
 mv target/release/mediacorral-drive-controller dist/drive-controller || exit

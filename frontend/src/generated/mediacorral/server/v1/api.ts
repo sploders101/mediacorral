@@ -12,7 +12,7 @@ import { UnknownFieldHandler } from "@protobuf-ts/runtime";
 import type { PartialMessage } from "@protobuf-ts/runtime";
 import { reflectionMergePartial } from "@protobuf-ts/runtime";
 import { MessageType } from "@protobuf-ts/runtime";
-import { VideoExtendedMetadata } from "./metadata";
+import { MediaDetails } from "../../analysis/v1/main";
 import { RipStatus } from "../../drive_controller/v1/main";
 import { TmdbMovieResult } from "./tmdb";
 import { TmdbTvResult } from "./tmdb";
@@ -965,9 +965,9 @@ export interface VideoFile {
      */
     ripJob?: bigint;
     /**
-     * @generated from protobuf field: optional mediacorral.server.v1.VideoExtendedMetadata extended_metadata = 10
+     * @generated from protobuf field: optional mediacorral.analysis.v1.MediaDetails extended_metadata = 10
      */
-    extendedMetadata?: VideoExtendedMetadata;
+    extendedMetadata?: MediaDetails;
 }
 /**
  * @generated from protobuf message mediacorral.server.v1.MatchInfoItem
@@ -4939,7 +4939,7 @@ class VideoFile$Type extends MessageType<VideoFile> {
             { no: 7, name: "length", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ },
             { no: 8, name: "original_video_hash", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 9, name: "rip_job", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 10, name: "extended_metadata", kind: "message", T: () => VideoExtendedMetadata }
+            { no: 10, name: "extended_metadata", kind: "message", T: () => MediaDetails }
         ]);
     }
     create(value?: PartialMessage<VideoFile>): VideoFile {
@@ -4983,8 +4983,8 @@ class VideoFile$Type extends MessageType<VideoFile> {
                 case /* optional int64 rip_job */ 9:
                     message.ripJob = reader.int64().toBigInt();
                     break;
-                case /* optional mediacorral.server.v1.VideoExtendedMetadata extended_metadata */ 10:
-                    message.extendedMetadata = VideoExtendedMetadata.internalBinaryRead(reader, reader.uint32(), options, message.extendedMetadata);
+                case /* optional mediacorral.analysis.v1.MediaDetails extended_metadata */ 10:
+                    message.extendedMetadata = MediaDetails.internalBinaryRead(reader, reader.uint32(), options, message.extendedMetadata);
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -5025,9 +5025,9 @@ class VideoFile$Type extends MessageType<VideoFile> {
         /* optional int64 rip_job = 9; */
         if (message.ripJob !== undefined)
             writer.tag(9, WireType.Varint).int64(message.ripJob);
-        /* optional mediacorral.server.v1.VideoExtendedMetadata extended_metadata = 10; */
+        /* optional mediacorral.analysis.v1.MediaDetails extended_metadata = 10; */
         if (message.extendedMetadata)
-            VideoExtendedMetadata.internalBinaryWrite(message.extendedMetadata, writer.tag(10, WireType.LengthDelimited).fork(), options).join();
+            MediaDetails.internalBinaryWrite(message.extendedMetadata, writer.tag(10, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

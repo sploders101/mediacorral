@@ -1,0 +1,159 @@
+syntax = "proto3";
+package mediacorral.analysis.v1;
+
+// This service allows mediacorral to analyze mkv files stored in blobs on-demand.
+//
+// This is a separate service for a few reasons:
+// 1. Analysis can happen on a more powerful computer, or even more than one.
+// 2. Thread pools like Rayon can function better when there aren't multiple processes.
+// 3. Media analysis isn't changed as often, so this can live in a more permanent location
+//    while other components are being developed.
+// 4. I already wrote codec decoders in Rust and don't think Go is very well suited for it.
+service MediaAnalysisService {
+  // Analyzes a single mkv file
+  rpc AnalyzeMkv(AnalyzeMkvRequest) returns (AnalyzeMkvResponse);
+}
+
+message AnalyzeMkvRequest {
+  // The blob ID of the file to analyze
+  string blob_id = 1;
+
+  // Overrides the subtitle track selection algorithm.
+  // A value of `0` means "use default heuristics".
+  uint64 st_track_number = 2;
+}
+message AnalyzeMkvResponse {
+  // Includes overall metadata about the content
+  MediaDetails media_details = 1;
+
+  // Includes a full subtitle track in SRT format. This will eventually go away
+  // in favor of a streaming solution.
+  optional AggregatedSubtitles aggregated_subtitles = 2;
+}
+
+// Subtitles that are transferred as one large unit.
+//
+// This likely will not stick around. I want to start streaming subtitles
+// in frames, and allow graphic-to-graphic conversion instead of just OCR.
+//
+// I also want to be able to transcode subtitles on-demand, so if the
+// automatic track selection chose a non-ideal track, the user can try a
+// different one.
+message AggregatedSubtitles {
+  // The actual text-based subtitles
+  string subtitles = 1;
+
+  // The track number from which these subtitles came. This will match a track
+  // number from a corresponding `MediaDetails.subtitle_tracks[].track_number`
+  // entry
+  uint64 track_number = 2;
+}
+
+// Metadata found in the media file. This contains small bits of data that
+// may be cached in other formats, or stored as a blob. This is comprised mostly
+// of format-shifted MKV metadata, but in protobuf format for easier consumption
+// by other services.
+message MediaDetails {
+  uint32 duration = 1;
+  repeated ChapterInfo chapter_info = 2;
+  repeated VideoTrack video_tracks = 3;
+  repeated AudioTrack audio_tracks = 4;
+  repeated SubtitleTrack subtitle_tracks = 5;
+}
+
+// Information about a chapter within a media file
+message ChapterInfo {
+  uint32 chapter_number = 1;
+  uint64 chapter_uid = 2;
+  uint64 chapter_start_ns = 3;
+  uint64 chapter_end_ns = 4;
+  string chapter_name = 5;
+}
+
+// Information about a video track within a media file
+message VideoTrack {
+  uint64 track_number = 1;
+  uint64 track_uid = 2;
+  bytes hash = 3;
+  bool enabled = 4;
+  bool default = 5;
+  bool commentary = 6;
+  bool original = 7;
+  bool visual_impaired = 8;
+  optional string name = 9;
+  optional string language = 10;
+  string codec_id = 11;
+  VideoStereoMode stereo_mode = 12;
+  uint64 display_width = 13;
+  uint64 display_height = 14;
+}
+
+// Information about an audio track within a media file
+message AudioTrack {
+  uint64 track_number = 1;
+  uint64 track_uid = 2;
+  bytes hash = 3;
+  bool enabled = 4;
+  bool default = 5;
+  bool commentary = 6;
+  bool original = 7;
+  bool visual_impaired = 8;
+  optional string name = 9;
+  optional string language = 10;
+  string codec_id = 11;
+  uint64 channels = 12;
+}
+
+// Information about a subtitle track within a media file
+message SubtitleTrack {
+  uint64 track_number = 1;
+  uint64 track_uid = 2;
+  bytes hash = 3;
+  bool enabled = 4;
+  bool default = 5;
+  bool commentary = 6;
+  bool original = 7;
+  bool visual_impaired = 8;
+  optional string name = 9;
+  optional string language = 10;
+  string codec_id = 11;
+}
+
+// The type of stereoscopy (if any) used within a video track.
+//
+// For 2D video, this will always be "mono". For 3D, this indicates
+// the type of stereoscopy used.
+enum VideoStereoMode {
+  // Unknown.
+  VIDEO_STEREO_MODE_UNSPECIFIED = 0;
+  // Mono.
+  VIDEO_STEREO_MODE_MONO = 1;
+  // Side by side (left eye first).
+  VIDEO_STEREO_MODE_SIDE_BY_SIDE_LEFT_EYE_FIRST = 2;
+  // Top - bottom (right eye is first).
+  VIDEO_STEREO_MODE_TOP_BOTTOM_RIGHT_EYE_FIRST = 3;
+  // Top - bottom (left eye is first).
+  VIDEO_STEREO_MODE_TOP_BOTTOM_LEFT_EYE_FIRST = 4;
+  // Checkboard (right eye is first).
+  VIDEO_STEREO_MODE_CHECKBOARD_RIGHT_EYE_FIRST = 5;
+  // Checkboard (left eye is first).
+  VIDEO_STEREO_MODE_CHECKBOARD_LEFT_EYE_FIRST = 6;
+  // Row interleaved (right eye is first).
+  VIDEO_STEREO_MODE_ROW_INTERLEAVED_RIGHT_EYE_FIRST = 7;
+  // Row interleaved (left eye is first).
+  VIDEO_STEREO_MODE_ROW_INTERLEAVED_LEFT_EYE_FIRST = 8;
+  // Column interleaved (right eye is first).
+  VIDEO_STEREO_MODE_COLUMN_INTERLEAVED_RIGHT_EYE_FIRST = 9;
+  // Column interleaved (left eye is first).
+  VIDEO_STEREO_MODE_COLUMN_INTERLEAVED_LEFT_EYE_FIRST = 10;
+  // Anaglyph (cyan/red).
+  VIDEO_STEREO_MODE_ANAGLYPH_CYAN_RED = 11;
+  // Side by side (right eye first).
+  VIDEO_STEREO_MODE_SIDE_BY_SIDE_RIGHT_EYE_FIRST = 12;
+  // Anaglyph (green/magenta).
+  VIDEO_STEREO_MODE_ANAGLYPH_GREEN_MAGENTA = 13;
+  // Both eyes laced in one Block (left eye is first).
+  VIDEO_STEREO_MODE_LACED_LEFT_EYE_FIRST = 14;
+  // Both eyes laced in one Block (right eye is first).
+  VIDEO_STEREO_MODE_LACED_RIGHT_EYE_FIRST = 15;
+}

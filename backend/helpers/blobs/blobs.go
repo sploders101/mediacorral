@@ -13,7 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sploders101/mediacorral/backend/dbapi"
-	"github.com/sploders101/mediacorral/backend/helpers/analysis"
+	analysis_proto "github.com/sploders101/mediacorral/backend/gen/mediacorral/analysis/v1"
 
 	proto "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
 )
@@ -25,12 +25,12 @@ var (
 // Wraps the database and uses it to keep track of files on the filesystem
 type BlobStorageController struct {
 	blobDir            string
-	analysisController *analysis.AnalysisController
+	analysisController analysis_proto.MediaAnalysisServiceClient
 }
 
 func NewController(
 	blobDir string,
-	analysisController *analysis.AnalysisController,
+	analysisController analysis_proto.MediaAnalysisServiceClient,
 ) (*BlobStorageController, error) {
 	if data, err := os.Stat(blobDir); err == nil {
 		fileType := data.Mode().Type()
