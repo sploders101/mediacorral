@@ -1261,21 +1261,25 @@ func (db *DbTx) TagVideoFile(
 func (db *DbTx) InsertSubtitleFile(
 	blobId string,
 	videoId int64,
+	trackId uint64,
 ) (SubtitleFilesItem, error) {
 	result := db.tx.QueryRow(
 		`
 			INSERT INTO subtitle_files (
 				blob_id,
-				video_file
-			) VALUES (?, ?)
+				video_file,
+				track_id
+			) VALUES (?, ?, ?)
 			RETURNING id
 		`,
 		blobId,
 		videoId,
+		trackId,
 	)
 	file := SubtitleFilesItem{
 		BlobId:    blobId,
 		VideoFile: videoId,
+		TrackId:   trackId,
 	}
 	if err := result.Scan(&file.Id); err != nil {
 		return SubtitleFilesItem{}, err
@@ -1289,7 +1293,8 @@ func (db *DbTx) GetSubtitlesForVideo(videoId int64) ([]SubtitleFilesItem, error)
 			SELECT
 				id,
 				blob_id,
-				video_file
+				video_file,
+				track_id
 			FROM subtitle_files
 			WHERE
 				video_file = ?
@@ -1302,7 +1307,7 @@ func (db *DbTx) GetSubtitlesForVideo(videoId int64) ([]SubtitleFilesItem, error)
 	var files []SubtitleFilesItem
 	for result.Next() {
 		var file SubtitleFilesItem
-		if err := result.Scan(&file.Id, &file.BlobId, &file.VideoFile); err != nil {
+		if err := result.Scan(&file.Id, &file.BlobId, &file.VideoFile, &file.TrackId); err != nil {
 			return nil, err
 		}
 		files = append(files, file)
@@ -1532,10 +1537,11 @@ func (db *DbTx) DeleteBlob(blobId string) error {
 }
 
 type RipVideoBlobs struct {
-	Id           int64
-	JobId        int64
-	VideoBlob    string
-	SubtitleBlob sql.NullString
+	Id            int64
+	JobId         int64
+	VideoBlob     string
+	SubtitleBlob  sql.NullString
+	SubtitleTrack sql.Null[uint32]
 }
 
 func (blob RipVideoBlobs) IntoProto() *proto.RipVideoBlobs {
@@ -1556,7 +1562,8 @@ func (db *DbTx) GetRipVideoBlobs(ripJob int64) ([]RipVideoBlobs, error) {
 				video_files.id as id,
 				rip_jobs.id as job_id,
 				video_files.blob_id as video_blob,
-				subtitle_files.blob_id as subtitle_blob
+				subtitle_files.blob_id as subtitle_blob,
+				subtitle_files.track_id as subtitle_track
 			FROM rip_jobs
 			INNER JOIN video_files ON
 				video_files.rip_job = rip_jobs.id
@@ -1581,6 +1588,7 @@ func (db *DbTx) GetRipVideoBlobs(ripJob int64) ([]RipVideoBlobs, error) {
 			&blob.JobId,
 			&blob.VideoBlob,
 			&blob.SubtitleBlob,
+			&blob.SubtitleTrack,
 		); err != nil {
 			return nil, err
 		}

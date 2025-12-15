@@ -98,7 +98,8 @@ CREATE TABLE `video_files`(
 CREATE TABLE `subtitle_files`(
 	`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`blob_id` TEXT,
-	`video_file` INTEGER NOT NULL
+	`video_file` INTEGER NOT NULL,
+	`track_id` INTEGER NOT NULL
 );
 
 -- Contains subtitles downloaded from Opensubtitles before they've been processed.

@@ -98,6 +98,7 @@ func (controller *BlobStorageController) AddSubtitlesFile(
 	db *dbapi.DbTx,
 	videoFile int64,
 	subtitles string,
+	subtitleTrack uint64,
 ) error {
 	subsUuid := uuid.New().String()
 	subsPath := controller.GetFilePath(subsUuid)
@@ -109,7 +110,7 @@ func (controller *BlobStorageController) AddSubtitlesFile(
 		return err
 	}
 
-	if _, err := db.InsertSubtitleFile(subsUuid, videoFile); err != nil {
+	if _, err := db.InsertSubtitleFile(subsUuid, videoFile, subtitleTrack); err != nil {
 		return fmt.Errorf("error inserting subtitle db entry: %w", err)
 	}
 

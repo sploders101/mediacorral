@@ -6217,15 +6217,16 @@ func (b0 MatchInfoItem_builder) Build() *MatchInfoItem {
 }
 
 type RipVideoBlobs struct {
-	state                   protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id           int64                  `protobuf:"varint,1,opt,name=id,proto3"`
-	xxx_hidden_JobId        int64                  `protobuf:"varint,2,opt,name=job_id,json=jobId,proto3"`
-	xxx_hidden_VideoBlob    string                 `protobuf:"bytes,3,opt,name=video_blob,json=videoBlob,proto3"`
-	xxx_hidden_SubtitleBlob *string                `protobuf:"bytes,4,opt,name=subtitle_blob,json=subtitleBlob,proto3,oneof"`
-	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
-	XXX_presence            [1]uint32
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	state                    protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id            int64                  `protobuf:"varint,1,opt,name=id,proto3"`
+	xxx_hidden_JobId         int64                  `protobuf:"varint,2,opt,name=job_id,json=jobId,proto3"`
+	xxx_hidden_VideoBlob     string                 `protobuf:"bytes,3,opt,name=video_blob,json=videoBlob,proto3"`
+	xxx_hidden_SubtitleBlob  *string                `protobuf:"bytes,4,opt,name=subtitle_blob,json=subtitleBlob,proto3,oneof"`
+	xxx_hidden_SubtitleTrack uint32                 `protobuf:"varint,5,opt,name=subtitle_track,json=subtitleTrack,proto3,oneof"`
+	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
+	XXX_presence             [1]uint32
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *RipVideoBlobs) Reset() {
@@ -6284,6 +6285,13 @@ func (x *RipVideoBlobs) GetSubtitleBlob() string {
 	return ""
 }
 
+func (x *RipVideoBlobs) GetSubtitleTrack() uint32 {
+	if x != nil {
+		return x.xxx_hidden_SubtitleTrack
+	}
+	return 0
+}
+
 func (x *RipVideoBlobs) SetId(v int64) {
 	x.xxx_hidden_Id = v
 }
@@ -6298,7 +6306,12 @@ func (x *RipVideoBlobs) SetVideoBlob(v string) {
 
 func (x *RipVideoBlobs) SetSubtitleBlob(v string) {
 	x.xxx_hidden_SubtitleBlob = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
+}
+
+func (x *RipVideoBlobs) SetSubtitleTrack(v uint32) {
+	x.xxx_hidden_SubtitleTrack = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
 }
 
 func (x *RipVideoBlobs) HasSubtitleBlob() bool {
@@ -6308,18 +6321,31 @@ func (x *RipVideoBlobs) HasSubtitleBlob() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
+func (x *RipVideoBlobs) HasSubtitleTrack() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
 func (x *RipVideoBlobs) ClearSubtitleBlob() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
 	x.xxx_hidden_SubtitleBlob = nil
 }
 
+func (x *RipVideoBlobs) ClearSubtitleTrack() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_SubtitleTrack = 0
+}
+
 type RipVideoBlobs_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id           int64
-	JobId        int64
-	VideoBlob    string
-	SubtitleBlob *string
+	Id            int64
+	JobId         int64
+	VideoBlob     string
+	SubtitleBlob  *string
+	SubtitleTrack *uint32
 }
 
 func (b0 RipVideoBlobs_builder) Build() *RipVideoBlobs {
@@ -6330,8 +6356,12 @@ func (b0 RipVideoBlobs_builder) Build() *RipVideoBlobs {
 	x.xxx_hidden_JobId = b.JobId
 	x.xxx_hidden_VideoBlob = b.VideoBlob
 	if b.SubtitleBlob != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
 		x.xxx_hidden_SubtitleBlob = b.SubtitleBlob
+	}
+	if b.SubtitleTrack != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
+		x.xxx_hidden_SubtitleTrack = *b.SubtitleTrack
 	}
 	return m0
 }
@@ -7065,14 +7095,16 @@ const file_mediacorral_server_v1_api_proto_rawDesc = "" +
 	"\rvideo_file_id\x18\x02 \x01(\x03R\vvideoFileId\x12&\n" +
 	"\x0fost_download_id\x18\x03 \x01(\x03R\rostDownloadId\x12\x1a\n" +
 	"\bdistance\x18\x04 \x01(\rR\bdistance\x12!\n" +
-	"\fmax_distance\x18\x05 \x01(\rR\vmaxDistance\"\x91\x01\n" +
+	"\fmax_distance\x18\x05 \x01(\rR\vmaxDistance\"\xd0\x01\n" +
 	"\rRipVideoBlobs\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x15\n" +
 	"\x06job_id\x18\x02 \x01(\x03R\x05jobId\x12\x1d\n" +
 	"\n" +
 	"video_blob\x18\x03 \x01(\tR\tvideoBlob\x12(\n" +
-	"\rsubtitle_blob\x18\x04 \x01(\tH\x00R\fsubtitleBlob\x88\x01\x01B\x10\n" +
-	"\x0e_subtitle_blob\"\xb3\x01\n" +
+	"\rsubtitle_blob\x18\x04 \x01(\tH\x00R\fsubtitleBlob\x88\x01\x01\x12*\n" +
+	"\x0esubtitle_track\x18\x05 \x01(\rH\x01R\rsubtitleTrack\x88\x01\x01B\x10\n" +
+	"\x0e_subtitle_blobB\x11\n" +
+	"\x0f_subtitle_track\"\xb3\x01\n" +
 	"\x10OstDownloadsItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12?\n" +
 	"\n" +

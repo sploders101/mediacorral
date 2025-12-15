@@ -547,6 +547,7 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 					dbTx,
 					videoFile.Id,
 					subtitles.GetSubtitles(),
+					subtitles.GetTrackNumber(),
 				)
 				if err != nil {
 					slog.Error(

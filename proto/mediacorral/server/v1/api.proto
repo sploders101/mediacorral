@@ -449,6 +449,7 @@ message RipVideoBlobs {
   int64 job_id = 2;
   string video_blob = 3;
   optional string subtitle_blob = 4;
+  optional uint32 subtitle_track = 5;
 }
 message OstDownloadsItem {
   int64 id = 1;

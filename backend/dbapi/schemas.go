@@ -219,6 +219,7 @@ type SubtitleFilesItem struct {
 	Id        int64
 	BlobId    string
 	VideoFile int64
+	TrackId   uint64
 }
 
 type OstDownloadsItem struct {

@@ -1014,6 +1014,10 @@ export interface RipVideoBlobs {
      * @generated from protobuf field: optional string subtitle_blob = 4
      */
     subtitleBlob?: string;
+    /**
+     * @generated from protobuf field: optional uint32 subtitle_track = 5
+     */
+    subtitleTrack?: number;
 }
 /**
  * @generated from protobuf message mediacorral.server.v1.OstDownloadsItem
@@ -5124,7 +5128,8 @@ class RipVideoBlobs$Type extends MessageType<RipVideoBlobs> {
             { no: 1, name: "id", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 2, name: "job_id", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "video_blob", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 4, name: "subtitle_blob", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
+            { no: 4, name: "subtitle_blob", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 5, name: "subtitle_track", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ }
         ]);
     }
     create(value?: PartialMessage<RipVideoBlobs>): RipVideoBlobs {
@@ -5153,6 +5158,9 @@ class RipVideoBlobs$Type extends MessageType<RipVideoBlobs> {
                 case /* optional string subtitle_blob */ 4:
                     message.subtitleBlob = reader.string();
                     break;
+                case /* optional uint32 subtitle_track */ 5:
+                    message.subtitleTrack = reader.uint32();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -5177,6 +5185,9 @@ class RipVideoBlobs$Type extends MessageType<RipVideoBlobs> {
         /* optional string subtitle_blob = 4; */
         if (message.subtitleBlob !== undefined)
             writer.tag(4, WireType.LengthDelimited).string(message.subtitleBlob);
+        /* optional uint32 subtitle_track = 5; */
+        if (message.subtitleTrack !== undefined)
+            writer.tag(5, WireType.Varint).uint32(message.subtitleTrack);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

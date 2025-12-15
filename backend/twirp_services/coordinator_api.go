@@ -1199,11 +1199,16 @@ func ripVideoBlobsDbToProto(ripVideoBlob dbapi.RipVideoBlobs) *server_pb.RipVide
 	if ripVideoBlob.SubtitleBlob.Valid {
 		subtitleBlob = &ripVideoBlob.SubtitleBlob.String
 	}
+	var subtitleTrack *uint32
+	if ripVideoBlob.SubtitleTrack.Valid {
+		subtitleTrack = &ripVideoBlob.SubtitleTrack.V
+	}
 	return server_pb.RipVideoBlobs_builder{
-		Id:           ripVideoBlob.Id,
-		JobId:        ripVideoBlob.JobId,
-		VideoBlob:    ripVideoBlob.VideoBlob,
-		SubtitleBlob: subtitleBlob,
+		Id:            ripVideoBlob.Id,
+		JobId:         ripVideoBlob.JobId,
+		VideoBlob:     ripVideoBlob.VideoBlob,
+		SubtitleBlob:  subtitleBlob,
+		SubtitleTrack: subtitleTrack,
 	}.Build()
 }
 
