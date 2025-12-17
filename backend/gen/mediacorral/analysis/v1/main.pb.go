@@ -387,6 +387,7 @@ type MediaDetails struct {
 	xxx_hidden_VideoTracks    *[]*VideoTrack         `protobuf:"bytes,3,rep,name=video_tracks,json=videoTracks,proto3"`
 	xxx_hidden_AudioTracks    *[]*AudioTrack         `protobuf:"bytes,4,rep,name=audio_tracks,json=audioTracks,proto3"`
 	xxx_hidden_SubtitleTracks *[]*SubtitleTrack      `protobuf:"bytes,5,rep,name=subtitle_tracks,json=subtitleTracks,proto3"`
+	xxx_hidden_Name           string                 `protobuf:"bytes,6,opt,name=name,proto3"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -459,6 +460,13 @@ func (x *MediaDetails) GetSubtitleTracks() []*SubtitleTrack {
 	return nil
 }
 
+func (x *MediaDetails) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
 func (x *MediaDetails) SetDuration(v uint32) {
 	x.xxx_hidden_Duration = v
 }
@@ -479,6 +487,10 @@ func (x *MediaDetails) SetSubtitleTracks(v []*SubtitleTrack) {
 	x.xxx_hidden_SubtitleTracks = &v
 }
 
+func (x *MediaDetails) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
 type MediaDetails_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -487,6 +499,7 @@ type MediaDetails_builder struct {
 	VideoTracks    []*VideoTrack
 	AudioTracks    []*AudioTrack
 	SubtitleTracks []*SubtitleTrack
+	Name           string
 }
 
 func (b0 MediaDetails_builder) Build() *MediaDetails {
@@ -498,6 +511,7 @@ func (b0 MediaDetails_builder) Build() *MediaDetails {
 	x.xxx_hidden_VideoTracks = &b.VideoTracks
 	x.xxx_hidden_AudioTracks = &b.AudioTracks
 	x.xxx_hidden_SubtitleTracks = &b.SubtitleTracks
+	x.xxx_hidden_Name = b.Name
 	return m0
 }
 
@@ -1408,13 +1422,14 @@ const file_mediacorral_analysis_v1_main_proto_rawDesc = "" +
 	"\x15_aggregated_subtitles\"V\n" +
 	"\x13AggregatedSubtitles\x12\x1c\n" +
 	"\tsubtitles\x18\x01 \x01(\tR\tsubtitles\x12!\n" +
-	"\ftrack_number\x18\x02 \x01(\x04R\vtrackNumber\"\xd4\x02\n" +
+	"\ftrack_number\x18\x02 \x01(\x04R\vtrackNumber\"\xe8\x02\n" +
 	"\fMediaDetails\x12\x1a\n" +
 	"\bduration\x18\x01 \x01(\rR\bduration\x12G\n" +
 	"\fchapter_info\x18\x02 \x03(\v2$.mediacorral.analysis.v1.ChapterInfoR\vchapterInfo\x12F\n" +
 	"\fvideo_tracks\x18\x03 \x03(\v2#.mediacorral.analysis.v1.VideoTrackR\vvideoTracks\x12F\n" +
 	"\faudio_tracks\x18\x04 \x03(\v2#.mediacorral.analysis.v1.AudioTrackR\vaudioTracks\x12O\n" +
-	"\x0fsubtitle_tracks\x18\x05 \x03(\v2&.mediacorral.analysis.v1.SubtitleTrackR\x0esubtitleTracks\"\xc8\x01\n" +
+	"\x0fsubtitle_tracks\x18\x05 \x03(\v2&.mediacorral.analysis.v1.SubtitleTrackR\x0esubtitleTracks\x12\x12\n" +
+	"\x04name\x18\x06 \x01(\tR\x04name\"\xc8\x01\n" +
 	"\vChapterInfo\x12%\n" +
 	"\x0echapter_number\x18\x01 \x01(\rR\rchapterNumber\x12\x1f\n" +
 	"\vchapter_uid\x18\x02 \x01(\x04R\n" +

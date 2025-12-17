@@ -104,6 +104,10 @@ export interface MediaDetails {
      * @generated from protobuf field: repeated mediacorral.analysis.v1.SubtitleTrack subtitle_tracks = 5
      */
     subtitleTracks: SubtitleTrack[];
+    /**
+     * @generated from protobuf field: string name = 6
+     */
+    name: string;
 }
 /**
  * Information about a chapter within a media file
@@ -578,7 +582,8 @@ class MediaDetails$Type extends MessageType<MediaDetails> {
             { no: 2, name: "chapter_info", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => ChapterInfo },
             { no: 3, name: "video_tracks", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => VideoTrack },
             { no: 4, name: "audio_tracks", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => AudioTrack },
-            { no: 5, name: "subtitle_tracks", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => SubtitleTrack }
+            { no: 5, name: "subtitle_tracks", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => SubtitleTrack },
+            { no: 6, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<MediaDetails>): MediaDetails {
@@ -588,6 +593,7 @@ class MediaDetails$Type extends MessageType<MediaDetails> {
         message.videoTracks = [];
         message.audioTracks = [];
         message.subtitleTracks = [];
+        message.name = "";
         if (value !== undefined)
             reflectionMergePartial<MediaDetails>(this, message, value);
         return message;
@@ -611,6 +617,9 @@ class MediaDetails$Type extends MessageType<MediaDetails> {
                     break;
                 case /* repeated mediacorral.analysis.v1.SubtitleTrack subtitle_tracks */ 5:
                     message.subtitleTracks.push(SubtitleTrack.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                case /* string name */ 6:
+                    message.name = reader.string();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -639,6 +648,9 @@ class MediaDetails$Type extends MessageType<MediaDetails> {
         /* repeated mediacorral.analysis.v1.SubtitleTrack subtitle_tracks = 5; */
         for (let i = 0; i < message.subtitleTracks.length; i++)
             SubtitleTrack.internalBinaryWrite(message.subtitleTracks[i], writer.tag(5, WireType.LengthDelimited).fork(), options).join();
+        /* string name = 6; */
+        if (message.name !== "")
+            writer.tag(6, WireType.LengthDelimited).string(message.name);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
