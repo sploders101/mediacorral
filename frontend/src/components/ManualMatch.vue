@@ -11,6 +11,7 @@ import { injectKeys } from "@/scripts/config";
 import type { ProcessedVideoItem } from "@/pages/catalogue/[id].vue";
 import { formatRuntime } from "@/scripts/utils";
 import { reportErrorsFactory } from "@/scripts/uiUtils";
+import TrackInspector from "./TrackInspector.vue";
 
 const rpc = inject(injectKeys.rpc)!;
 const reportErrors = reportErrorsFactory();
@@ -38,6 +39,10 @@ const emits = defineEmits<{
 	cancel: [];
 	submitted: [];
 }>();
+
+const videoFile = computed(() =>
+	props.catInfo.videoFiles.find((file) => file.id === props.videoFile.id)
+);
 
 async function matchItem(details: SubmitData) {
 	matchManually.value = false;
@@ -241,6 +246,7 @@ async function selectMatch() {
 	}
 }
 
+const inspectorTab = ref("subtitles");
 const matchManually = ref(false);
 </script>
 
@@ -284,35 +290,53 @@ const matchManually = ref(false);
 				</v-col>
 			</v-row>
 			<v-row>
-				<v-col :cols="showMatchSubtitles ? 6 : 12">
-					<div class="text-h6 ma-1">Original Subtitles</div>
-				</v-col>
-				<v-col v-if="showMatchSubtitles" cols="6">
-					<div class="text-h6 ma-1">OST Subtitles</div>
+				<v-col cols="12">
+					<div class="text-h6 ma-1">Media Inspector</div>
+					<v-tabs v-model="inspectorTab">
+						<v-tab value="subtitles">Subtitles</v-tab>
+						<v-tab value="tracks">Tracks</v-tab>
+					</v-tabs>
 				</v-col>
 			</v-row>
 			<v-row>
-				<v-col :cols="showMatchSubtitles ? 6 : 12">
-					<v-sheet
-						v-if="videoSubtitles !== undefined"
-						color="#101010"
-						class="pre-wrap pa-2"
-						elevation="3"
-						rounded="lg"
-						>{{ videoSubtitles }}</v-sheet
-					>
-					<v-skeleton-loader v-else type="paragraph" />
-				</v-col>
-				<v-col v-if="showMatchSubtitles" cols="6">
-					<v-sheet
-						v-if="matchSubtitles !== undefined"
-						color="#101010"
-						class="pre-wrap pa-2"
-						elevation="3"
-						rounded="lg"
-						>{{ matchSubtitles }}</v-sheet
-					>
-					<v-skeleton-loader v-else type="paragraph" />
+				<v-col cols="12">
+					<v-tabs-window v-model="inspectorTab">
+						<v-tabs-window-item value="subtitles">
+							<v-row>
+								<v-col :cols="showMatchSubtitles ? 6 : 12">
+									<div class="text-h6 ma-1">Original Subtitles</div>
+								</v-col>
+								<v-col v-if="showMatchSubtitles" cols="6">
+									<div class="text-h6 ma-1">OST Subtitles</div>
+								</v-col>
+								<v-col :cols="showMatchSubtitles ? 6 : 12">
+									<v-sheet
+										v-if="videoSubtitles !== undefined"
+										color="#101010"
+										class="pre-wrap pa-2"
+										elevation="3"
+										rounded="lg"
+										>{{ videoSubtitles }}</v-sheet
+									>
+									<v-skeleton-loader v-else type="paragraph" />
+								</v-col>
+								<v-col v-if="showMatchSubtitles" cols="6">
+									<v-sheet
+										v-if="matchSubtitles !== undefined"
+										color="#101010"
+										class="pre-wrap pa-2"
+										elevation="3"
+										rounded="lg"
+										>{{ matchSubtitles }}</v-sheet
+									>
+									<v-skeleton-loader v-else type="paragraph" />
+								</v-col>
+							</v-row>
+						</v-tabs-window-item>
+						<v-tabs-window-item value="tracks">
+							<TrackInspector v-if="videoFile !== undefined" :videoFile="videoFile" />
+						</v-tabs-window-item>
+					</v-tabs-window>
 				</v-col>
 			</v-row>
 		</v-card-text>

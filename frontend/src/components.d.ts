@@ -14,5 +14,6 @@ declare module 'vue' {
     PromptService: typeof import('./components/PromptService.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    TrackInspector: typeof import('./components/TrackInspector.vue')['default']
   }
 }
