@@ -88,6 +88,7 @@ where
     let info = mkv_file.info();
 
     // Collect container metadata
+    metadata.name = info.title().unwrap_or_default().to_string();
     let timestamp_scale = info.timestamp_scale().get();
     let duration_ns: u64 = match info.duration() {
         Some(duration) => duration.round() as u64 * timestamp_scale,

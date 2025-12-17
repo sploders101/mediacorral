@@ -59,6 +59,7 @@ message MediaDetails {
   repeated VideoTrack video_tracks = 3;
   repeated AudioTrack audio_tracks = 4;
   repeated SubtitleTrack subtitle_tracks = 5;
+  string name = 6;
 }
 
 // Information about a chapter within a media file
