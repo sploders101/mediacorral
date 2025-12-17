@@ -119,17 +119,21 @@ const episodeOptions = computed(() => {
 
 const matchSelection = ref<bigint | undefined>();
 const matchSubtitles = ref<string | undefined>();
+const showMatchSubtitles = computed(() => matchSubtitles.value !== undefined);
 watch(
 	() => matchSelection.value,
 	async () => {
 		matchSubtitles.value = undefined;
 		if (matchSelection.value === undefined) {
-			matchSubtitles.value = "[No selection]";
+			matchSubtitles.value = "";
 		}
 		let subs = props.catInfo.ostSubtitleFiles.find(
 			(subtitle) => matchSelection.value === subtitle.matchId
 		);
-		if (subs === undefined) return;
+		if (subs === undefined) {
+			matchSubtitles.value = undefined;
+			return;
+		}
 		const { response } = await reportErrors(
 			rpc.getSubtitles({ blobId: subs.blobId }),
 			"Failed to get subtitles for suspected episode"
@@ -280,15 +284,15 @@ const matchManually = ref(false);
 				</v-col>
 			</v-row>
 			<v-row>
-				<v-col :cols="matchSelection === undefined ? 12 : 6">
+				<v-col :cols="showMatchSubtitles ? 6 : 12">
 					<div class="text-h6 ma-1">Original Subtitles</div>
 				</v-col>
-				<v-col v-if="matchSelection !== undefined" cols="6">
+				<v-col v-if="showMatchSubtitles" cols="6">
 					<div class="text-h6 ma-1">OST Subtitles</div>
 				</v-col>
 			</v-row>
 			<v-row>
-				<v-col :cols="matchSelection === undefined ? 12 : 6">
+				<v-col :cols="showMatchSubtitles ? 6 : 12">
 					<v-sheet
 						v-if="videoSubtitles !== undefined"
 						color="#101010"
@@ -299,7 +303,7 @@ const matchManually = ref(false);
 					>
 					<v-skeleton-loader v-else type="paragraph" />
 				</v-col>
-				<v-col v-if="matchSelection !== undefined" cols="6">
+				<v-col v-if="showMatchSubtitles" cols="6">
 					<v-sheet
 						v-if="matchSubtitles !== undefined"
 						color="#101010"
