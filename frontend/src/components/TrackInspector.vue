@@ -8,7 +8,6 @@ const reportErrors = reportErrorsFactory();
 const props = defineProps<{
 	videoFile: VideoFile;
 }>();
-onMounted(() => console.log(toRaw(props.videoFile)));
 
 function resolveLanguage(langCode: string): string {
 	switch (langCode) {
@@ -120,31 +119,72 @@ const items = computed(() => {
 		},
 	];
 });
+
+const trackDetails = computed(() => {
+	if (selected.value.length === 0) {
+		return undefined;
+	}
+	const value = selected.value[0];
+	if (value.id.startsWith("video-")) {
+		const track =
+			props.videoFile.extendedMetadata?.videoTracks[Number(value.id.slice(6))];
+		if (track === undefined) return undefined;
+		return {
+			type: "video",
+			track,
+		} as const;
+	} else if (value.id.startsWith("audio-")) {
+		const track =
+			props.videoFile.extendedMetadata?.audioTracks[Number(value.id.slice(6))];
+		if (track === undefined) return undefined;
+		return {
+			type: "audio",
+			track,
+		} as const;
+	} else if (value.id.startsWith("subtitles-")) {
+		const track =
+			props.videoFile.extendedMetadata?.subtitleTracks[
+				Number(value.id.slice(10))
+			];
+		if (track === undefined) return undefined;
+		return {
+			type: "subtitles",
+			track,
+		} as const;
+	}
+});
 </script>
 
 <template>
 	<v-row>
 		<v-col cols="12" md="6">
 			<v-treeview
-				v-model:selected="selected"
+				v-model:activated="selected"
 				:items="items"
-				select-strategy="single-leaf"
+				active-strategy="single-leaf"
+				indent-lines="default"
 				item-value="id"
 				return-object
-				selectable
+				activatable
+				open-all
+				open-on-click
 			></v-treeview>
 		</v-col>
 
 		<v-divider vertical></v-divider>
 
 		<v-col class="pa-6" cols="12" md="6">
-			<template v-if="!selected.length">No nodes selected.</template>
+			<template v-if="trackDetails === undefined">No track selected.</template>
 
-			<template v-else>
-				<div v-for="node in selected" :key="node.id">
-					{{ node.title }}
-				</div>
-			</template>
+			<div v-else-if="trackDetails.type === 'video'">
+				Video Track
+			</div>
+			<div v-else-if="trackDetails.type === 'audio'">
+				Audio Track
+			</div>
+			<div v-else-if="trackDetails.type === 'subtitles'">
+				Subtitles Track
+			</div>
 		</v-col>
 	</v-row>
 </template>
