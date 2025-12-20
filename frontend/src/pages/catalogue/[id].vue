@@ -102,7 +102,8 @@ async function refreshData() {
 	// Fetch relevant media for suspectedContents
 	if (jobInfoResponse.response.details?.suspectedContents !== undefined) {
 		const suspectedContents =
-			jobInfoResponse.response.details.suspectedContents.suspectedContents;
+			jobInfoResponse.response.details.suspectedContents
+				.suspectedContents;
 		switch (suspectedContents.oneofKind) {
 			case "movie":
 				firstFetchers.push(
@@ -113,24 +114,37 @@ async function refreshData() {
 						.then(({ response }) => {
 							if (response.movie === undefined)
 								throw new Error("Movie missing");
-							if (cache.movies.get(response.movie.id) === undefined) {
-								cache.movies.set(response.movie.id, response.movie);
+							if (
+								cache.movies.get(response.movie.id) ===
+								undefined
+							) {
+								cache.movies.set(
+									response.movie.id,
+									response.movie
+								);
 							}
 						})
 				);
 				break;
 			case "tvEpisodes":
 				firstFetchers.push(
-					...suspectedContents.tvEpisodes.episodeTmdbIds.map(async (tmdbId) => {
-						const { response } = await rpc.getTvEpisodeByTmdbId({
-							tmdbId: tmdbId,
-						});
-						if (response.episode === undefined)
-							throw new Error("TV episode missing");
-						cache.tvEpisodes.set(response.episode.id, response.episode);
-						tvShows.add(response.episode.tvShowId);
-						tvSeasons.add(response.episode.tvSeasonId);
-					})
+					...suspectedContents.tvEpisodes.episodeTmdbIds.map(
+						async (tmdbId) => {
+							const { response } = await rpc.getTvEpisodeByTmdbId(
+								{
+									tmdbId: tmdbId,
+								}
+							);
+							if (response.episode === undefined)
+								throw new Error("TV episode missing");
+							cache.tvEpisodes.set(
+								response.episode.id,
+								response.episode
+							);
+							tvShows.add(response.episode.tvShowId);
+							tvSeasons.add(response.episode.tvSeasonId);
+						}
+					)
 				);
 		}
 	}
@@ -148,7 +162,10 @@ async function refreshData() {
 						});
 						if (response.episode === undefined)
 							throw new Error("TV episode missing");
-						cache.tvEpisodes.set(response.episode.id, response.episode);
+						cache.tvEpisodes.set(
+							response.episode.id,
+							response.episode
+						);
 						tvShows.add(response.episode.tvShowId);
 						tvSeasons.add(response.episode.tvSeasonId);
 					}
@@ -170,7 +187,8 @@ async function refreshData() {
 		if (cache.movies.has(movieId)) continue;
 		finalFetchers.push(
 			rpc.getMovie({ movieId }).then(({ response }) => {
-				if (response.movie === undefined) throw new Error("Movie missing");
+				if (response.movie === undefined)
+					throw new Error("Movie missing");
 				cache.movies.set(movieId, response.movie);
 			})
 		);
@@ -179,7 +197,8 @@ async function refreshData() {
 		if (cache.tvShows.has(showId)) continue;
 		finalFetchers.push(
 			rpc.getTvShow({ showId }).then(({ response }) => {
-				if (response.tvShow === undefined) throw new Error("TV show missing");
+				if (response.tvShow === undefined)
+					throw new Error("TV show missing");
 				cache.tvShows.set(response.tvShow.id, response.tvShow);
 			})
 		);
@@ -237,7 +256,9 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 
 	return catInfo.value.videoFiles.map<ProcessedVideoItem>((videoFile) => {
 		const runtime =
-			videoFile.length === undefined ? "?" : formatRuntime(videoFile.length);
+			videoFile.length === undefined
+				? "?"
+				: formatRuntime(videoFile.length);
 
 		const matches = catInfo.value!.matches.filter(
 			(match) => match.videoFileId === videoFile.id
@@ -248,7 +269,8 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 
 		const likelyOstMatches = matches.filter(
 			(match) =>
-				match.distance / match.maxDistance < 1 - matchThreshold.value / 100
+				match.distance / match.maxDistance <
+				1 - matchThreshold.value / 100
 		);
 
 		let currentMatch = "";
@@ -377,7 +399,9 @@ async function suspectContents(data: MatchSubmitData) {
 	switch (data.type) {
 		case SearchType.Movie:
 			if (data.movie.tmdbId === undefined)
-				throw new Error("Cannot suspect movie that was created manually");
+				throw new Error(
+					"Cannot suspect movie that was created manually"
+				);
 			await reportErrors(
 				rpc.suspectJob({
 					jobId: jobInfo.value.id,
@@ -395,7 +419,9 @@ async function suspectContents(data: MatchSubmitData) {
 			break;
 		case SearchType.TvSeries:
 			if (data.episodes.some((episode) => episode.tmdbId === undefined))
-				throw new Error("Cannot suspect tv show that was created manually");
+				throw new Error(
+					"Cannot suspect tv show that was created manually"
+				);
 			await reportErrors(
 				rpc.suspectJob({
 					jobId: jobInfo.value.id,
@@ -403,7 +429,9 @@ async function suspectContents(data: MatchSubmitData) {
 						suspectedContents: {
 							oneofKind: "tvEpisodes",
 							tvEpisodes: {
-								episodeTmdbIds: data.episodes.map((episode) => episode.tmdbId!),
+								episodeTmdbIds: data.episodes.map(
+									(episode) => episode.tmdbId!
+								),
 							},
 						},
 					},
@@ -445,10 +473,15 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 											`Enter the following to delete the rip job:\n'Please delete job ${route.params.id}'`
 										)
 										.then((result) => {
-											if (result === `Please delete job ${route.params.id}`) {
+											if (
+												result ===
+												`Please delete job ${route.params.id}`
+											) {
 												return reportErrors(
 													rpc.deleteJob({
-														jobId: BigInt(route.params.id),
+														jobId: BigInt(
+															route.params.id
+														),
 													}),
 													'An error occurred while deleting the job'
 												);
@@ -479,12 +512,14 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 										.then((result) => {
 											if (result) {
 												loading = true;
-												rpc
-													.pruneRipJob({ jobId: BigInt(route.params.id) })
-													.then(() => {
-														$router.push('/catalogue');
-														loading = false;
-													});
+												rpc.pruneRipJob({
+													jobId: BigInt(
+														route.params.id
+													),
+												}).then(() => {
+													$router.push('/catalogue');
+													loading = false;
+												});
 											}
 										})
 								"
@@ -534,13 +569,24 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 					:headers="[
 						{ title: 'ID', value: 'id', sortable: false },
 						{ title: 'Runtime', value: 'runtime', sortable: false },
-						{ title: 'Resolution', value: 'resolution', sortable: false },
-						{ title: 'Attributes', key: 'attributes', sortable: false },
+						{
+							title: 'Resolution',
+							value: 'resolution',
+							sortable: false,
+						},
+						{
+							title: 'Attributes',
+							key: 'attributes',
+							sortable: false,
+						},
 						{
 							title: 'Subtitle Match',
 							key: 'likelyOstMatch',
 							value: (item) =>
-								formatMatch(item.likelyOstMatchCount, item.likelyOstMatch),
+								formatMatch(
+									item.likelyOstMatchCount,
+									item.likelyOstMatch
+								),
 							sortable: false,
 						},
 						{
@@ -559,14 +605,22 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 								:text="`Duplicate (x${item.attributes.dupCount})\nVideo Hash: ${item.attributes.hash?.substring(0, 6)}`"
 							>
 								<template v-slot:activator="{ props }">
-									<v-icon v-bind="props" :color="item.attributes.hashColor">
+									<v-icon
+										v-bind="props"
+										:color="item.attributes.hashColor"
+									>
 										mdi-pound-box
 									</v-icon>
 								</template>
 							</v-tooltip>
-							<v-tooltip v-if="item.attributes.subtitles" text="Subtitles">
+							<v-tooltip
+								v-if="item.attributes.subtitles"
+								text="Subtitles"
+							>
 								<template v-slot:activator="{ props }">
-									<v-icon v-bind="props">mdi-subtitles</v-icon>
+									<v-icon v-bind="props"
+										>mdi-subtitles</v-icon
+									>
 								</template>
 							</v-tooltip>
 						</template>
@@ -574,7 +628,8 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 					<template v-slot:item.actions="{ item }">
 						<v-btn
 							v-if="
-								item.existingMatchType !== VideoType.UNSPECIFIED &&
+								item.existingMatchType !==
+									VideoType.UNSPECIFIED &&
 								item.existingMatch !== undefined
 							"
 							flat
@@ -598,7 +653,9 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 							Unmatch
 						</v-btn>
 						<template v-else>
-							<v-btn flat @click="manualMatchItem = item"> Match </v-btn>
+							<v-btn flat @click="manualMatchItem = item">
+								Match
+							</v-btn>
 							<v-tooltip
 								v-if="item.suggestedMatch !== undefined"
 								text="Approve Suggested Match"
@@ -610,14 +667,24 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 										v-bind="props"
 										@click="
 											reportErrors(
-												rpc.tagFile(item.suggestedMatch!).then(() => {
-													let file = catInfo?.videoFiles.find(
-														(video) => video.id === item.id
-													);
-													if (file === undefined) return;
-													file.videoType = item.suggestedMatch!.videoType;
-													file.matchId = item.suggestedMatch!.matchId;
-												}),
+												rpc
+													.tagFile(
+														item.suggestedMatch!
+													)
+													.then(() => {
+														let file =
+															catInfo?.videoFiles.find(
+																(video) =>
+																	video.id ===
+																	item.id
+															);
+														if (file === undefined)
+															return;
+														file.videoType =
+															item.suggestedMatch!.videoType;
+														file.matchId =
+															item.suggestedMatch!.matchId;
+													}),
 												'An error occurred while tagging the file'
 											)
 										"

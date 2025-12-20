@@ -96,7 +96,8 @@ const movieSelection = ref<Movie | undefined>();
 watch(
 	() => mediaType.value,
 	() => {
-		if (mediaType.value !== SearchType.Movie) movieSelection.value = undefined;
+		if (mediaType.value !== SearchType.Movie)
+			movieSelection.value = undefined;
 	}
 );
 
@@ -155,7 +156,8 @@ const tvSeasonsListSelections = computed(() =>
 );
 const tvSeasonSelection = ref<TvSeason[] | undefined>();
 watch([() => tvShowSelection.value], () => {
-	if (tvShowSelection.value === undefined) tvSeasonSelection.value = undefined;
+	if (tvShowSelection.value === undefined)
+		tvSeasonSelection.value = undefined;
 });
 
 const tvSeasonsById = computed(() => {
@@ -335,7 +337,10 @@ function submit(event: "submit" | "input") {
 			<v-row v-if="mediaType === SearchType.TvSeries">
 				<v-col cols="6">
 					<v-autocomplete
-						v-if="tvShowSelection !== undefined && props.multipleEpisodes"
+						v-if="
+							tvShowSelection !== undefined &&
+							props.multipleEpisodes
+						"
 						label="Seasons"
 						multiple
 						chips
@@ -344,12 +349,17 @@ function submit(event: "submit" | "input") {
 						v-model="tvSeasonSelection"
 					/>
 					<v-autocomplete
-						v-if="tvShowSelection !== undefined && !props.multipleEpisodes"
+						v-if="
+							tvShowSelection !== undefined &&
+							!props.multipleEpisodes
+						"
 						label="Season"
 						:loading="tvSeasonsList === undefined"
 						:items="tvSeasonsListSelections"
 						:modelValue="
-							tvSeasonSelection === undefined ? undefined : tvSeasonSelection[0]
+							tvSeasonSelection === undefined
+								? undefined
+								: tvSeasonSelection[0]
 						"
 						@update:modelValue="tvSeasonSelection = [$event]"
 					/>

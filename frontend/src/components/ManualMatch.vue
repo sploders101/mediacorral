@@ -101,16 +101,20 @@ const episodeOptions = computed(() => {
 	switch (contents?.oneofKind) {
 		case "movie":
 			let title = "???";
-			const movie = metaCacheByTmdbId.value.movies.get(contents.movie.tmdbId);
+			const movie = metaCacheByTmdbId.value.movies.get(
+				contents.movie.tmdbId
+			);
 			if (movie !== undefined) {
 				title = movie.title || "???";
-				if (movie.releaseYear !== undefined) title += ` (${movie.releaseYear})`;
+				if (movie.releaseYear !== undefined)
+					title += ` (${movie.releaseYear})`;
 				options.push({ title, value: movie.id });
 			}
 			break;
 		case "tvEpisodes":
 			for (const tvEpisode of contents.tvEpisodes.episodeTmdbIds) {
-				const episode = metaCacheByTmdbId.value.tvEpisodes.get(tvEpisode);
+				const episode =
+					metaCacheByTmdbId.value.tvEpisodes.get(tvEpisode);
 				if (episode === undefined) break;
 				const season = metaCache.tvSeasons.get(episode.tvSeasonId);
 				if (season === undefined) break;
@@ -181,12 +185,15 @@ const matchInfo = computed(() => {
 	if (matchSelection.value === undefined) return "";
 
 	points.push(`File runtime:      ${props.videoFile.runtime}`);
-	const suspectedContents = props.catInfo.suspectedContents?.suspectedContents;
+	const suspectedContents =
+		props.catInfo.suspectedContents?.suspectedContents;
 	switch (suspectedContents?.oneofKind) {
 		case "movie":
 			const movie = metaCache.movies.get(matchSelection.value);
 			if (movie?.runtime !== undefined) {
-				points.push(`Movie runtime:     ${formatRuntime(movie.runtime * 60)}`);
+				points.push(
+					`Movie runtime:     ${formatRuntime(movie.runtime * 60)}`
+				);
 			}
 			break;
 		case "tvEpisodes":
@@ -265,7 +272,9 @@ const matchManually = ref(false);
 					>
 						<template v-slot:no-data />
 						<template v-slot:append-item>
-							<v-list-item @click="matchManually = true"> Other </v-list-item>
+							<v-list-item @click="matchManually = true">
+								Other
+							</v-list-item>
 						</template>
 					</v-select>
 				</v-col>
@@ -304,10 +313,14 @@ const matchManually = ref(false);
 						<v-tabs-window-item value="subtitles">
 							<v-row>
 								<v-col :cols="showMatchSubtitles ? 6 : 12">
-									<div class="text-h6 ma-1">Original Subtitles</div>
+									<div class="text-h6 ma-1">
+										Original Subtitles
+									</div>
 								</v-col>
 								<v-col v-if="showMatchSubtitles" cols="6">
-									<div class="text-h6 ma-1">OST Subtitles</div>
+									<div class="text-h6 ma-1">
+										OST Subtitles
+									</div>
 								</v-col>
 								<v-col :cols="showMatchSubtitles ? 6 : 12">
 									<v-sheet
@@ -318,7 +331,10 @@ const matchManually = ref(false);
 										rounded="lg"
 										>{{ videoSubtitles }}</v-sheet
 									>
-									<v-skeleton-loader v-else type="paragraph" />
+									<v-skeleton-loader
+										v-else
+										type="paragraph"
+									/>
 								</v-col>
 								<v-col v-if="showMatchSubtitles" cols="6">
 									<v-sheet
@@ -329,12 +345,18 @@ const matchManually = ref(false);
 										rounded="lg"
 										>{{ matchSubtitles }}</v-sheet
 									>
-									<v-skeleton-loader v-else type="paragraph" />
+									<v-skeleton-loader
+										v-else
+										type="paragraph"
+									/>
 								</v-col>
 							</v-row>
 						</v-tabs-window-item>
 						<v-tabs-window-item value="tracks">
-							<TrackInspector v-if="videoFile !== undefined" :videoFile="videoFile" />
+							<TrackInspector
+								v-if="videoFile !== undefined"
+								:videoFile="videoFile"
+							/>
 						</v-tabs-window-item>
 					</v-tabs-window>
 				</v-col>

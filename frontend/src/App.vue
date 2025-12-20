@@ -11,7 +11,10 @@ provide(injectKeys.appbar, appbar);
 	<v-app>
 		<v-app-bar>
 			<template v-slot:prepend>
-				<v-app-bar-nav-icon variant="text" @click.stop="drawer = !drawer" />
+				<v-app-bar-nav-icon
+					variant="text"
+					@click.stop="drawer = !drawer"
+				/>
 			</template>
 			<v-app-bar-title>
 				<div class="mc-appbar" ref="appbar">
@@ -49,6 +52,6 @@ provide(injectKeys.appbar, appbar);
 		<v-main>
 			<router-view />
 		</v-main>
-		<PromptService/>
+		<PromptService />
 	</v-app>
 </template>

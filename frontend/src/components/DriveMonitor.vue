@@ -164,7 +164,9 @@ function trackJob() {
 		inflight = true;
 		let requestingJob = jobInfo.value.id;
 		try {
-			let {response} = await rpc.getRipJobStatus({jobId: requestingJob});
+			let { response } = await rpc.getRipJobStatus({
+				jobId: requestingJob,
+			});
 			if (requestingJob === jobInfo.value.id) {
 				jobStatus.value = response.status;
 			}
@@ -183,7 +185,7 @@ watch(
 			jobTrackerInterval.value = undefined;
 		}
 	}
-)
+);
 watch(
 	() => jobInfo.value?.id,
 	(id) => {
@@ -201,7 +203,7 @@ watch(
 );
 onBeforeUnmount(() => {
 	if (jobTrackerInterval.value !== undefined) {
-		clearInterval(jobTrackerInterval.value)
+		clearInterval(jobTrackerInterval.value);
 		jobTrackerInterval.value = undefined;
 	}
 });
@@ -246,7 +248,8 @@ async function renameJob() {
 				<v-label :text="`Current: ${jobStatus.cprogTitle}`" />
 				<v-progress-linear
 					:model-value="
-						((jobStatus.progress?.cprogValue || 0) / (jobStatus.progress?.maxValue || 1)) *
+						((jobStatus.progress?.cprogValue || 0) /
+							(jobStatus.progress?.maxValue || 1)) *
 						100
 					"
 					buffer-value="0"
@@ -256,7 +259,8 @@ async function renameJob() {
 				<v-label :text="`Total: ${jobStatus.tprogTitle}`" />
 				<v-progress-linear
 					:model-value="
-						((jobStatus.progress?.tprogValue || 0) / (jobStatus.progress?.maxValue || 1)) *
+						((jobStatus.progress?.tprogValue || 0) /
+							(jobStatus.progress?.maxValue || 1)) *
 						100
 					"
 					buffer-value="0"

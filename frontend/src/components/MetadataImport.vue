@@ -47,7 +47,8 @@ const resultsMapped = computed(() => {
 	if (results.value === undefined) return undefined;
 	return results.value[1].results
 		.filter(
-			(result) => !("type" in result && !["movie", "tv"].includes(result.type))
+			(result) =>
+				!("type" in result && !["movie", "tv"].includes(result.type))
 		)
 		.map((result) => ({
 			value: result.id,
@@ -155,7 +156,9 @@ async function importItem() {
 				let {
 					response: { movieId },
 				} = await reportErrors(
-					rpc.importTmdbMovie({ tmdbId: selectedItemDetails.value.id }),
+					rpc.importTmdbMovie({
+						tmdbId: selectedItemDetails.value.id,
+					}),
 					"Error importing movie"
 				);
 				emit("dataImported", {
@@ -213,20 +216,31 @@ defineExpose({
 							:items="[
 								{ title: 'Any', value: SearchType.Unspecified },
 								{ title: 'Movies', value: SearchType.Movie },
-								{ title: 'TV Series', value: SearchType.TvSeries },
+								{
+									title: 'TV Series',
+									value: SearchType.TvSeries,
+								},
 							]"
 							variant="outlined"
 							v-model="searchType"
 						/>
 					</v-col>
 					<v-col class="pa-2">
-						<v-text-field label="Title" variant="outlined" v-model="query" />
+						<v-text-field
+							label="Title"
+							variant="outlined"
+							v-model="query"
+						/>
 					</v-col>
 				</v-row>
 				<v-row>
 					<v-spacer />
 					<v-col cols="auto">
-						<v-btn type="submit" prepend-icon="mdi-magnify" variant="outlined">
+						<v-btn
+							type="submit"
+							prepend-icon="mdi-magnify"
+							variant="outlined"
+						>
 							Search
 						</v-btn>
 					</v-col>
@@ -261,7 +275,11 @@ defineExpose({
 			<v-card-actions>
 				<v-btn @click="selectItem()" color="red">Cancel</v-btn>
 				<v-spacer />
-				<v-btn @click="importItem()" color="green" :loading="importingItem">
+				<v-btn
+					@click="importItem()"
+					color="green"
+					:loading="importingItem"
+				>
 					Import
 				</v-btn>
 			</v-card-actions>

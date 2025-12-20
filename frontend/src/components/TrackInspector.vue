@@ -28,54 +28,58 @@ const items = computed(() => {
 		{
 			id: "video",
 			title: "Video",
-			children: props.videoFile.extendedMetadata.videoTracks.map((track, i) => {
-				let segments: string[] = [];
-				if (!track.enabled) {
-					segments.push("Disabled");
-				} else if (track.default) {
-					segments.push("Default");
+			children: props.videoFile.extendedMetadata.videoTracks.map(
+				(track, i) => {
+					let segments: string[] = [];
+					if (!track.enabled) {
+						segments.push("Disabled");
+					} else if (track.default) {
+						segments.push("Default");
+					}
+					if (track.language) {
+						segments.push(resolveLanguage(track.language));
+					}
+					if (track.commentary) {
+						segments.push("Commentary");
+					}
+					const trackDetails =
+						track.name === undefined
+							? segments.join(" ")
+							: `${track.name} - ${segments.join(" ")}`;
+					return {
+						id: `video-${i}`,
+						title: `[${track.trackNumber}] ${trackDetails || "Main"}`,
+					};
 				}
-				if (track.language) {
-					segments.push(resolveLanguage(track.language));
-				}
-				if (track.commentary) {
-					segments.push("Commentary");
-				}
-				const trackDetails =
-					track.name === undefined
-						? segments.join(" ")
-						: `${track.name} - ${segments.join(" ")}`;
-				return {
-					id: `video-${i}`,
-					title: `[${track.trackNumber}] ${trackDetails || "Main"}`,
-				};
-			}),
+			),
 		},
 		{
 			id: "audio",
 			title: "Audio",
-			children: props.videoFile.extendedMetadata.audioTracks.map((track, i) => {
-				let segments: string[] = [];
-				if (!track.enabled) {
-					segments.push("Disabled");
-				} else if (track.default) {
-					segments.push("Default");
+			children: props.videoFile.extendedMetadata.audioTracks.map(
+				(track, i) => {
+					let segments: string[] = [];
+					if (!track.enabled) {
+						segments.push("Disabled");
+					} else if (track.default) {
+						segments.push("Default");
+					}
+					if (track.language) {
+						segments.push(resolveLanguage(track.language));
+					}
+					if (track.commentary) {
+						segments.push("Commentary");
+					}
+					const trackDetails =
+						track.name === undefined
+							? segments.join(" ")
+							: `${track.name} - ${segments.join(" ")}`;
+					return {
+						id: `audio-${i}`,
+						title: `[${track.trackNumber}] ${trackDetails || "Main"}`,
+					};
 				}
-				if (track.language) {
-					segments.push(resolveLanguage(track.language));
-				}
-				if (track.commentary) {
-					segments.push("Commentary");
-				}
-				const trackDetails =
-					track.name === undefined
-						? segments.join(" ")
-						: `${track.name} - ${segments.join(" ")}`;
-				return {
-					id: `audio-${i}`,
-					title: `[${track.trackNumber}] ${trackDetails || "Main"}`,
-				};
-			}),
+			),
 		},
 		{
 			id: "subtitles",
@@ -115,7 +119,9 @@ const trackDetails = computed(() => {
 	const value = selected.value[0];
 	if (value.id.startsWith("video-")) {
 		const track =
-			props.videoFile.extendedMetadata?.videoTracks[Number(value.id.slice(6))];
+			props.videoFile.extendedMetadata?.videoTracks[
+				Number(value.id.slice(6))
+			];
 		if (track === undefined) return undefined;
 		return {
 			type: "video",
@@ -123,7 +129,9 @@ const trackDetails = computed(() => {
 		} as const;
 	} else if (value.id.startsWith("audio-")) {
 		const track =
-			props.videoFile.extendedMetadata?.audioTracks[Number(value.id.slice(6))];
+			props.videoFile.extendedMetadata?.audioTracks[
+				Number(value.id.slice(6))
+			];
 		if (track === undefined) return undefined;
 		return {
 			type: "audio",
@@ -162,7 +170,9 @@ const trackDetails = computed(() => {
 		<v-divider vertical></v-divider>
 
 		<v-col class="pa-6" cols="12" md="6">
-			<template v-if="trackDetails === undefined">No track selected.</template>
+			<template v-if="trackDetails === undefined"
+				>No track selected.</template
+			>
 
 			<div v-else>
 				<v-table striped="odd">
@@ -181,7 +191,11 @@ const trackDetails = computed(() => {
 						</tr>
 						<tr>
 							<td>Name</td>
-							<td>{{ trackDetails.track.name || "Untitled Track" }}</td>
+							<td>
+								{{
+									trackDetails.track.name || "Untitled Track"
+								}}
+							</td>
 						</tr>
 						<tr>
 							<td>Type</td>
@@ -189,7 +203,11 @@ const trackDetails = computed(() => {
 						</tr>
 						<tr v-if="trackDetails.track.language !== undefined">
 							<td>Language</td>
-							<td>{{ resolveLanguage(trackDetails.track.language) }}</td>
+							<td>
+								{{
+									resolveLanguage(trackDetails.track.language)
+								}}
+							</td>
 						</tr>
 						<tr>
 							<td>Flags</td>
@@ -221,11 +239,17 @@ const trackDetails = computed(() => {
 										/>
 									</template>
 								</v-tooltip>
-								<v-tooltip location="top" text="Visually Impaired">
+								<v-tooltip
+									location="top"
+									text="Visually Impaired"
+								>
 									<template v-slot:activator="{ props }">
 										<v-icon
 											v-bind="props"
-											v-if="trackDetails.track.visualImpaired"
+											v-if="
+												trackDetails.track
+													.visualImpaired
+											"
 										/>
 									</template>
 								</v-tooltip>
@@ -241,7 +265,13 @@ const trackDetails = computed(() => {
 						</tr>
 						<tr v-if="trackDetails.type === 'video'">
 							<td>Stereoscopy (3D) Mode</td>
-							<td>{{ resolveStereoMode(trackDetails.track.stereoMode) }}</td>
+							<td>
+								{{
+									resolveStereoMode(
+										trackDetails.track.stereoMode
+									)
+								}}
+							</td>
 						</tr>
 						<tr v-if="trackDetails.type === 'audio'">
 							<td>Channel Count</td>

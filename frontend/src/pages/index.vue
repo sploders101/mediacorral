@@ -57,7 +57,10 @@ async function changeAutorip(status: boolean) {
 			:value="drive"
 		>
 			<v-container fluid>
-				<DriveMonitor :drive="drive" :visible="driveSelection === drive" />
+				<DriveMonitor
+					:drive="drive"
+					:visible="driveSelection === drive"
+				/>
 			</v-container>
 		</v-tabs-window-item>
 	</v-tabs-window>

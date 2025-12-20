@@ -29,10 +29,14 @@ export class PromptService {
 	promptStack: Prompt[] = reactive([]);
 
 	alert(message: string, title?: string) {
-		return new Promise<void>((callback) => this.promptStack.push({ type: "alert", title, message, callback }));
+		return new Promise<void>((callback) =>
+			this.promptStack.push({ type: "alert", title, message, callback })
+		);
 	}
 	alertCustom(message: Omit<AlertPrompt, "callback" | "type">) {
-		return new Promise<void>((callback) => this.promptStack.push({ ...message, type: "alert", callback }));
+		return new Promise<void>((callback) =>
+			this.promptStack.push({ ...message, type: "alert", callback })
+		);
 	}
 
 	confirm(message: string, title?: string) {
@@ -75,7 +79,9 @@ const visiblePrompt = computed(() => {
 	<v-dialog :modelValue="!!visiblePrompt" persistent>
 		<template v-if="visiblePrompt?.type === 'alert'">
 			<v-card>
-				<v-card-title> {{ visiblePrompt.title || "Confirm" }} </v-card-title>
+				<v-card-title>
+					{{ visiblePrompt.title || "Confirm" }}
+				</v-card-title>
 				<v-card-text> {{ visiblePrompt.message }} </v-card-text>
 				<v-card-actions>
 					<v-spacer />
@@ -91,7 +97,9 @@ const visiblePrompt = computed(() => {
 		</template>
 		<template v-else-if="visiblePrompt?.type === 'confirm'">
 			<v-card>
-				<v-card-title> {{ visiblePrompt.title || "Confirm" }} </v-card-title>
+				<v-card-title>
+					{{ visiblePrompt.title || "Confirm" }}
+				</v-card-title>
 				<v-card-text> {{ visiblePrompt.message }} </v-card-text>
 				<v-card-actions>
 					<v-spacer />
@@ -127,7 +135,10 @@ const visiblePrompt = computed(() => {
 				<v-card>
 					<v-card-title> {{ visiblePrompt.title }} </v-card-title>
 					<v-card-text>
-						<p v-if="visiblePrompt.message !== undefined" class="pre-wrap ma-5">
+						<p
+							v-if="visiblePrompt.message !== undefined"
+							class="pre-wrap ma-5"
+						>
 							{{ visiblePrompt.message }}
 						</p>
 						<v-text-field
@@ -138,9 +149,12 @@ const visiblePrompt = computed(() => {
 							"
 							variant="outlined"
 							:modelValue="
-								inputValues.get(visiblePrompt) || visiblePrompt.value
+								inputValues.get(visiblePrompt) ||
+								visiblePrompt.value
 							"
-							@update:modelValue="inputValues.set(visiblePrompt, $event)"
+							@update:modelValue="
+								inputValues.set(visiblePrompt, $event)
+							"
 						/>
 					</v-card-text>
 					<v-card-actions>

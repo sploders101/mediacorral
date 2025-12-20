@@ -50,7 +50,9 @@ function getRipStatus(job: RipJob) {
 		hide-default-footer
 	>
 		<template v-slot:item.actions="{ item }">
-			<v-btn flat @click="$router.push(`/catalogue/${item.id}`)">Open</v-btn>
+			<v-btn flat @click="$router.push(`/catalogue/${item.id}`)"
+				>Open</v-btn
+			>
 		</template>
 	</v-data-table-virtual>
 </template>
