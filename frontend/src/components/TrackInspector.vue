@@ -1,32 +1,20 @@
 <script lang="ts" setup>
+import { VideoStereoMode } from "@/generated/mediacorral/analysis/v1/main";
 import { VideoFile } from "@/generated/mediacorral/server/v1/api";
 import { injectKeys } from "@/scripts/config";
 import { reportErrorsFactory } from "@/scripts/uiUtils";
+import {
+	capitalize,
+	resolveLanguage,
+	resolveStereoMode,
+	toHex,
+} from "@/scripts/utils";
 
 const rpc = inject(injectKeys.rpc)!;
 const reportErrors = reportErrorsFactory();
 const props = defineProps<{
 	videoFile: VideoFile;
 }>();
-
-function resolveLanguage(langCode: string): string {
-	switch (langCode) {
-		case "eng":
-			return "English";
-		case "spa":
-			return "Spanish";
-		case "fra":
-			return "French";
-		case "fin":
-			return "Finnish";
-		case "nor":
-			return "Norwegian";
-		case "swe":
-			return "Swedish";
-		default:
-			return langCode;
-	}
-}
 
 interface TrackTreeLeaf {
 	id: string;
@@ -176,14 +164,91 @@ const trackDetails = computed(() => {
 		<v-col class="pa-6" cols="12" md="6">
 			<template v-if="trackDetails === undefined">No track selected.</template>
 
-			<div v-else-if="trackDetails.type === 'video'">
-				Video Track
-			</div>
-			<div v-else-if="trackDetails.type === 'audio'">
-				Audio Track
-			</div>
-			<div v-else-if="trackDetails.type === 'subtitles'">
-				Subtitles Track
+			<div v-else>
+				<v-table striped="odd">
+					<tbody>
+						<tr>
+							<td>Track Number</td>
+							<td>{{ trackDetails.track.trackNumber }}</td>
+						</tr>
+						<tr>
+							<td>Track UID</td>
+							<td>{{ trackDetails.track.trackUid }}</td>
+						</tr>
+						<tr>
+							<td>Hash</td>
+							<td>{{ toHex(trackDetails.track.hash) }}</td>
+						</tr>
+						<tr>
+							<td>Name</td>
+							<td>{{ trackDetails.track.name || "Untitled Track" }}</td>
+						</tr>
+						<tr>
+							<td>Type</td>
+							<td>{{ capitalize(trackDetails.type) }}</td>
+						</tr>
+						<tr v-if="trackDetails.track.language !== undefined">
+							<td>Language</td>
+							<td>{{ resolveLanguage(trackDetails.track.language) }}</td>
+						</tr>
+						<tr>
+							<td>Flags</td>
+							<td>
+								<v-tooltip location="top" text="Disabled">
+									<template v-slot:activator="{ props }">
+										<v-icon
+											v-bind="props"
+											v-if="!trackDetails.track.enabled"
+											icon="mdi-cancel"
+										/>
+									</template>
+								</v-tooltip>
+								<v-tooltip location="top" text="Default">
+									<template v-slot:activator="{ props }">
+										<v-icon
+											v-bind="props"
+											v-if="trackDetails.track.default"
+											icon="mdi-selection"
+										/>
+									</template>
+								</v-tooltip>
+								<v-tooltip location="top" text="Commentary">
+									<template v-slot:activator="{ props }">
+										<v-icon
+											v-bind="props"
+											v-if="trackDetails.track.commentary"
+											icon="mdi-comment-quote"
+										/>
+									</template>
+								</v-tooltip>
+								<v-tooltip location="top" text="Visually Impaired">
+									<template v-slot:activator="{ props }">
+										<v-icon
+											v-bind="props"
+											v-if="trackDetails.track.visualImpaired"
+										/>
+									</template>
+								</v-tooltip>
+							</td>
+						</tr>
+						<tr v-if="trackDetails.type === 'video'">
+							<td>Resolution</td>
+							<td>
+								{{ trackDetails.track.displayWidth }}x{{
+									trackDetails.track.displayHeight
+								}}
+							</td>
+						</tr>
+						<tr v-if="trackDetails.type === 'video'">
+							<td>Stereoscopy (3D) Mode</td>
+							<td>{{ resolveStereoMode(trackDetails.track.stereoMode) }}</td>
+						</tr>
+						<tr v-if="trackDetails.type === 'audio'">
+							<td>Channel Count</td>
+							<td>{{ trackDetails.track.channels }}</td>
+						</tr>
+					</tbody>
+				</v-table>
 			</div>
 		</v-col>
 	</v-row>

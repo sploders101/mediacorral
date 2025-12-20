@@ -33,7 +33,7 @@ import {
 import router from "@/router";
 import { SearchType, type MetaCache } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
-import { formatRuntime } from "@/scripts/utils";
+import { formatRuntime, toHex } from "@/scripts/utils";
 import { reportErrorsFactory } from "@/scripts/uiUtils";
 
 const reportErrors = reportErrorsFactory();
@@ -310,13 +310,6 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 		};
 	});
 });
-
-function toHex(buf: Uint8Array) {
-	return Array.prototype.map
-		.call(buf, (n: number) => n.toString(16).padStart(2, "0"))
-		.join("")
-		.toUpperCase();
-}
 
 function formatMatch(matchCount: number, match: MatchInfoItem | undefined) {
 	if (matchCount > 1) return "Multiple matches";
