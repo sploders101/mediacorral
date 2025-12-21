@@ -626,6 +626,7 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 								location="bottom right"
 								dot
 								color="indigo"
+								class="icon-gap"
 							>
 								<v-tooltip
 									:text="`Duplicate (x${item.attributes.videoDupCount})\nVideo Hash: ${item.attributes.videoHash?.substring(0, 6)}`"
@@ -645,6 +646,7 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 								location="bottom right"
 								dot
 								color="red"
+								class="icon-gap"
 							>
 								<v-tooltip
 									:text="`Duplicate (x${item.attributes.audioDupCount})\nAudio Hash: ${item.attributes.audioHash?.substring(0, 6)}`"
@@ -664,6 +666,7 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 								location="bottom right"
 								dot
 								color="green"
+								class="icon-gap"
 							>
 								<v-tooltip
 									:text="`Duplicate (x${item.attributes.subtitleDupCount})\nSubtitle Hash: ${item.attributes.subtitleHash?.substring(0, 6)}`"
@@ -680,7 +683,7 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 							</v-badge>
 							<v-tooltip v-if="item.attributes.subtitles" text="Subtitles">
 								<template v-slot:activator="{ props }">
-									<v-icon v-bind="props">mdi-subtitles</v-icon>
+									<v-icon v-bind="props" class="icon-gap">mdi-subtitles</v-icon>
 								</template>
 							</v-tooltip>
 						</template>
@@ -788,4 +791,8 @@ const manualMatchItem = ref<ProcessedVideoItem | undefined>();
 	</v-dialog>
 </template>
 
-<style lang="scss"></style>
+<style lang="scss" scoped>
+.icon-gap {
+	margin: 0.25rem;
+}
+</style>
