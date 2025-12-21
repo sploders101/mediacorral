@@ -245,8 +245,9 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 				hashCounts[hash] = (hashCounts[hash] || 0) + 1;
 			}
 			const defaultSubtitle: SubtitleTrack | undefined =
-				videoFile.extendedMetadata.subtitleTracks.find((track) => track.default) ||
-				videoFile.extendedMetadata.subtitleTracks[0];
+				videoFile.extendedMetadata.subtitleTracks.find(
+					(track) => track.default
+				) || videoFile.extendedMetadata.subtitleTracks[0];
 			if (defaultSubtitle !== undefined) {
 				let hash = toHex(defaultSubtitle.hash);
 				hashCounts[hash] = (hashCounts[hash] || 0) + 1;
