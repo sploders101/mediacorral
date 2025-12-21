@@ -299,8 +299,8 @@ function submit(event: "submit" | "input") {
 									@click="
 										importDialog = true;
 										importQuery = preImportQuery;
-										if (importQuery !== '') {
-											nextTick(importer?.submit);
+										if (importQuery !== '' && importer !== undefined) {
+											nextTick(importer.submit);
 										}
 									"
 								>
@@ -322,8 +322,8 @@ function submit(event: "submit" | "input") {
 									@click="
 										importDialog = true;
 										importQuery = preImportQuery;
-										if (importQuery !== '') {
-											nextTick(importer?.submit);
+										if (importQuery !== '' && importer !== undefined) {
+											nextTick(importer.submit);
 										}
 									"
 								>

@@ -5,7 +5,7 @@
  */
 
 // Composables
-import { createRouter, createWebHashHistory } from "vue-router/auto";
+import { createRouter, createWebHashHistory } from "vue-router";
 import { setupLayouts } from "virtual:generated-layouts";
 import { routes } from "vue-router/auto-routes";
 
