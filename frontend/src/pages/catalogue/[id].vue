@@ -359,10 +359,7 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 				audioHashColor: audioDupCount && audioDupCount[0],
 				subtitleDupCount: (subtitleDupCount && subtitleDupCount[1]) || 1,
 				subtitleHashColor: subtitleDupCount && subtitleDupCount[0],
-				subtitles:
-					catInfo.value?.subtitleMaps.find(
-						(subtitle) => subtitle.id === videoFile.id
-					)?.subtitleBlob !== undefined,
+				subtitles: (videoFile.extendedMetadata?.subtitleTracks.length || 0) > 0,
 			},
 		};
 		return value;
