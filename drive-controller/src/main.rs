@@ -522,11 +522,17 @@ fn main() {
     let mut drives = Vec::new();
 
     for drive in config.drives {
+        let drive_path = String::from(
+            std::fs::canonicalize(&drive.path)
+                .expect("Couldn't open drives")
+                .to_str()
+                .expect("Unable to process path"),
+        );
         drives.push(Drive {
             ejector: Arc::new(
                 eject::device::Device::open(&drive.path).expect("Couldn't open drives"),
             ),
-            path: drive.path,
+            path: drive_path,
             name: drive.name,
         });
     }
