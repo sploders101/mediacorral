@@ -1,0 +1,121 @@
+syntax = "proto3";
+package mediacorral.drive_coordinator.v1;
+
+service DriveCoordinatorService {
+  // Establishes a connection between the drive and the coordinator, allowing the coordinator
+  // to send commands back to the drive, which may live on another network entirely.
+  rpc ConnectDrive(stream DriveConnectionRequest) returns (stream DriveConnectionResponse);
+
+  // Allows a drive to upload a file from a rip job.
+  rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
+
+  // Marks a job as finished. This should be called once all files have been uploaded successfully.
+  rpc FinishJob(stream FinishJobRequest) returns (FinishJobResponse);
+}
+
+// Messages sent from the drive to the coordinator
+message DriveConnectionRequest {
+  oneof message {
+    DiscoveryInfo discovery = 1;
+    DriveStatusUpdate drive_status_update = 2;
+    RipStatusUpdate rip_status_update = 3;
+  }
+}
+
+// Contains identifying information about the drive, to be sent immediately upon connection.
+//
+// The coordinator will ignore any messages received before this one.
+message DiscoveryInfo {
+  string drive_id = 1;
+  string drive_name = 2;
+}
+
+// Provides a status update for the drive
+message DriveStatusUpdate {
+  DriveStatusTag status = 1;
+  string disc_name = 2;
+  optional int64 active_rip_job = 3;
+}
+
+enum DriveStatusTag {
+  DRIVE_STATUS_TAG_UNSPECIFIED = 0;
+  DRIVE_STATUS_TAG_EMPTY = 1;
+  DRIVE_STATUS_TAG_TRAY_OPEN = 2;
+  DRIVE_STATUS_TAG_NOT_READY = 3;
+  DRIVE_STATUS_TAG_DISC_LOADED = 4;
+}
+
+// Provides a status update for the specified rip job
+message RipStatusUpdate {
+  int64 rip_job = 1;
+  RipStatusTag status = 2;
+
+  string cprog_title = 3;
+  string tprog_title = 4;
+  uint32 cprog_value = 5;
+  uint32 tprog_value = 6;
+  uint32 max_prog_value = 7;
+
+  // Contains new logs since the last update
+  repeated string append_logs = 8;
+}
+
+enum RipStatusTag {
+  RIP_STATUS_TAG_UNSPECIFIED = 0;
+  RIP_STATUS_TAG_RUNNING = 1;
+  RIP_STATUS_TAG_POST_PROCESSING = 2;
+  RIP_STATUS_TAG_COMPLETED = 3;
+  RIP_STATUS_TAG_ERROR = 4;
+}
+
+// Messages sent from the coordinator to the drive
+message DriveConnectionResponse {
+  oneof message {
+    TrayCommand tray_command = 1;
+    RipMediaCommand rip_media = 2;
+  }
+}
+
+// A command for the disc tray to execute
+enum TrayCommand {
+  TRAY_COMMAND_UNSPECIFIED = 0;
+  TRAY_COMMAND_OPEN_TRAY = 1;
+  TRAY_COMMAND_CLOSE_TRAY = 2;
+}
+
+message RipMediaCommand {
+  // The ID for the rip job, as used in the database
+  uint64 job_id = 1;
+  // Whether or not to automatically eject the drive upon completion
+  bool autoeject = 2;
+}
+
+// Contains either metadata or a data chunk of a ripped file
+message UploadFileRequest {
+  oneof message {
+    // Contains metadata about the file being uploaded
+    UploadFileRequestHeader header = 1;
+    // Contains up to 3MB of data from the file
+    bytes data_chunk = 2;
+    // Contains a hash of the file to verify its integrity.
+    // This is sent as the last message of the transfer, and the server
+    // should only respond successfully if the hash is correct.
+    bytes md5_hash = 3;
+  }
+}
+
+// Contains metadata about the file being uploaded
+message UploadFileRequestHeader {
+  // The ID for the rip job, as used in the database
+  int64 rip_job = 1;
+  // The name of the file being uploaded
+  string file_name = 2;
+}
+
+// Indicates a successful upload
+message UploadFileResponse {}
+
+message FinishJobRequest {
+  int64 rip_job = 1;
+}
+message FinishJobResponse {}

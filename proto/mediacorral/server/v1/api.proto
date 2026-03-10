@@ -3,7 +3,7 @@ package mediacorral.server.v1;
 
 import "mediacorral/server/v1/tmdb.proto";
 
-import "mediacorral/drive_controller/v1/main.proto";
+import "mediacorral/drive_coordinator/v1/main.proto";
 import "mediacorral/analysis/v1/main.proto";
 
 service CoordinatorApiService {
@@ -31,23 +31,14 @@ service CoordinatorApiService {
   // Gets/sets the status of the auto-ripper
   rpc AutoripStatus (AutoripStatusRequest) returns (AutoripStatusResponse);
 
-  // Lists the currently-registered drives
-  rpc ListDrives (ListDrivesRequest) returns (ListDrivesResponse);
-
   // Starts a rip job
   rpc StartRipJob (StartRipJobRequest) returns (StartRipJobResponse);
 
-  // Gets the current status of a rip job
-  rpc GetRipJobStatus (GetRipJobStatusRequest) returns (GetRipJobStatusResponse);
-
   // Ejects a disc
-  rpc Eject (EjectRequest) returns (EjectResponse);
-
-  // Retracts a disc
-  rpc Retract (RetractRequest) returns (RetractResponse);
+  rpc TrayCommand (TrayCommandRequest) returns (TrayCommandResponse);
 
   // Gets the current state of the drive
-  rpc GetDriveState (GetDriveStateRequest) returns (mediacorral.drive_controller.v1.DriveState);
+  rpc GetDriveStatus (GetDriveStatusRequest) returns (GetDriveStatusResponse);
 
   // Lists the movies in the database
   rpc ListMovies (ListMoviesRequest) returns (ListMoviesResponse);
@@ -194,18 +185,8 @@ message AutoripStatusResponse {
   AutoripStatus status = 1;
 }
 
-message ListDrivesRequest {}
-message ListDrivesResponse {
-  repeated DiscDrive drives = 1;
-}
-message DiscDrive {
-  string controller = 1;
-  uint32 drive_id = 2;
-  string name = 3;
-}
-
 message StartRipJobRequest {
-  DiscDrive drive = 1;
+  string drive_id = 1;
   optional string disc_name = 2;
   optional SuspectedContents suspected_contents = 3;
   bool autoeject = 4;
@@ -226,26 +207,51 @@ message SuspectedContents {
   }
 }
 
-message GetRipJobStatusRequest {
+message TrayCommandRequest {
+  string drive_id = 1;
+  mediacorral.drive_coordinator.v1.TrayCommand command = 2;
+}
+message TrayCommandResponse {}
+
+message GetDriveStatusRequest {
+  // List the IDs of the drives you'd like the status for. An empty list will return
+  // statuses for all drives.
+  repeated string drive_ids = 1;
+}
+message GetDriveStatusResponse {
+  repeated DriveStatus drive_status = 1;
+}
+message DriveStatus {
+  string drive_id = 1;
+  DriveStatusTag status = 2;
+  string disc_name = 3;
+  RipJobStatus rip_job = 4;
+}
+enum DriveStatusTag {
+  DRIVE_STATUS_TAG_UNSPECIFIED = 0;
+  DRIVE_STATUS_TAG_EMPTY = 1;
+  DRIVE_STATUS_TAG_TRAY_OPEN = 2;
+  DRIVE_STATUS_TAG_NOT_READY = 3;
+  DRIVE_STATUS_TAG_DISC_LOADED = 4;
+  DRIVE_STATUS_RIPPING = 5;
+}
+message RipJobStatus {
+  // The ID of the rip job
   int64 job_id = 1;
-}
-message GetRipJobStatusResponse {
-  mediacorral.drive_controller.v1.RipStatus status = 1;
-}
+  // Title for "Current progress" bar
+  string cprog_title = 2;
+  // Title for "Total progress" bar
+  string tprog_title = 3;
+  // Current item progress
+  uint32 cprog_value = 4;
+  // Total progress
+  uint32 tprog_value = 5;
+  // The maximum progress value (X "out of" this value)
+  uint32 max_prog_value = 6;
 
-message EjectRequest {
-  DiscDrive drive = 1;
-}
-message EjectResponse {}
-
-message RetractRequest {
-  DiscDrive drive = 1;
-}
-message RetractResponse {}
-
-message GetDriveStateRequest {
-  string controller_id = 1;
-  uint32 drive_id = 2;
+  // Log lines from MakeMKV.
+  // These will contain all logs for status requests, and only new lines for status updates
+  repeated string logs = 7;
 }
 
 message ListMoviesRequest {}
