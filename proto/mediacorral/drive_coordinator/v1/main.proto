@@ -8,17 +8,14 @@ service DriveCoordinatorService {
 
   // Allows a drive to upload a file from a rip job.
   rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
-
-  // Marks a job as finished. This should be called once all files have been uploaded successfully.
-  rpc FinishJob(stream FinishJobRequest) returns (FinishJobResponse);
 }
 
 // Messages sent from the drive to the coordinator
 message DriveConnectionRequest {
   oneof message {
     DiscoveryInfo discovery = 1;
-    DriveStatusUpdate drive_status_update = 2;
-    RipStatusUpdate rip_status_update = 3;
+    DriveStatus drive_status_update = 2;
+    RipStatus rip_status_update = 3;
   }
 }
 
@@ -31,9 +28,9 @@ message DiscoveryInfo {
 }
 
 // Provides a status update for the drive
-message DriveStatusUpdate {
+message DriveStatus {
   DriveStatusTag status = 1;
-  string disc_name = 2;
+  optional string disc_name = 2;
   optional int64 active_rip_job = 3;
 }
 
@@ -46,7 +43,7 @@ enum DriveStatusTag {
 }
 
 // Provides a status update for the specified rip job
-message RipStatusUpdate {
+message RipStatus {
   int64 rip_job = 1;
   RipStatusTag status = 2;
 
@@ -56,8 +53,7 @@ message RipStatusUpdate {
   uint32 tprog_value = 6;
   uint32 max_prog_value = 7;
 
-  // Contains new logs since the last update
-  repeated string append_logs = 8;
+  repeated string logs = 8;
 }
 
 enum RipStatusTag {
@@ -85,7 +81,7 @@ enum TrayCommand {
 
 message RipMediaCommand {
   // The ID for the rip job, as used in the database
-  uint64 job_id = 1;
+  int64 job_id = 1;
   // Whether or not to automatically eject the drive upon completion
   bool autoeject = 2;
 }
@@ -99,7 +95,9 @@ message UploadFileRequest {
     bytes data_chunk = 2;
     // Contains a hash of the file to verify its integrity.
     // This is sent as the last message of the transfer, and the server
-    // should only respond successfully if the hash is correct.
+    // should only respond successfully if the hash is correct. If the
+    // hash is not sent, then the upload is considered a failure, and
+    // the backing file should be deleted.
     bytes md5_hash = 3;
   }
 }

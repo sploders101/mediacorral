@@ -1,483 +1,64 @@
 use std::{
-    collections::{HashMap, VecDeque},
     path::{Path, PathBuf},
-    pin::Pin,
     str::FromStr,
     sync::Arc,
     time::Duration,
 };
 
-use async_udev::{disc_insert_events, get_disc_name};
+use anyhow::Context;
 use clap::Parser;
 use futures::StreamExt;
-use makemkv::{
-    Makemkv,
-    messaging::{MakemkvMessage, ProgressBar},
-};
-use proto::mediacorral::{
-    drive_controller::v1::{
-        DriveState, DriveStatusTag, EjectRequest, EjectResponse, GetDriveCountRequest,
-        GetDriveCountResponse, GetDriveMetaRequest, GetDriveMetaResponse, GetDriveStateRequest,
-        GetJobStatusRequest, JobStatus, Progress, ReapJobRequest, ReapJobResponse, RetractRequest,
-        RetractResponse, RipMediaRequest, RipMediaResponse, RipStatus, RipUpdate,
-        WatchRipJobRequest,
-        drive_controller_service_server::{DriveControllerService, DriveControllerServiceServer},
-        rip_update,
-    },
-    server::v1::{
-        DiscInsertedRequest, RipFinishedRequest,
-        coordinator_notification_service_client::CoordinatorNotificationServiceClient,
-    },
-};
 use serde::Deserialize;
-use tokio::{
-    sync::{RwLock, watch},
-    task::JoinHandle,
+use tokio::io::AsyncReadExt;
+use tokio_stream::{
+    StreamMap,
+    wrappers::{ReceiverStream, WatchStream},
 };
-use tokio_stream::wrappers::WatchStream;
-use tonic::transport::{Endpoint, Server};
+use tonic::transport::{Channel, Endpoint};
+
+use crate::{
+    async_udev::get_disc_name,
+    makemkv::{Makemkv, messaging::MakemkvMessage},
+    proto::mediacorral::drive_coordinator::v1::{
+        DiscoveryInfo, DriveConnectionRequest, DriveConnectionResponse, DriveStatus,
+        DriveStatusTag, RipMediaCommand, RipStatus, RipStatusTag, TrayCommand, UploadFileRequest,
+        UploadFileRequestHeader, drive_connection_request, drive_connection_response,
+        drive_coordinator_service_client::DriveCoordinatorServiceClient, upload_file_request,
+    },
+};
 
 mod async_udev;
 mod makemkv;
 mod proto;
 
-macro_rules! try_ejector {
-    (wrap $val:expr) => {
-        try_ejector!(tokio::task::spawn_blocking(move || $val).await.unwrap())
-    };
-    ($val:expr) => {
-        match ($val) {
-            Ok(value) => value,
-            Err(err) => match err.kind() {
-                eject::error::ErrorKind::AccessDenied => {
-                    return Err(tonic::Status::permission_denied(
-                        "Got 'access denied' while ejecting the drive.",
-                    ));
-                }
-                eject::error::ErrorKind::NotFound => {
-                    return Err(tonic::Status::not_found(
-                        "Got 'device not found' while ejecting the drive.",
-                    ));
-                }
-                eject::error::ErrorKind::InvalidPath => {
-                    return Err(tonic::Status::internal(
-                        "Got 'invalid path' while ejecting the drive.",
-                    ));
-                }
-                eject::error::ErrorKind::UnsupportedOperation => {
-                    return Err(tonic::Status::unknown(
-                        "This operation is not supported on the device.",
-                    ));
-                }
-                _ => {
-                    return Err(tonic::Status::unknown("An unknown error occurred."));
-                }
-            },
-        }
-    };
-}
-
 pub struct Drive {
+    id: String,
     path: String,
     name: String,
     ejector: Arc<eject::device::Device>,
 }
-
-pub struct RipJob {
-    job_id: i64,
-    drive_id: usize,
-    job_status: watch::Receiver<RipStatus>,
-    #[allow(dead_code)]
-    task_handle: JoinHandle<()>,
-}
-
-pub struct DriveController {
-    id: String,
-    coordinator_notifs: CoordinatorNotificationServiceClient<tonic::transport::Channel>,
-    shared_directory: PathBuf,
-    drives: Arc<Vec<Drive>>,
-    rip_jobs: RwLock<HashMap<i64, RipJob>>,
-}
-
-#[tonic::async_trait]
-impl DriveControllerService for DriveController {
-    async fn get_drive_count(
-        &self,
-        _request: tonic::Request<GetDriveCountRequest>,
-    ) -> std::result::Result<tonic::Response<GetDriveCountResponse>, tonic::Status> {
-        return Ok(tonic::Response::new(GetDriveCountResponse {
-            drive_count: self.drives.len() as _,
-        }));
-    }
-
-    async fn get_drive_meta(
-        &self,
-        request: tonic::Request<GetDriveMetaRequest>,
-    ) -> Result<tonic::Response<GetDriveMetaResponse>, tonic::Status> {
-        let request = request.into_inner();
-
-        let drive = match self.drives.get(request.drive_id as usize) {
-            Some(drive) => drive,
-            None => {
-                return Err(tonic::Status::not_found(
-                    "The requested drive was not found.",
-                ));
-            }
-        };
-
-        return Ok(tonic::Response::new(GetDriveMetaResponse {
-            drive_id: request.drive_id,
-            name: drive.name.clone(),
-        }));
-    }
-
-    async fn eject(
-        &self,
-        request: tonic::Request<EjectRequest>,
-    ) -> Result<tonic::Response<EjectResponse>, tonic::Status> {
-        let request = request.into_inner();
-
-        let drive = match self.drives.get(request.drive_id as usize) {
-            Some(drive) => drive,
-            None => {
-                return Err(tonic::Status::not_found(
-                    "The requested drive was not found.",
-                ));
-            }
-        };
-
-        let ejector = Arc::clone(&drive.ejector);
-        try_ejector!(wrap ejector.eject());
-
-        return Ok(tonic::Response::new(EjectResponse {}));
-    }
-
-    async fn retract(
-        &self,
-        request: tonic::Request<RetractRequest>,
-    ) -> Result<tonic::Response<RetractResponse>, tonic::Status> {
-        let request = request.into_inner();
-
-        let drive = match self.drives.get(request.drive_id as usize) {
-            Some(drive) => drive,
-            None => {
-                return Err(tonic::Status::not_found(
-                    "The requested drive was not found.",
-                ));
-            }
-        };
-
-        let ejector = Arc::clone(&drive.ejector);
-        try_ejector!(wrap ejector.retract());
-
-        return Ok(tonic::Response::new(RetractResponse {}));
-    }
-
-    async fn get_drive_state(
-        &self,
-        request: tonic::Request<GetDriveStateRequest>,
-    ) -> Result<tonic::Response<DriveState>, tonic::Status> {
-        let request = request.into_inner();
-
-        let drive = match self.drives.get(request.drive_id as usize) {
-            Some(drive) => drive,
-            None => {
-                return Err(tonic::Status::not_found(
-                    "The requested drive was not found.",
-                ));
-            }
-        };
-
-        let disc_name = get_disc_name(&drive.path).await;
-
-        let ejector = Arc::clone(&drive.ejector);
-        let status = match try_ejector!(wrap ejector.status()) {
-            eject::device::DriveStatus::Empty => DriveStatusTag::Empty,
-            eject::device::DriveStatus::TrayOpen => DriveStatusTag::TrayOpen,
-            eject::device::DriveStatus::NotReady => DriveStatusTag::NotReady,
-            eject::device::DriveStatus::Loaded => DriveStatusTag::DiscLoaded,
-        };
-
-        let mut active_rip_job: Option<_> = None;
-        for job in self.rip_jobs.read().await.values() {
-            if job.drive_id == request.drive_id as usize {
-                active_rip_job = Some(job.job_id);
-            }
-        }
-
-        return Ok(tonic::Response::new(DriveState {
-            drive_id: request.drive_id,
-            status: status.into(),
-            disc_name,
-            active_rip_job,
-        }));
-    }
-
-    async fn rip_media(
-        &self,
-        request: tonic::Request<RipMediaRequest>,
-    ) -> Result<tonic::Response<RipMediaResponse>, tonic::Status> {
-        let request = request.into_inner();
-
-        let drive = match self.drives.get(request.drive_id as usize) {
-            Some(drive) => drive,
-            None => {
-                return Err(tonic::Status::not_found(
-                    "The requested drive was not found.",
-                ));
-            }
-        };
-
-        let mut jobs = self.rip_jobs.write().await;
-        // Check for jobs with the same ID
-        if jobs.contains_key(&request.job_id) {
-            return Err(tonic::Status::already_exists(
-                "The requested job ID already exists.",
-            ));
-        }
-        // Check for jobs already running on the drive
-        for job in jobs.values() {
-            if job.drive_id == request.drive_id as usize
-                && job.job_status.borrow().status() == JobStatus::Running
-            {
-                return Err(tonic::Status::resource_exhausted(
-                    "The requested drive is already undergoing a rip job.",
-                ));
-            }
-        }
-
-        let rip_dir = RipDir::new(&self.shared_directory, request.job_id)
-            .await
-            .map_err(|err| match err.kind() {
-                std::io::ErrorKind::AlreadyExists => {
-                    tonic::Status::already_exists("The rip directory already exists.")
-                }
-                std::io::ErrorKind::NotFound => {
-                    tonic::Status::not_found("The shared directory doesn't exist")
-                }
-                _ => tonic::Status::internal(format!(
-                    "An error occurred while creating the rip directory:\n{err}"
-                )),
-            })?;
-        let mut makemkv = Makemkv::rip(&drive.path, &rip_dir.dir).map_err(|err| {
-            tonic::Status::internal(format!("Unknown error while spawning makemkv:\n{err}"))
-        })?;
-
-        let (sender, receiver) = watch::channel(RipStatus {
-            job_id: request.job_id,
-            status: JobStatus::Running.into(),
-            cprog_title: String::from("Starting Rip..."),
-            tprog_title: String::from("Starting Rip..."),
-            progress: Some(Progress {
-                cprog_value: 0,
-                tprog_value: 0,
-                max_value: 1,
-            }),
-            logs: Vec::new(),
-        });
-        let mut notif_client = self.coordinator_notifs.clone();
-        let controller_id = self.id.clone();
-        let ejector = Arc::clone(&drive.ejector);
-        let autoeject = request.autoeject;
-        let task_handle = tokio::task::spawn(async move {
-            while let Ok(Some(event)) = makemkv.next_event().await {
-                match event {
-                    MakemkvMessage::ProgressTitle { bar, name, .. } => {
-                        sender.send_modify(|rip_status| match bar {
-                            ProgressBar::Current => rip_status.cprog_title = name,
-                            ProgressBar::Total => rip_status.tprog_title = name,
-                        });
-                    }
-                    MakemkvMessage::ProgressValue {
-                        current,
-                        total,
-                        max,
-                    } => sender.send_modify(|rip_status| {
-                        rip_status.progress = Some(Progress {
-                            cprog_value: current as _,
-                            tprog_value: total as _,
-                            max_value: max as _,
-                        })
-                    }),
-                    MakemkvMessage::Message { message } => sender.send_modify(|rip_status| {
-                        rip_status.logs.push(message);
-                    }),
-                    _ => continue,
-                }
-            }
-            match makemkv.finish().await {
-                Ok(exit_status) if exit_status.success() => {
-                    sender.send_modify(|rip_status| rip_status.set_status(JobStatus::Completed));
-                }
-                _ => {
-                    sender.send_modify(|rip_status| rip_status.set_status(JobStatus::Error));
-                }
-            }
-            rip_dir.complete();
-            if autoeject {
-                let _ = ejector.eject();
-            }
-            for _ in 0..15 {
-                if let Ok(_) = notif_client
-                    .rip_finished(RipFinishedRequest {
-                        controller_id: controller_id.clone(),
-                        job_id: request.job_id,
-                    })
-                    .await
-                {
-                    break;
-                }
-                tokio::time::sleep(Duration::from_secs(1)).await;
-            }
-        });
-
-        jobs.insert(
-            request.job_id,
-            RipJob {
-                job_id: request.job_id,
-                drive_id: request.drive_id as _,
-                job_status: receiver,
-                task_handle,
-            },
-        );
-
-        return Ok(tonic::Response::new(RipMediaResponse {}));
-    }
-
-    async fn get_job_status(
-        &self,
-        request: tonic::Request<GetJobStatusRequest>,
-    ) -> Result<tonic::Response<RipStatus>, tonic::Status> {
-        let request = request.into_inner();
-
-        let jobs = self.rip_jobs.read().await;
-        let job = jobs
-            .get(&request.job_id)
-            .ok_or_else(|| tonic::Status::not_found("The requested job was not found"))?;
-        return Ok(tonic::Response::new(job.job_status.borrow().clone()));
-    }
-
-    type WatchRipJobStream = WatchRipJobStream;
-
-    async fn watch_rip_job(
-        &self,
-        request: tonic::Request<WatchRipJobRequest>,
-    ) -> Result<tonic::Response<Self::WatchRipJobStream>, tonic::Status> {
-        let request = request.into_inner();
-
-        let jobs = self.rip_jobs.read().await;
-        let job = jobs
-            .get(&request.job_id)
-            .ok_or_else(|| tonic::Status::not_found("The requested job was not found"))?;
-        let receiver = job.job_status.clone();
-        drop(jobs);
-
-        return Ok(tonic::Response::new(WatchRipJobStream {
-            starting_value: RipStatus::default(),
-            log_offset: 0,
-            receiver: WatchStream::new(receiver),
-            buffer: VecDeque::new(),
-        }));
-    }
-
-    async fn reap_job(
-        &self,
-        request: tonic::Request<ReapJobRequest>,
-    ) -> Result<tonic::Response<ReapJobResponse>, tonic::Status> {
-        let request = request.into_inner();
-
-        let mut jobs = self.rip_jobs.write().await;
-        jobs.remove(&request.job_id);
-
-        return Ok(tonic::Response::new(ReapJobResponse {}));
+impl std::fmt::Debug for Drive {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        return f.write_fmt(format_args!(
+            "Drive {{ id: {:?}, path: {:?}, name: {:?} }}",
+            self.id, self.path, self.name
+        ));
     }
 }
 
-pub struct WatchRipJobStream {
-    starting_value: RipStatus,
-    log_offset: usize,
-    receiver: WatchStream<RipStatus>,
-    buffer: VecDeque<rip_update::RipUpdate>,
-}
-impl futures::Stream for WatchRipJobStream {
-    type Item = Result<RipUpdate, tonic::Status>;
-    fn poll_next(
-        self: Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Option<Self::Item>> {
-        let this = self.get_mut();
-        loop {
-            // Clear the cache...
-            if let Some(item) = this.buffer.pop_front() {
-                return std::task::Poll::Ready(Some(Ok(RipUpdate {
-                    rip_update: Some(item),
-                })));
-            }
-
-            // ... then go grab a new result
-            // NOTE: This isn't the most efficient method, since WatchStream will clone the logs
-            // on every change, but I really just want something that works right now. Go for this
-            // when optimizing.
-            let poll_result = this.receiver.poll_next_unpin(cx);
-            match poll_result {
-                std::task::Poll::Pending => return std::task::Poll::Pending,
-                std::task::Poll::Ready(None) => {
-                    return std::task::Poll::Ready(None);
-                }
-                std::task::Poll::Ready(Some(new_value)) => {
-                    if new_value.status != this.starting_value.status {
-                        this.starting_value.status = new_value.status;
-                        this.buffer
-                            .push_back(rip_update::RipUpdate::Status(new_value.status));
-                    }
-                    if new_value.cprog_title != this.starting_value.cprog_title {
-                        this.starting_value.cprog_title = new_value.cprog_title.clone();
-                        this.buffer.push_back(rip_update::RipUpdate::CprogTitle(
-                            new_value.cprog_title.clone(),
-                        ));
-                    }
-                    if new_value.tprog_title != this.starting_value.tprog_title {
-                        this.starting_value.tprog_title = new_value.tprog_title.clone();
-                        this.buffer.push_back(rip_update::RipUpdate::TprogTitle(
-                            new_value.tprog_title.clone(),
-                        ));
-                    }
-                    if new_value.progress != this.starting_value.progress {
-                        this.starting_value.progress = new_value.progress;
-                        if let Some(progress) = new_value.progress {
-                            this.buffer
-                                .push_back(rip_update::RipUpdate::ProgressValues(progress));
-                        }
-                    }
-                    for i in this.log_offset..new_value.logs.len() {
-                        let message = new_value.logs[i].clone();
-                        this.buffer
-                            .push_back(rip_update::RipUpdate::LogMessage(message));
-                    }
-                    this.log_offset = new_value.logs.len();
-                    drop(new_value);
-                }
-            }
-        }
-    }
-}
-
-/// This object allows you to create a directory that will be automatically deleted if
-/// the task is cancelled.
+/// This object allows you to create a directory that will be automatically deleted when
+/// the task ends.
+#[derive(Debug)]
 pub struct RipDir {
     dir: PathBuf,
 }
 impl RipDir {
     /// Create a new rip directory for a specific job
     pub async fn new(rip_directory: &Path, job_id: i64) -> std::io::Result<Self> {
-        let rip_dir = rip_directory.join("rips").join(job_id.to_string());
+        let rip_dir = rip_directory.join(job_id.to_string());
         tokio::fs::create_dir(&rip_dir).await?;
 
         return Ok(Self { dir: rip_dir });
-    }
-    /// Drops the directory without deleting its contents
-    pub fn complete(self) {
-        std::mem::forget(self);
     }
 }
 impl Drop for RipDir {
@@ -499,15 +80,15 @@ pub struct Args {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct DriveControllerConfig {
-    shared_directory: PathBuf,
-    serve_address: String,
+    rip_directory: PathBuf,
     coordinator_address: String,
-    controller_id: String,
     drives: Vec<DriveInfo>,
+    max_upload_queue: usize,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct DriveInfo {
+    id: String,
     name: String,
     path: String,
 }
@@ -516,12 +97,12 @@ fn main() {
     let args = Args::parse();
 
     let config_file = std::fs::File::open(args.config).expect("Couldn't open config");
-    let config: DriveControllerConfig =
-        serde_yaml::from_reader(config_file).expect("Couldn't read config");
+    let config: Arc<DriveControllerConfig> =
+        Arc::new(serde_yaml::from_reader(config_file).expect("Couldn't read config"));
 
     let mut drives = Vec::new();
 
-    for drive in config.drives {
+    for drive in config.drives.iter() {
         let drive_path = String::from(
             std::fs::canonicalize(&drive.path)
                 .expect("Couldn't open drives")
@@ -529,16 +110,16 @@ fn main() {
                 .expect("Unable to process path"),
         );
         drives.push(Drive {
+            id: drive.id.clone(),
             ejector: Arc::new(
                 eject::device::Device::open(&drive.path).expect("Couldn't open drives"),
             ),
             path: drive_path,
-            name: drive.name,
+            name: drive.name.clone(),
         });
     }
 
-    let rip_dir = config.shared_directory.join("rips");
-    let _ = std::fs::create_dir(&rip_dir);
+    let _ = std::fs::create_dir(&config.rip_directory);
 
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -546,56 +127,440 @@ fn main() {
         .build()
         .expect("Couldn't build tokio runtime")
         .block_on(async move {
-            let coordinator_endpoint = Endpoint::from_str(&config.coordinator_address)
-                .expect("Invalid coordinator address")
+            let endpoint = Endpoint::from_str(config.coordinator_address.as_str())
+                .expect("Invalid coordinator_address")
                 .connect_lazy();
-            let coordinator_client =
-                CoordinatorNotificationServiceClient::new(coordinator_endpoint);
 
-            let drives = Arc::new(drives);
+            let coordinator_client = DriveCoordinatorServiceClient::new(endpoint);
 
-            // Watch for disc insert events
-            {
-                let drives = Arc::clone(&drives);
-                let mut coordinator_client = coordinator_client.clone();
-                let controller_id = config.controller_id.clone();
-                tokio::task::spawn(async move {
-                    let mut stream = disc_insert_events();
-                    while let Some(event) = stream.next().await {
-                        for (i, drive) in drives.iter().enumerate() {
-                            if event.device != drive.path {
-                                continue;
-                            }
-                            let _ = coordinator_client
-                                .disc_inserted(DiscInsertedRequest {
-                                    controller_id: controller_id.clone(),
-                                    drive_id: i as _,
-                                    name: Some(event.disc_name),
-                                })
-                                .await;
-                            break;
-                        }
-                    }
-                });
+            let (upload_queue_sender, upload_queue_receiver) =
+                tokio::sync::mpsc::channel(config.max_upload_queue);
+
+            for drive in drives {
+                tokio::task::spawn(control_drive(
+                    coordinator_client.clone(),
+                    drive,
+                    Arc::clone(&config),
+                    upload_queue_sender.clone(),
+                ));
             }
 
-            let reflection = tonic_reflection::server::Builder::configure()
-                .register_encoded_file_descriptor_set(proto::mediacorral::FILE_DESCRIPTOR_SET)
-                .with_service_name("mediacorral.drive_controller.v1.DriveControllerService")
-                .build_v1()
-                .unwrap();
-
-            Server::builder()
-                .add_service(reflection)
-                .add_service(DriveControllerServiceServer::new(DriveController {
-                    id: config.controller_id.clone(),
-                    coordinator_notifs: coordinator_client,
-                    shared_directory: config.shared_directory,
-                    drives,
-                    rip_jobs: RwLock::new(HashMap::new()),
-                }))
-                .serve(config.serve_address.parse().expect("Invalid address"))
-                .await
-                .unwrap();
+            // This blocks the main task so it never exits.
+            rip_job_postprocessor(coordinator_client.clone(), upload_queue_receiver).await;
         });
+}
+
+/// When a rip job is finished, it needs to be uploaded to the server and finalized. This process can take a while, so
+/// there's not much point making the drives wait for this process to complete before accepting a new disc. To account
+/// for this, `control_drive` function can pass finished rip jobs off to this task for finalization so it can continue
+/// operations on its own. Jobs are processed sequentially since they are IO-bound. Parallelization likely won't help
+/// much here.
+#[tracing::instrument]
+async fn rip_job_postprocessor(
+    mut client: DriveCoordinatorServiceClient<Channel>,
+    mut upload_queue: tokio::sync::mpsc::Receiver<(tokio::sync::watch::Sender<RipStatus>, RipDir)>,
+) {
+    while let Some((status, dir)) = upload_queue.recv().await {
+        let rip_job = status.borrow().rip_job;
+        let mut contents = match tokio::fs::read_dir(&dir.dir).await {
+            Ok(contents) => contents,
+            Err(err) => {
+                tracing::error!("Failed to list contents of rip dir: {}", err);
+                continue;
+            }
+        };
+        while let Some(dir_entry) = rev_ro(contents.next_entry().await) {
+            let dir_entry = match dir_entry {
+                Ok(dir_entry) => dir_entry,
+                Err(err) => {
+                    tracing::error!("Failed to list contents of rip dir: {}", err);
+                    continue;
+                }
+            };
+            // Skip non-files
+            match dir_entry.file_type().await {
+                Ok(ftype) if !ftype.is_file() => {
+                    continue;
+                }
+                Ok(_) => {}
+                Err(err) => {
+                    tracing::error!("Failed to get file type: {}", err);
+                    continue;
+                }
+            }
+            let path = dir_entry.path();
+            // Skip non-mkvs
+            if path.extension().and_then(|ext| ext.to_str()) != Some("mkv") {
+                continue;
+            }
+            // Skip invalid filenames
+            let file_name = match dir_entry.file_name().into_string() {
+                Ok(file_name) => file_name,
+                Err(_) => {
+                    tracing::error!("Invalid file name");
+                    continue;
+                }
+            };
+
+            // Upload
+            let mut file = match tokio::fs::File::open(&path).await {
+                Ok(file) => file,
+                Err(err) => {
+                    tracing::error!("Failed to open mkv file: {}", err);
+                    continue;
+                }
+            };
+            let (upload_sender, upload_receiver) = tokio::sync::mpsc::channel(1);
+            tokio::task::spawn(async move {
+                let mut buf = [0u8; 16384];
+                let mut hasher = md5::Context::new();
+                if let Err(err) = upload_sender
+                    .send(UploadFileRequest {
+                        message: Some(upload_file_request::Message::Header(
+                            UploadFileRequestHeader { rip_job, file_name },
+                        )),
+                    })
+                    .await
+                {
+                    tracing::error!("Failed to upload file: {}", err);
+                    return;
+                }
+                loop {
+                    match file.read(&mut buf).await {
+                        Ok(0) => {
+                            let digest = hasher.finalize();
+                            if let Err(err) = upload_sender
+                                .send(UploadFileRequest {
+                                    message: Some(upload_file_request::Message::Md5Hash(
+                                        digest.0.into(),
+                                    )),
+                                })
+                                .await
+                            {
+                                tracing::error!("Failed to upload file: {}", err);
+                            };
+                            return;
+                        }
+                        Ok(bytes_read) => {
+                            hasher.consume(&buf[0..bytes_read]);
+                            if let Err(err) = upload_sender
+                                .send(UploadFileRequest {
+                                    message: Some(upload_file_request::Message::DataChunk(
+                                        buf[0..bytes_read].into(),
+                                    )),
+                                })
+                                .await
+                            {
+                                tracing::error!("Failed to upload file: {}", err);
+                                return;
+                            };
+                        }
+                        Err(err) => {
+                            tracing::error!("Error reading file: {}", err);
+                            // Return immediately. This will prevent the hash from being sent
+                            // and cancel the request.
+                            return;
+                        }
+                    }
+                }
+            });
+            if let Err(err) = client
+                .upload_file(ReceiverStream::new(upload_receiver))
+                .await
+            {
+                tracing::error!("Failed to upload file: {}", err);
+            }
+        }
+        status.send_modify(|job| job.set_status(RipStatusTag::Completed));
+    }
+}
+
+/// Reverses `Result<Option<T>, E>` types into `Option<Result<T, E>>`. Useful for async loops.
+fn rev_ro<T, E>(item: Result<Option<T>, E>) -> Option<Result<T, E>> {
+    return match item {
+        Ok(Some(item)) => Some(Ok(item)),
+        Ok(None) => None,
+        Err(err) => Some(Err(err)),
+    };
+}
+
+/// The main drive control loop. One of these is spawned for each drive, and only fails on hardware connection errors.
+/// This handles keeping state objects up to date and running commands from the server.
+#[tracing::instrument]
+async fn control_drive(
+    coordinator_client: DriveCoordinatorServiceClient<Channel>,
+    drive: Drive,
+    config: Arc<DriveControllerConfig>,
+    upload_queue: tokio::sync::mpsc::Sender<(tokio::sync::watch::Sender<RipStatus>, RipDir)>,
+) {
+    let (command_sender, mut command_receiver) =
+        tokio::sync::mpsc::channel::<DriveConnectionResponse>(50);
+
+    let (drive_status_sender, drive_status_receiver) =
+        tokio::sync::watch::channel(DriveStatus::default());
+
+    let (rip_watcher_sender, mut rip_watcher_receiver) =
+        tokio::sync::mpsc::channel::<tokio::sync::watch::Receiver<RipStatus>>(50);
+
+    {
+        let coordinator_client = coordinator_client.clone();
+        tokio::task::spawn(async move {
+            loop {
+                let result = handle_connection(
+                    coordinator_client.clone(),
+                    drive.id.clone(),
+                    drive.name.clone(),
+                    command_sender.clone(),
+                    drive_status_receiver.clone(),
+                    &mut rip_watcher_receiver,
+                )
+                .await;
+                if let Err(err) = result {
+                    tracing::error!("Restarting `handle_registration`. Error: {err:?}");
+                }
+                tokio::time::sleep(Duration::from_secs(5)).await;
+            }
+        });
+    }
+
+    let mut update_interval = tokio::time::interval(Duration::from_secs(1));
+    update_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+    struct RipJobCtx {
+        status: tokio::sync::watch::Sender<RipStatus>,
+        rip_dir: RipDir,
+        makemkv: Makemkv,
+        autoeject: bool,
+    }
+    let mut rip_job: Option<RipJobCtx> = None;
+
+    loop {
+        enum SelectResult {
+            Message(DriveConnectionResponse),
+            MakemkvUpdate(std::io::Result<Option<MakemkvMessage>>),
+            DriveStatusUpdate,
+        }
+        let result = tokio::select! {
+            // None shouldn't be possible, since command_sender is held
+            message = command_receiver.recv() => SelectResult::Message(message.unwrap()),
+            message = next_mmkv_if_some(rip_job.as_mut().map(|job| &mut job.makemkv)) => SelectResult::MakemkvUpdate(message),
+            _ = update_interval.tick() => SelectResult::DriveStatusUpdate,
+        };
+        match result {
+            SelectResult::Message(message) => match message.message {
+                Some(drive_connection_response::Message::TrayCommand(tray_command)) => {
+                    match TrayCommand::try_from(tray_command).unwrap_or_default() {
+                        TrayCommand::Unspecified => continue,
+                        TrayCommand::OpenTray => {
+                            if let Err(err) = drive.ejector.eject() {
+                                tracing::error!("Failed to eject drive: {err}");
+                            }
+                        }
+                        TrayCommand::CloseTray => {
+                            if let Err(err) = drive.ejector.retract() {
+                                tracing::error!("Failed to eject drive: {err}");
+                            }
+                        }
+                    }
+                }
+                Some(drive_connection_response::Message::RipMedia(RipMediaCommand {
+                    job_id,
+                    autoeject,
+                })) => {
+                    let rip_dir = RipDir::new(&config.rip_directory, job_id)
+                        .await
+                        .expect("Unable to create rip directory");
+                    let mmkv =
+                        Makemkv::rip(&drive.path, &rip_dir.dir).expect("Unable to start rip job");
+                    let status = RipStatus {
+                        rip_job: job_id,
+                        status: RipStatusTag::Running as _,
+                        ..Default::default()
+                    };
+                    let (status, status_receiver) = tokio::sync::watch::channel(status);
+                    rip_watcher_sender
+                        .send(status_receiver)
+                        .await
+                        .expect("Rip status receiver dropped.");
+                    rip_job = Some(RipJobCtx {
+                        status,
+                        rip_dir,
+                        makemkv: mmkv,
+                        autoeject,
+                    });
+                }
+                None => continue,
+            },
+            SelectResult::MakemkvUpdate(update) => {
+                let ctx = rip_job
+                    .as_mut()
+                    .expect("Rip job context missing in update handler");
+                match update.unwrap() {
+                    Some(MakemkvMessage::Message { message }) => {
+                        ctx.status.send_modify(|status| status.logs.push(message));
+                    }
+                    Some(MakemkvMessage::ProgressTitle { bar, name, .. }) => {
+                        ctx.status.send_modify(|status| match bar {
+                            makemkv::messaging::ProgressBar::Current => status.cprog_title = name,
+                            makemkv::messaging::ProgressBar::Total => status.tprog_title = name,
+                        });
+                    }
+                    Some(MakemkvMessage::ProgressValue {
+                        current,
+                        total,
+                        max,
+                    }) => {
+                        ctx.status.send_modify(|status| {
+                            status.cprog_value = current as _;
+                            status.tprog_value = total as _;
+                            status.max_prog_value = max as _;
+                        });
+                    }
+                    Some(_) => {}
+                    None => {
+                        // Job has ended. Time to pass it off.
+                        let ctx = rip_job
+                            .take()
+                            .expect("Rip job context missing in update handler");
+                        ctx.status
+                            .send_modify(|job| job.set_status(RipStatusTag::PostProcessing));
+                        let _ = upload_queue.send((ctx.status, ctx.rip_dir)).await;
+                        if ctx.autoeject {
+                            if let Err(err) = drive.ejector.eject() {
+                                tracing::error!("Failed to eject drive: {}", err);
+                            }
+                        }
+                    }
+                }
+            }
+            SelectResult::DriveStatusUpdate => {
+                // Update the drive status
+                match drive.ejector.status() {
+                    Ok(status) => {
+                        let disc_name = get_disc_name(&drive.path).await;
+                        let status = DriveStatus {
+                            status: match status {
+                                eject::device::DriveStatus::Empty => DriveStatusTag::Empty,
+                                eject::device::DriveStatus::TrayOpen => DriveStatusTag::TrayOpen,
+                                eject::device::DriveStatus::NotReady => DriveStatusTag::NotReady,
+                                eject::device::DriveStatus::Loaded => DriveStatusTag::DiscLoaded,
+                            } as _,
+                            disc_name,
+                            active_rip_job: None,
+                        };
+                        drive_status_sender.send_if_modified(move |oldval| {
+                            let modified = status != *oldval;
+                            *oldval = status;
+                            return modified;
+                        });
+                    }
+                    Err(err) => {
+                        tracing::error!("Failed to get drive status: {err}");
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Handles the connection to the server and relays messages to the main control loop. This process is made to be
+/// ephemeral so server disconnects don't interrupt operation of the drive. This will handle watching updates and
+/// relaying them to the server, as well as relaying commands from the server to the drive control loop.
+///
+/// TODO: Handle connection drops more gracefully. Currently, when the connection is re-established, updates can
+/// be missed.
+#[tracing::instrument]
+async fn handle_connection(
+    mut client: DriveCoordinatorServiceClient<Channel>,
+    drive_id: String,
+    drive_name: String,
+    command_sender: tokio::sync::mpsc::Sender<DriveConnectionResponse>,
+    mut drive_status_receiver: tokio::sync::watch::Receiver<DriveStatus>,
+    rip_status_receiver: &mut tokio::sync::mpsc::Receiver<tokio::sync::watch::Receiver<RipStatus>>,
+) -> anyhow::Result<()> {
+    let (sender, receiver) = tokio::sync::mpsc::channel(50);
+    let response = client
+        .connect_drive(ReceiverStream::new(receiver))
+        .await
+        .context("Failed to connect to server")?;
+    let mut rip_status_streams: StreamMap<i64, _> = StreamMap::new();
+
+    // Send discovery message
+    sender
+        .send(DriveConnectionRequest {
+            message: Some(drive_connection_request::Message::Discovery(
+                DiscoveryInfo {
+                    drive_id,
+                    drive_name,
+                },
+            )),
+        })
+        .await
+        .context("Failed to send discovery packet")?;
+
+    // Handle communication between server and drive loop
+    let mut response = response.into_inner();
+    let _ = response.next().await;
+    loop {
+        enum SelectResult {
+            Message(DriveConnectionResponse),
+            SendDriveUpdate,
+            WatchRipStatus(tokio::sync::watch::Receiver<RipStatus>),
+            RipStatusUpdate(RipStatus),
+        }
+        let result = tokio::select! {
+            result = response.next() => {
+                match result {
+                    Some(Ok(message)) => SelectResult::Message(message),
+                    Some(Err(err)) => {
+                        return Err(err).context("Error receiving message from server");
+                    }
+                    None => {
+                        return Ok(());
+                    }
+                }
+            },
+            Ok(()) = drive_status_receiver.changed() => SelectResult::SendDriveUpdate,
+            Some(receiver) = rip_status_receiver.recv() => SelectResult::WatchRipStatus(receiver),
+            Some((_, rip_status)) = rip_status_streams.next() => SelectResult::RipStatusUpdate(rip_status),
+        };
+        match result {
+            SelectResult::Message(message) => command_sender
+                .send(message)
+                .await
+                .context("Command loop exited")?,
+            SelectResult::SendDriveUpdate => {
+                let status = drive_status_receiver.borrow_and_update().clone();
+                sender
+                    .send(DriveConnectionRequest {
+                        message: Some(drive_connection_request::Message::DriveStatusUpdate(status)),
+                    })
+                    .await
+                    .context("Failed to send update")?
+            }
+            SelectResult::WatchRipStatus(message) => {
+                let rip_job = message.borrow().rip_job;
+                rip_status_streams.insert(rip_job, WatchStream::new(message));
+            }
+            SelectResult::RipStatusUpdate(rip_status) => {
+                sender
+                    .send(DriveConnectionRequest {
+                        message: Some(drive_connection_request::Message::RipStatusUpdate(
+                            rip_status,
+                        )),
+                    })
+                    .await
+                    .context("Failed to send update")?;
+            }
+        }
+    }
+}
+
+async fn next_mmkv_if_some(
+    makemkv: Option<&mut Makemkv>,
+) -> std::io::Result<Option<MakemkvMessage>> {
+    match makemkv {
+        Some(makemkv) => makemkv.next_event().await,
+        None => std::future::pending().await,
+    }
 }
