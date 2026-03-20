@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
   "drive-controller",
+  "drive-tester",
   "analysis-service",
 ]
 
