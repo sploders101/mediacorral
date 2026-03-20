@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
     str::FromStr,
     sync::Arc,
@@ -10,7 +11,7 @@ use anyhow::Context;
 use clap::Parser;
 use futures::StreamExt;
 use serde::Deserialize;
-use tokio::{io::AsyncReadExt, process::Command};
+use tokio::{io::{AsyncReadExt, BufReader}, process::Command};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::{Channel, Endpoint};
 use tracing_subscriber::EnvFilter;
@@ -27,6 +28,8 @@ use crate::{
 
 mod makemkv;
 mod proto;
+
+const UPLOAD_CHUNK_SIZE: usize = 1024 * 1024 * 2; // 2MiB
 
 pub struct Drive {
     id: String,
@@ -205,21 +208,32 @@ async fn rip_job_postprocessor(
             };
 
             // Upload
-            let mut file = match tokio::fs::File::open(&path).await {
+            let file = match tokio::fs::File::open(&path).await {
                 Ok(file) => file,
                 Err(err) => {
                     tracing::error!("Failed to open mkv file: {}", err);
                     continue;
                 }
             };
+            let file_size = file
+                .metadata()
+                .await
+                .map(|stats| stats.size())
+                .ok()
+                .unwrap_or_default();
+            let mut file = BufReader::new(file);
             let (upload_sender, upload_receiver) = tokio::sync::mpsc::channel(1);
             tokio::task::spawn(async move {
-                let mut buf = [0u8; 16384];
+                let mut buf = [0u8; UPLOAD_CHUNK_SIZE];
                 let mut hasher = md5::Context::new();
                 if let Err(err) = upload_sender
                     .send(UploadFileRequest {
                         message: Some(upload_file_request::Message::Header(
-                            UploadFileRequestHeader { rip_job, file_name },
+                            UploadFileRequestHeader {
+                                rip_job,
+                                file_name,
+                                file_size,
+                            },
                         )),
                     })
                     .await

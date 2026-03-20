@@ -108,6 +108,12 @@ message UploadFileRequestHeader {
   int64 rip_job = 1;
   // The name of the file being uploaded
   string file_name = 2;
+
+  // The size in bytes of the file being uploaded.
+  // This is used only as a progress indicator, and should
+  // not be relied upon. A value of `0` means the file is
+  // of indeterminate size.
+  uint64 file_size = 3;
 }
 
 // Indicates a successful upload
