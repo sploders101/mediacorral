@@ -4,3 +4,6 @@ members = [
   "drive-controller",
   "analysis-service",
 ]
+
+[profile.release]
+lto = true

@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     path::{Path, PathBuf},
     str::FromStr,
     sync::Arc,
@@ -9,15 +10,12 @@ use anyhow::Context;
 use clap::Parser;
 use futures::StreamExt;
 use serde::Deserialize;
-use tokio::io::AsyncReadExt;
-use tokio_stream::{
-    StreamMap,
-    wrappers::{ReceiverStream, WatchStream},
-};
+use tokio::{io::AsyncReadExt, process::Command};
+use tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::{Channel, Endpoint};
+use tracing_subscriber::EnvFilter;
 
 use crate::{
-    async_udev::get_disc_name,
     makemkv::{Makemkv, messaging::MakemkvMessage},
     proto::mediacorral::drive_coordinator::v1::{
         DiscoveryInfo, DriveConnectionRequest, DriveConnectionResponse, DriveStatus,
@@ -27,7 +25,6 @@ use crate::{
     },
 };
 
-mod async_udev;
 mod makemkv;
 mod proto;
 
@@ -94,6 +91,11 @@ pub struct DriveInfo {
 }
 
 fn main() {
+    // Set up logging with environment filter
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
+
     let args = Args::parse();
 
     let config_file = std::fs::File::open(args.config).expect("Couldn't open config");
@@ -305,6 +307,7 @@ async fn control_drive(
     {
         let coordinator_client = coordinator_client.clone();
         tokio::task::spawn(async move {
+            let mut rip_status_streams = HashMap::new();
             loop {
                 let result = handle_connection(
                     coordinator_client.clone(),
@@ -313,6 +316,7 @@ async fn control_drive(
                     command_sender.clone(),
                     drive_status_receiver.clone(),
                     &mut rip_watcher_receiver,
+                    &mut rip_status_streams,
                 )
                 .await;
                 if let Err(err) = result {
@@ -335,6 +339,7 @@ async fn control_drive(
     let mut rip_job: Option<RipJobCtx> = None;
 
     loop {
+        #[derive(Debug)]
         enum SelectResult {
             Message(DriveConnectionResponse),
             MakemkvUpdate(std::io::Result<Option<MakemkvMessage>>),
@@ -438,6 +443,7 @@ async fn control_drive(
                 match drive.ejector.status() {
                     Ok(status) => {
                         let disc_name = get_disc_name(&drive.path).await;
+                        tracing::debug!("Got disc name {disc_name:?}");
                         let status = DriveStatus {
                             status: match status {
                                 eject::device::DriveStatus::Empty => DriveStatusTag::Empty,
@@ -477,13 +483,13 @@ async fn handle_connection(
     command_sender: tokio::sync::mpsc::Sender<DriveConnectionResponse>,
     mut drive_status_receiver: tokio::sync::watch::Receiver<DriveStatus>,
     rip_status_receiver: &mut tokio::sync::mpsc::Receiver<tokio::sync::watch::Receiver<RipStatus>>,
+    rip_status_streams: &mut HashMap<i64, tokio::sync::watch::Receiver<RipStatus>>,
 ) -> anyhow::Result<()> {
     let (sender, receiver) = tokio::sync::mpsc::channel(50);
     let response = client
         .connect_drive(ReceiverStream::new(receiver))
         .await
         .context("Failed to connect to server")?;
-    let mut rip_status_streams: StreamMap<i64, _> = StreamMap::new();
 
     // Send discovery message
     sender
@@ -498,9 +504,14 @@ async fn handle_connection(
         .await
         .context("Failed to send discovery packet")?;
 
+    // Mark all values as unseen
+    drive_status_receiver.mark_changed();
+    for stream in rip_status_streams.values_mut() {
+        stream.mark_changed();
+    }
+
     // Handle communication between server and drive loop
     let mut response = response.into_inner();
-    let _ = response.next().await;
     loop {
         enum SelectResult {
             Message(DriveConnectionResponse),
@@ -522,7 +533,7 @@ async fn handle_connection(
             },
             Ok(()) = drive_status_receiver.changed() => SelectResult::SendDriveUpdate,
             Some(receiver) = rip_status_receiver.recv() => SelectResult::WatchRipStatus(receiver),
-            Some((_, rip_status)) = rip_status_streams.next() => SelectResult::RipStatusUpdate(rip_status),
+            Some(rip_status) = watch_all(rip_status_streams.values_mut()) => SelectResult::RipStatusUpdate(rip_status),
         };
         match result {
             SelectResult::Message(message) => command_sender
@@ -540,9 +551,14 @@ async fn handle_connection(
             }
             SelectResult::WatchRipStatus(message) => {
                 let rip_job = message.borrow().rip_job;
-                rip_status_streams.insert(rip_job, WatchStream::new(message));
+                rip_status_streams.insert(rip_job, message);
             }
             SelectResult::RipStatusUpdate(rip_status) => {
+                let rip_job = rip_status.rip_job;
+                let rip_finished = matches!(
+                    rip_status.status(),
+                    RipStatusTag::Completed | RipStatusTag::Error
+                );
                 sender
                     .send(DriveConnectionRequest {
                         message: Some(drive_connection_request::Message::RipStatusUpdate(
@@ -551,9 +567,30 @@ async fn handle_connection(
                     })
                     .await
                     .context("Failed to send update")?;
+                if rip_finished {
+                    rip_status_streams.remove(&rip_job);
+                }
             }
         }
     }
+}
+
+pub async fn get_disc_name(device: &str) -> Option<String> {
+    let output = Command::new("blkid")
+        .arg("-o")
+        .arg("value")
+        .arg("-s")
+        .arg("LABEL")
+        .arg(device)
+        .output()
+        .await
+        .ok()?;
+
+    let label: String = String::from_utf8_lossy(&output.stdout).trim().into();
+    if label.len() == 0 {
+        return None;
+    }
+    return Some(label);
 }
 
 async fn next_mmkv_if_some(
@@ -563,4 +600,23 @@ async fn next_mmkv_if_some(
         Some(makemkv) => makemkv.next_event().await,
         None => std::future::pending().await,
     }
+}
+
+async fn watch_all(
+    receivers: impl Iterator<Item = &mut tokio::sync::watch::Receiver<RipStatus>>,
+) -> Option<RipStatus> {
+    let things = receivers
+        .map(|receiver| {
+            Box::pin(async move {
+                if let Err(_) = receiver.changed().await {
+                    return None;
+                }
+                Some(receiver.borrow().clone())
+            })
+        })
+        .collect::<Vec<_>>();
+    if things.len() == 0 {
+        return None;
+    }
+    return futures::future::select_all(things).await.0;
 }
