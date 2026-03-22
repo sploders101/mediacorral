@@ -386,6 +386,11 @@ async fn control_drive(
                     job_id,
                     autoeject,
                 })) => {
+                    if rip_job.is_some() {
+                        // Might be a race condition.
+                        // TODO: Check if the job id is different
+                        continue;
+                    }
                     let rip_dir = RipDir::new(&config.rip_directory, job_id)
                         .await
                         .expect("Unable to create rip directory");
