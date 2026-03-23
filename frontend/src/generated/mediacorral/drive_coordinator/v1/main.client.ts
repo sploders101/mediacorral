@@ -4,8 +4,8 @@
 import type { RpcTransport } from "@protobuf-ts/runtime-rpc";
 import type { ServiceInfo } from "@protobuf-ts/runtime-rpc";
 import { DriveCoordinatorService } from "./main";
-import type { UploadFileResponse } from "./main";
-import type { UploadFileRequest } from "./main";
+import type { FinalizeRipJobResponse } from "./main";
+import type { FinalizeRipJobRequest } from "./main";
 import type { ClientStreamingCall } from "@protobuf-ts/runtime-rpc";
 import { stackIntercept } from "@protobuf-ts/runtime-rpc";
 import type { DriveConnectionResponse } from "./main";
@@ -17,18 +17,44 @@ import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
  */
 export interface IDriveCoordinatorServiceClient {
     /**
-     * Establishes a connection between the drive and the coordinator, allowing the coordinator
-     * to send commands back to the drive, which may live on another network entirely.
+     * Establishes a connection between the drive and the coordinator, allowing
+     * the coordinator to send commands back to the drive, which may live on
+     * another network entirely.
      *
      * @generated from protobuf rpc: ConnectDrive
      */
     connectDrive(options?: RpcOptions): DuplexStreamingCall<DriveConnectionRequest, DriveConnectionResponse>;
     /**
-     * Allows a drive to upload a file from a rip job.
+     * Finalizes a rip job, uploading media if the drive controller doesn't use a
+     * shared filesystem.
      *
-     * @generated from protobuf rpc: UploadFile
+     * The drive controller, when finalizing a rip job, must first send a
+     * `header` message. This message includes information about the operations
+     * that are about to take place. Along with the ID of the rip job, it should
+     * also contain a list of files to be uploaded, including their name and
+     * size. This list must be in the order that the files will be uploaded.
+     *
+     * Next, the drive controller should send file data in `data_chunk` objects.
+     * These objects may contain up to 3MB of data from the file, and should be
+     * transmitted in the order they appear in the file.
+     *
+     * Finally, in order to finish the upload, the drive controller must send an
+     * `md5_hash` object. This terminates the upload and begins the next file,
+     * if another file is to be uploaded. The number of `md5_hash` objects must
+     * equal the number of `upload_files` objects in the `header`.
+     *
+     * Once all files have been fully uploaded, the coordinator may return with
+     * a list of corrupted files. This indicates that the rip job is still
+     * incomplete, and the drive controller should call the RPC function again,
+     * uploading the files that the coordinator indicated were corrupted.
+     *
+     * If the coordinator responds with an empty list of `corrupted_files`, then
+     * the rip job is considered complete, and may be forgotten by the drive
+     * controller.
+     *
+     * @generated from protobuf rpc: FinalizeRipJob
      */
-    uploadFile(options?: RpcOptions): ClientStreamingCall<UploadFileRequest, UploadFileResponse>;
+    finalizeRipJob(options?: RpcOptions): ClientStreamingCall<FinalizeRipJobRequest, FinalizeRipJobResponse>;
 }
 /**
  * @generated from protobuf service mediacorral.drive_coordinator.v1.DriveCoordinatorService
@@ -40,8 +66,9 @@ export class DriveCoordinatorServiceClient implements IDriveCoordinatorServiceCl
     constructor(private readonly _transport: RpcTransport) {
     }
     /**
-     * Establishes a connection between the drive and the coordinator, allowing the coordinator
-     * to send commands back to the drive, which may live on another network entirely.
+     * Establishes a connection between the drive and the coordinator, allowing
+     * the coordinator to send commands back to the drive, which may live on
+     * another network entirely.
      *
      * @generated from protobuf rpc: ConnectDrive
      */
@@ -50,12 +77,37 @@ export class DriveCoordinatorServiceClient implements IDriveCoordinatorServiceCl
         return stackIntercept<DriveConnectionRequest, DriveConnectionResponse>("duplex", this._transport, method, opt);
     }
     /**
-     * Allows a drive to upload a file from a rip job.
+     * Finalizes a rip job, uploading media if the drive controller doesn't use a
+     * shared filesystem.
      *
-     * @generated from protobuf rpc: UploadFile
+     * The drive controller, when finalizing a rip job, must first send a
+     * `header` message. This message includes information about the operations
+     * that are about to take place. Along with the ID of the rip job, it should
+     * also contain a list of files to be uploaded, including their name and
+     * size. This list must be in the order that the files will be uploaded.
+     *
+     * Next, the drive controller should send file data in `data_chunk` objects.
+     * These objects may contain up to 3MB of data from the file, and should be
+     * transmitted in the order they appear in the file.
+     *
+     * Finally, in order to finish the upload, the drive controller must send an
+     * `md5_hash` object. This terminates the upload and begins the next file,
+     * if another file is to be uploaded. The number of `md5_hash` objects must
+     * equal the number of `upload_files` objects in the `header`.
+     *
+     * Once all files have been fully uploaded, the coordinator may return with
+     * a list of corrupted files. This indicates that the rip job is still
+     * incomplete, and the drive controller should call the RPC function again,
+     * uploading the files that the coordinator indicated were corrupted.
+     *
+     * If the coordinator responds with an empty list of `corrupted_files`, then
+     * the rip job is considered complete, and may be forgotten by the drive
+     * controller.
+     *
+     * @generated from protobuf rpc: FinalizeRipJob
      */
-    uploadFile(options?: RpcOptions): ClientStreamingCall<UploadFileRequest, UploadFileResponse> {
+    finalizeRipJob(options?: RpcOptions): ClientStreamingCall<FinalizeRipJobRequest, FinalizeRipJobResponse> {
         const method = this.methods[1], opt = this._transport.mergeOptions(options);
-        return stackIntercept<UploadFileRequest, UploadFileResponse>("clientStreaming", this._transport, method, opt);
+        return stackIntercept<FinalizeRipJobRequest, FinalizeRipJobResponse>("clientStreaming", this._transport, method, opt);
     }
 }

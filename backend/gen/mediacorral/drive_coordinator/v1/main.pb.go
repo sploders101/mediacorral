@@ -73,11 +73,10 @@ func (x DriveStatusTag) Number() protoreflect.EnumNumber {
 type RipStatusTag int32
 
 const (
-	RipStatusTag_RIP_STATUS_TAG_UNSPECIFIED     RipStatusTag = 0
-	RipStatusTag_RIP_STATUS_TAG_RUNNING         RipStatusTag = 1
-	RipStatusTag_RIP_STATUS_TAG_POST_PROCESSING RipStatusTag = 2
-	RipStatusTag_RIP_STATUS_TAG_COMPLETED       RipStatusTag = 3
-	RipStatusTag_RIP_STATUS_TAG_ERROR           RipStatusTag = 4
+	RipStatusTag_RIP_STATUS_TAG_UNSPECIFIED RipStatusTag = 0
+	RipStatusTag_RIP_STATUS_TAG_RUNNING     RipStatusTag = 1
+	RipStatusTag_RIP_STATUS_TAG_COMPLETED   RipStatusTag = 2
+	RipStatusTag_RIP_STATUS_TAG_ERROR       RipStatusTag = 4
 )
 
 // Enum value maps for RipStatusTag.
@@ -85,16 +84,14 @@ var (
 	RipStatusTag_name = map[int32]string{
 		0: "RIP_STATUS_TAG_UNSPECIFIED",
 		1: "RIP_STATUS_TAG_RUNNING",
-		2: "RIP_STATUS_TAG_POST_PROCESSING",
-		3: "RIP_STATUS_TAG_COMPLETED",
+		2: "RIP_STATUS_TAG_COMPLETED",
 		4: "RIP_STATUS_TAG_ERROR",
 	}
 	RipStatusTag_value = map[string]int32{
-		"RIP_STATUS_TAG_UNSPECIFIED":     0,
-		"RIP_STATUS_TAG_RUNNING":         1,
-		"RIP_STATUS_TAG_POST_PROCESSING": 2,
-		"RIP_STATUS_TAG_COMPLETED":       3,
-		"RIP_STATUS_TAG_ERROR":           4,
+		"RIP_STATUS_TAG_UNSPECIFIED": 0,
+		"RIP_STATUS_TAG_RUNNING":     1,
+		"RIP_STATUS_TAG_COMPLETED":   2,
+		"RIP_STATUS_TAG_ERROR":       4,
 	}
 )
 
@@ -381,7 +378,8 @@ func (*driveConnectionRequest_DriveStatusUpdate) isDriveConnectionRequest_Messag
 
 func (*driveConnectionRequest_RipStatusUpdate) isDriveConnectionRequest_Message() {}
 
-// Contains identifying information about the drive, to be sent immediately upon connection.
+// Contains identifying information about the drive, to be sent immediately
+// upon connection.
 //
 // The coordinator will ignore any messages received before this one.
 type DiscoveryInfo struct {
@@ -975,28 +973,27 @@ func (b0 RipMediaCommand_builder) Build() *RipMediaCommand {
 	return m0
 }
 
-// Contains either metadata or a data chunk of a ripped file
-type UploadFileRequest struct {
-	state              protoimpl.MessageState      `protogen:"opaque.v1"`
-	xxx_hidden_Message isUploadFileRequest_Message `protobuf_oneof:"message"`
+type FinalizeRipJobRequest struct {
+	state              protoimpl.MessageState          `protogen:"opaque.v1"`
+	xxx_hidden_Message isFinalizeRipJobRequest_Message `protobuf_oneof:"message"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
-func (x *UploadFileRequest) Reset() {
-	*x = UploadFileRequest{}
+func (x *FinalizeRipJobRequest) Reset() {
+	*x = FinalizeRipJobRequest{}
 	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UploadFileRequest) String() string {
+func (x *FinalizeRipJobRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UploadFileRequest) ProtoMessage() {}
+func (*FinalizeRipJobRequest) ProtoMessage() {}
 
-func (x *UploadFileRequest) ProtoReflect() protoreflect.Message {
+func (x *FinalizeRipJobRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1008,165 +1005,161 @@ func (x *UploadFileRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *UploadFileRequest) GetHeader() *UploadFileRequestHeader {
+func (x *FinalizeRipJobRequest) GetHeader() *FinalizeRipJobRequestHeader {
 	if x != nil {
-		if x, ok := x.xxx_hidden_Message.(*uploadFileRequest_Header); ok {
+		if x, ok := x.xxx_hidden_Message.(*finalizeRipJobRequest_Header); ok {
 			return x.Header
 		}
 	}
 	return nil
 }
 
-func (x *UploadFileRequest) GetDataChunk() []byte {
+func (x *FinalizeRipJobRequest) GetDataChunk() []byte {
 	if x != nil {
-		if x, ok := x.xxx_hidden_Message.(*uploadFileRequest_DataChunk); ok {
+		if x, ok := x.xxx_hidden_Message.(*finalizeRipJobRequest_DataChunk); ok {
 			return x.DataChunk
 		}
 	}
 	return nil
 }
 
-func (x *UploadFileRequest) GetMd5Hash() []byte {
+func (x *FinalizeRipJobRequest) GetMd5Hash() []byte {
 	if x != nil {
-		if x, ok := x.xxx_hidden_Message.(*uploadFileRequest_Md5Hash); ok {
+		if x, ok := x.xxx_hidden_Message.(*finalizeRipJobRequest_Md5Hash); ok {
 			return x.Md5Hash
 		}
 	}
 	return nil
 }
 
-func (x *UploadFileRequest) SetHeader(v *UploadFileRequestHeader) {
+func (x *FinalizeRipJobRequest) SetHeader(v *FinalizeRipJobRequestHeader) {
 	if v == nil {
 		x.xxx_hidden_Message = nil
 		return
 	}
-	x.xxx_hidden_Message = &uploadFileRequest_Header{v}
+	x.xxx_hidden_Message = &finalizeRipJobRequest_Header{v}
 }
 
-func (x *UploadFileRequest) SetDataChunk(v []byte) {
+func (x *FinalizeRipJobRequest) SetDataChunk(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
-	x.xxx_hidden_Message = &uploadFileRequest_DataChunk{v}
+	x.xxx_hidden_Message = &finalizeRipJobRequest_DataChunk{v}
 }
 
-func (x *UploadFileRequest) SetMd5Hash(v []byte) {
+func (x *FinalizeRipJobRequest) SetMd5Hash(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
-	x.xxx_hidden_Message = &uploadFileRequest_Md5Hash{v}
+	x.xxx_hidden_Message = &finalizeRipJobRequest_Md5Hash{v}
 }
 
-func (x *UploadFileRequest) HasMessage() bool {
+func (x *FinalizeRipJobRequest) HasMessage() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Message != nil
 }
 
-func (x *UploadFileRequest) HasHeader() bool {
+func (x *FinalizeRipJobRequest) HasHeader() bool {
 	if x == nil {
 		return false
 	}
-	_, ok := x.xxx_hidden_Message.(*uploadFileRequest_Header)
+	_, ok := x.xxx_hidden_Message.(*finalizeRipJobRequest_Header)
 	return ok
 }
 
-func (x *UploadFileRequest) HasDataChunk() bool {
+func (x *FinalizeRipJobRequest) HasDataChunk() bool {
 	if x == nil {
 		return false
 	}
-	_, ok := x.xxx_hidden_Message.(*uploadFileRequest_DataChunk)
+	_, ok := x.xxx_hidden_Message.(*finalizeRipJobRequest_DataChunk)
 	return ok
 }
 
-func (x *UploadFileRequest) HasMd5Hash() bool {
+func (x *FinalizeRipJobRequest) HasMd5Hash() bool {
 	if x == nil {
 		return false
 	}
-	_, ok := x.xxx_hidden_Message.(*uploadFileRequest_Md5Hash)
+	_, ok := x.xxx_hidden_Message.(*finalizeRipJobRequest_Md5Hash)
 	return ok
 }
 
-func (x *UploadFileRequest) ClearMessage() {
+func (x *FinalizeRipJobRequest) ClearMessage() {
 	x.xxx_hidden_Message = nil
 }
 
-func (x *UploadFileRequest) ClearHeader() {
-	if _, ok := x.xxx_hidden_Message.(*uploadFileRequest_Header); ok {
+func (x *FinalizeRipJobRequest) ClearHeader() {
+	if _, ok := x.xxx_hidden_Message.(*finalizeRipJobRequest_Header); ok {
 		x.xxx_hidden_Message = nil
 	}
 }
 
-func (x *UploadFileRequest) ClearDataChunk() {
-	if _, ok := x.xxx_hidden_Message.(*uploadFileRequest_DataChunk); ok {
+func (x *FinalizeRipJobRequest) ClearDataChunk() {
+	if _, ok := x.xxx_hidden_Message.(*finalizeRipJobRequest_DataChunk); ok {
 		x.xxx_hidden_Message = nil
 	}
 }
 
-func (x *UploadFileRequest) ClearMd5Hash() {
-	if _, ok := x.xxx_hidden_Message.(*uploadFileRequest_Md5Hash); ok {
+func (x *FinalizeRipJobRequest) ClearMd5Hash() {
+	if _, ok := x.xxx_hidden_Message.(*finalizeRipJobRequest_Md5Hash); ok {
 		x.xxx_hidden_Message = nil
 	}
 }
 
-const UploadFileRequest_Message_not_set_case case_UploadFileRequest_Message = 0
-const UploadFileRequest_Header_case case_UploadFileRequest_Message = 1
-const UploadFileRequest_DataChunk_case case_UploadFileRequest_Message = 2
-const UploadFileRequest_Md5Hash_case case_UploadFileRequest_Message = 3
+const FinalizeRipJobRequest_Message_not_set_case case_FinalizeRipJobRequest_Message = 0
+const FinalizeRipJobRequest_Header_case case_FinalizeRipJobRequest_Message = 1
+const FinalizeRipJobRequest_DataChunk_case case_FinalizeRipJobRequest_Message = 2
+const FinalizeRipJobRequest_Md5Hash_case case_FinalizeRipJobRequest_Message = 3
 
-func (x *UploadFileRequest) WhichMessage() case_UploadFileRequest_Message {
+func (x *FinalizeRipJobRequest) WhichMessage() case_FinalizeRipJobRequest_Message {
 	if x == nil {
-		return UploadFileRequest_Message_not_set_case
+		return FinalizeRipJobRequest_Message_not_set_case
 	}
 	switch x.xxx_hidden_Message.(type) {
-	case *uploadFileRequest_Header:
-		return UploadFileRequest_Header_case
-	case *uploadFileRequest_DataChunk:
-		return UploadFileRequest_DataChunk_case
-	case *uploadFileRequest_Md5Hash:
-		return UploadFileRequest_Md5Hash_case
+	case *finalizeRipJobRequest_Header:
+		return FinalizeRipJobRequest_Header_case
+	case *finalizeRipJobRequest_DataChunk:
+		return FinalizeRipJobRequest_DataChunk_case
+	case *finalizeRipJobRequest_Md5Hash:
+		return FinalizeRipJobRequest_Md5Hash_case
 	default:
-		return UploadFileRequest_Message_not_set_case
+		return FinalizeRipJobRequest_Message_not_set_case
 	}
 }
 
-type UploadFileRequest_builder struct {
+type FinalizeRipJobRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Fields of oneof xxx_hidden_Message:
 	// Contains metadata about the file being uploaded
-	Header *UploadFileRequestHeader
+	Header *FinalizeRipJobRequestHeader
 	// Contains up to 3MB of data from the file
 	DataChunk []byte
-	// Contains a hash of the file to verify its integrity.
-	// This is sent as the last message of the transfer, and the server
-	// should only respond successfully if the hash is correct. If the
-	// hash is not sent, then the upload is considered a failure, and
-	// the backing file should be deleted.
+	// Contains a hash of the most recent file to verify its integrity.
 	Md5Hash []byte
 	// -- end of xxx_hidden_Message
 }
 
-func (b0 UploadFileRequest_builder) Build() *UploadFileRequest {
-	m0 := &UploadFileRequest{}
+func (b0 FinalizeRipJobRequest_builder) Build() *FinalizeRipJobRequest {
+	m0 := &FinalizeRipJobRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Header != nil {
-		x.xxx_hidden_Message = &uploadFileRequest_Header{b.Header}
+		x.xxx_hidden_Message = &finalizeRipJobRequest_Header{b.Header}
 	}
 	if b.DataChunk != nil {
-		x.xxx_hidden_Message = &uploadFileRequest_DataChunk{b.DataChunk}
+		x.xxx_hidden_Message = &finalizeRipJobRequest_DataChunk{b.DataChunk}
 	}
 	if b.Md5Hash != nil {
-		x.xxx_hidden_Message = &uploadFileRequest_Md5Hash{b.Md5Hash}
+		x.xxx_hidden_Message = &finalizeRipJobRequest_Md5Hash{b.Md5Hash}
 	}
 	return m0
 }
 
-type case_UploadFileRequest_Message protoreflect.FieldNumber
+type case_FinalizeRipJobRequest_Message protoreflect.FieldNumber
 
-func (x case_UploadFileRequest_Message) String() string {
+func (x case_FinalizeRipJobRequest_Message) String() string {
 	md := file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[6].Descriptor()
 	if x == 0 {
 		return "not set"
@@ -1174,59 +1167,53 @@ func (x case_UploadFileRequest_Message) String() string {
 	return protoimpl.X.MessageFieldStringOf(md, protoreflect.FieldNumber(x))
 }
 
-type isUploadFileRequest_Message interface {
-	isUploadFileRequest_Message()
+type isFinalizeRipJobRequest_Message interface {
+	isFinalizeRipJobRequest_Message()
 }
 
-type uploadFileRequest_Header struct {
+type finalizeRipJobRequest_Header struct {
 	// Contains metadata about the file being uploaded
-	Header *UploadFileRequestHeader `protobuf:"bytes,1,opt,name=header,proto3,oneof"`
+	Header *FinalizeRipJobRequestHeader `protobuf:"bytes,1,opt,name=header,proto3,oneof"`
 }
 
-type uploadFileRequest_DataChunk struct {
+type finalizeRipJobRequest_DataChunk struct {
 	// Contains up to 3MB of data from the file
 	DataChunk []byte `protobuf:"bytes,2,opt,name=data_chunk,json=dataChunk,proto3,oneof"`
 }
 
-type uploadFileRequest_Md5Hash struct {
-	// Contains a hash of the file to verify its integrity.
-	// This is sent as the last message of the transfer, and the server
-	// should only respond successfully if the hash is correct. If the
-	// hash is not sent, then the upload is considered a failure, and
-	// the backing file should be deleted.
+type finalizeRipJobRequest_Md5Hash struct {
+	// Contains a hash of the most recent file to verify its integrity.
 	Md5Hash []byte `protobuf:"bytes,3,opt,name=md5_hash,json=md5Hash,proto3,oneof"`
 }
 
-func (*uploadFileRequest_Header) isUploadFileRequest_Message() {}
+func (*finalizeRipJobRequest_Header) isFinalizeRipJobRequest_Message() {}
 
-func (*uploadFileRequest_DataChunk) isUploadFileRequest_Message() {}
+func (*finalizeRipJobRequest_DataChunk) isFinalizeRipJobRequest_Message() {}
 
-func (*uploadFileRequest_Md5Hash) isUploadFileRequest_Message() {}
+func (*finalizeRipJobRequest_Md5Hash) isFinalizeRipJobRequest_Message() {}
 
-// Contains metadata about the file being uploaded
-type UploadFileRequestHeader struct {
-	state               protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_RipJob   int64                  `protobuf:"varint,1,opt,name=rip_job,json=ripJob,proto3"`
-	xxx_hidden_FileName string                 `protobuf:"bytes,2,opt,name=file_name,json=fileName,proto3"`
-	xxx_hidden_FileSize uint64                 `protobuf:"varint,3,opt,name=file_size,json=fileSize,proto3"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+type FinalizeRipJobRequestHeader struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_RipJob      int64                  `protobuf:"varint,1,opt,name=rip_job,json=ripJob,proto3"`
+	xxx_hidden_UploadFiles *[]*FileDescription    `protobuf:"bytes,2,rep,name=upload_files,json=uploadFiles,proto3"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
-func (x *UploadFileRequestHeader) Reset() {
-	*x = UploadFileRequestHeader{}
+func (x *FinalizeRipJobRequestHeader) Reset() {
+	*x = FinalizeRipJobRequestHeader{}
 	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UploadFileRequestHeader) String() string {
+func (x *FinalizeRipJobRequestHeader) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UploadFileRequestHeader) ProtoMessage() {}
+func (*FinalizeRipJobRequestHeader) ProtoMessage() {}
 
-func (x *UploadFileRequestHeader) ProtoReflect() protoreflect.Message {
+func (x *FinalizeRipJobRequestHeader) ProtoReflect() protoreflect.Message {
 	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1238,45 +1225,107 @@ func (x *UploadFileRequestHeader) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *UploadFileRequestHeader) GetRipJob() int64 {
+func (x *FinalizeRipJobRequestHeader) GetRipJob() int64 {
 	if x != nil {
 		return x.xxx_hidden_RipJob
 	}
 	return 0
 }
 
-func (x *UploadFileRequestHeader) GetFileName() string {
+func (x *FinalizeRipJobRequestHeader) GetUploadFiles() []*FileDescription {
+	if x != nil {
+		if x.xxx_hidden_UploadFiles != nil {
+			return *x.xxx_hidden_UploadFiles
+		}
+	}
+	return nil
+}
+
+func (x *FinalizeRipJobRequestHeader) SetRipJob(v int64) {
+	x.xxx_hidden_RipJob = v
+}
+
+func (x *FinalizeRipJobRequestHeader) SetUploadFiles(v []*FileDescription) {
+	x.xxx_hidden_UploadFiles = &v
+}
+
+type FinalizeRipJobRequestHeader_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The ID for the rip job, as used in the database
+	RipJob int64
+	// A list of files to be uploaded, in the order they will be uploaded.
+	UploadFiles []*FileDescription
+}
+
+func (b0 FinalizeRipJobRequestHeader_builder) Build() *FinalizeRipJobRequestHeader {
+	m0 := &FinalizeRipJobRequestHeader{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_RipJob = b.RipJob
+	x.xxx_hidden_UploadFiles = &b.UploadFiles
+	return m0
+}
+
+type FileDescription struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_FileName string                 `protobuf:"bytes,1,opt,name=file_name,json=fileName,proto3"`
+	xxx_hidden_FileSize uint64                 `protobuf:"varint,2,opt,name=file_size,json=fileSize,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *FileDescription) Reset() {
+	*x = FileDescription{}
+	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FileDescription) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FileDescription) ProtoMessage() {}
+
+func (x *FileDescription) ProtoReflect() protoreflect.Message {
+	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *FileDescription) GetFileName() string {
 	if x != nil {
 		return x.xxx_hidden_FileName
 	}
 	return ""
 }
 
-func (x *UploadFileRequestHeader) GetFileSize() uint64 {
+func (x *FileDescription) GetFileSize() uint64 {
 	if x != nil {
 		return x.xxx_hidden_FileSize
 	}
 	return 0
 }
 
-func (x *UploadFileRequestHeader) SetRipJob(v int64) {
-	x.xxx_hidden_RipJob = v
-}
-
-func (x *UploadFileRequestHeader) SetFileName(v string) {
+func (x *FileDescription) SetFileName(v string) {
 	x.xxx_hidden_FileName = v
 }
 
-func (x *UploadFileRequestHeader) SetFileSize(v uint64) {
+func (x *FileDescription) SetFileSize(v uint64) {
 	x.xxx_hidden_FileSize = v
 }
 
-type UploadFileRequestHeader_builder struct {
+type FileDescription_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// The ID for the rip job, as used in the database
-	RipJob int64
-	// The name of the file being uploaded
+	// The name of the file to be uploaded
 	FileName string
 	// The size in bytes of the file being uploaded.
 	// This is used only as a progress indicator, and should
@@ -1285,81 +1334,36 @@ type UploadFileRequestHeader_builder struct {
 	FileSize uint64
 }
 
-func (b0 UploadFileRequestHeader_builder) Build() *UploadFileRequestHeader {
-	m0 := &UploadFileRequestHeader{}
+func (b0 FileDescription_builder) Build() *FileDescription {
+	m0 := &FileDescription{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_RipJob = b.RipJob
 	x.xxx_hidden_FileName = b.FileName
 	x.xxx_hidden_FileSize = b.FileSize
 	return m0
 }
 
-// Indicates a successful upload
-type UploadFileResponse struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+type FinalizeRipJobResponse struct {
+	state                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_CorruptedFiles []string               `protobuf:"bytes,1,rep,name=corrupted_files,json=corruptedFiles,proto3"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
-func (x *UploadFileResponse) Reset() {
-	*x = UploadFileResponse{}
-	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UploadFileResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UploadFileResponse) ProtoMessage() {}
-
-func (x *UploadFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-type UploadFileResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-}
-
-func (b0 UploadFileResponse_builder) Build() *UploadFileResponse {
-	m0 := &UploadFileResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	return m0
-}
-
-type FinishJobRequest struct {
-	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_RipJob int64                  `protobuf:"varint,1,opt,name=rip_job,json=ripJob,proto3"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
-}
-
-func (x *FinishJobRequest) Reset() {
-	*x = FinishJobRequest{}
+func (x *FinalizeRipJobResponse) Reset() {
+	*x = FinalizeRipJobResponse{}
 	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *FinishJobRequest) String() string {
+func (x *FinalizeRipJobResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*FinishJobRequest) ProtoMessage() {}
+func (*FinalizeRipJobResponse) ProtoMessage() {}
 
-func (x *FinishJobRequest) ProtoReflect() protoreflect.Message {
+func (x *FinalizeRipJobResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1371,71 +1375,28 @@ func (x *FinishJobRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *FinishJobRequest) GetRipJob() int64 {
+func (x *FinalizeRipJobResponse) GetCorruptedFiles() []string {
 	if x != nil {
-		return x.xxx_hidden_RipJob
+		return x.xxx_hidden_CorruptedFiles
 	}
-	return 0
+	return nil
 }
 
-func (x *FinishJobRequest) SetRipJob(v int64) {
-	x.xxx_hidden_RipJob = v
+func (x *FinalizeRipJobResponse) SetCorruptedFiles(v []string) {
+	x.xxx_hidden_CorruptedFiles = v
 }
 
-type FinishJobRequest_builder struct {
+type FinalizeRipJobResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	RipJob int64
+	CorruptedFiles []string
 }
 
-func (b0 FinishJobRequest_builder) Build() *FinishJobRequest {
-	m0 := &FinishJobRequest{}
+func (b0 FinalizeRipJobResponse_builder) Build() *FinalizeRipJobResponse {
+	m0 := &FinalizeRipJobResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_RipJob = b.RipJob
-	return m0
-}
-
-type FinishJobResponse struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *FinishJobResponse) Reset() {
-	*x = FinishJobResponse{}
-	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *FinishJobResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*FinishJobResponse) ProtoMessage() {}
-
-func (x *FinishJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-type FinishJobResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-}
-
-func (b0 FinishJobResponse_builder) Build() *FinishJobResponse {
-	m0 := &FinishJobResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
+	x.xxx_hidden_CorruptedFiles = b.CorruptedFiles
 	return m0
 }
 
@@ -1479,60 +1440,57 @@ const file_mediacorral_drive_coordinator_v1_main_proto_rawDesc = "" +
 	"\amessage\"F\n" +
 	"\x0fRipMediaCommand\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\x03R\x05jobId\x12\x1c\n" +
-	"\tautoeject\x18\x02 \x01(\bR\tautoeject\"\xb1\x01\n" +
-	"\x11UploadFileRequest\x12S\n" +
-	"\x06header\x18\x01 \x01(\v29.mediacorral.drive_coordinator.v1.UploadFileRequestHeaderH\x00R\x06header\x12\x1f\n" +
+	"\tautoeject\x18\x02 \x01(\bR\tautoeject\"\xb9\x01\n" +
+	"\x15FinalizeRipJobRequest\x12W\n" +
+	"\x06header\x18\x01 \x01(\v2=.mediacorral.drive_coordinator.v1.FinalizeRipJobRequestHeaderH\x00R\x06header\x12\x1f\n" +
 	"\n" +
 	"data_chunk\x18\x02 \x01(\fH\x00R\tdataChunk\x12\x1b\n" +
 	"\bmd5_hash\x18\x03 \x01(\fH\x00R\amd5HashB\t\n" +
-	"\amessage\"l\n" +
-	"\x17UploadFileRequestHeader\x12\x17\n" +
-	"\arip_job\x18\x01 \x01(\x03R\x06ripJob\x12\x1b\n" +
-	"\tfile_name\x18\x02 \x01(\tR\bfileName\x12\x1b\n" +
-	"\tfile_size\x18\x03 \x01(\x04R\bfileSize\"\x14\n" +
-	"\x12UploadFileResponse\"+\n" +
-	"\x10FinishJobRequest\x12\x17\n" +
-	"\arip_job\x18\x01 \x01(\x03R\x06ripJob\"\x13\n" +
-	"\x11FinishJobResponse*\xb0\x01\n" +
+	"\amessage\"\x8c\x01\n" +
+	"\x1bFinalizeRipJobRequestHeader\x12\x17\n" +
+	"\arip_job\x18\x01 \x01(\x03R\x06ripJob\x12T\n" +
+	"\fupload_files\x18\x02 \x03(\v21.mediacorral.drive_coordinator.v1.FileDescriptionR\vuploadFiles\"K\n" +
+	"\x0fFileDescription\x12\x1b\n" +
+	"\tfile_name\x18\x01 \x01(\tR\bfileName\x12\x1b\n" +
+	"\tfile_size\x18\x02 \x01(\x04R\bfileSize\"A\n" +
+	"\x16FinalizeRipJobResponse\x12'\n" +
+	"\x0fcorrupted_files\x18\x01 \x03(\tR\x0ecorruptedFiles*\xb0\x01\n" +
 	"\x0eDriveStatusTag\x12 \n" +
 	"\x1cDRIVE_STATUS_TAG_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16DRIVE_STATUS_TAG_EMPTY\x10\x01\x12\x1e\n" +
 	"\x1aDRIVE_STATUS_TAG_TRAY_OPEN\x10\x02\x12\x1e\n" +
 	"\x1aDRIVE_STATUS_TAG_NOT_READY\x10\x03\x12 \n" +
-	"\x1cDRIVE_STATUS_TAG_DISC_LOADED\x10\x04*\xa6\x01\n" +
+	"\x1cDRIVE_STATUS_TAG_DISC_LOADED\x10\x04*\x82\x01\n" +
 	"\fRipStatusTag\x12\x1e\n" +
 	"\x1aRIP_STATUS_TAG_UNSPECIFIED\x10\x00\x12\x1a\n" +
-	"\x16RIP_STATUS_TAG_RUNNING\x10\x01\x12\"\n" +
-	"\x1eRIP_STATUS_TAG_POST_PROCESSING\x10\x02\x12\x1c\n" +
-	"\x18RIP_STATUS_TAG_COMPLETED\x10\x03\x12\x18\n" +
+	"\x16RIP_STATUS_TAG_RUNNING\x10\x01\x12\x1c\n" +
+	"\x18RIP_STATUS_TAG_COMPLETED\x10\x02\x12\x18\n" +
 	"\x14RIP_STATUS_TAG_ERROR\x10\x04*d\n" +
 	"\vTrayCommand\x12\x1c\n" +
 	"\x18TRAY_COMMAND_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16TRAY_COMMAND_OPEN_TRAY\x10\x01\x12\x1b\n" +
-	"\x17TRAY_COMMAND_CLOSE_TRAY\x10\x022\x9e\x02\n" +
+	"\x17TRAY_COMMAND_CLOSE_TRAY\x10\x022\xab\x02\n" +
 	"\x17DriveCoordinatorService\x12\x87\x01\n" +
-	"\fConnectDrive\x128.mediacorral.drive_coordinator.v1.DriveConnectionRequest\x1a9.mediacorral.drive_coordinator.v1.DriveConnectionResponse(\x010\x01\x12y\n" +
-	"\n" +
-	"UploadFile\x123.mediacorral.drive_coordinator.v1.UploadFileRequest\x1a4.mediacorral.drive_coordinator.v1.UploadFileResponse(\x01B\xb4\x02\n" +
+	"\fConnectDrive\x128.mediacorral.drive_coordinator.v1.DriveConnectionRequest\x1a9.mediacorral.drive_coordinator.v1.DriveConnectionResponse(\x010\x01\x12\x85\x01\n" +
+	"\x0eFinalizeRipJob\x127.mediacorral.drive_coordinator.v1.FinalizeRipJobRequest\x1a8.mediacorral.drive_coordinator.v1.FinalizeRipJobResponse(\x01B\xb4\x02\n" +
 	"$com.mediacorral.drive_coordinator.v1B\tMainProtoP\x01Zcgithub.com/sploders101/mediacorral/backend/gen/mediacorral/drive_coordinator/v1;drive_coordinatorv1\xa2\x02\x03MDX\xaa\x02\x1fMediacorral.DriveCoordinator.V1\xca\x02\x1fMediacorral\\DriveCoordinator\\V1\xe2\x02+Mediacorral\\DriveCoordinator\\V1\\GPBMetadata\xea\x02!Mediacorral::DriveCoordinator::V1b\x06proto3"
 
 var file_mediacorral_drive_coordinator_v1_main_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_mediacorral_drive_coordinator_v1_main_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_mediacorral_drive_coordinator_v1_main_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_mediacorral_drive_coordinator_v1_main_proto_goTypes = []any{
-	(DriveStatusTag)(0),             // 0: mediacorral.drive_coordinator.v1.DriveStatusTag
-	(RipStatusTag)(0),               // 1: mediacorral.drive_coordinator.v1.RipStatusTag
-	(TrayCommand)(0),                // 2: mediacorral.drive_coordinator.v1.TrayCommand
-	(*DriveConnectionRequest)(nil),  // 3: mediacorral.drive_coordinator.v1.DriveConnectionRequest
-	(*DiscoveryInfo)(nil),           // 4: mediacorral.drive_coordinator.v1.DiscoveryInfo
-	(*DriveStatus)(nil),             // 5: mediacorral.drive_coordinator.v1.DriveStatus
-	(*RipStatus)(nil),               // 6: mediacorral.drive_coordinator.v1.RipStatus
-	(*DriveConnectionResponse)(nil), // 7: mediacorral.drive_coordinator.v1.DriveConnectionResponse
-	(*RipMediaCommand)(nil),         // 8: mediacorral.drive_coordinator.v1.RipMediaCommand
-	(*UploadFileRequest)(nil),       // 9: mediacorral.drive_coordinator.v1.UploadFileRequest
-	(*UploadFileRequestHeader)(nil), // 10: mediacorral.drive_coordinator.v1.UploadFileRequestHeader
-	(*UploadFileResponse)(nil),      // 11: mediacorral.drive_coordinator.v1.UploadFileResponse
-	(*FinishJobRequest)(nil),        // 12: mediacorral.drive_coordinator.v1.FinishJobRequest
-	(*FinishJobResponse)(nil),       // 13: mediacorral.drive_coordinator.v1.FinishJobResponse
+	(DriveStatusTag)(0),                 // 0: mediacorral.drive_coordinator.v1.DriveStatusTag
+	(RipStatusTag)(0),                   // 1: mediacorral.drive_coordinator.v1.RipStatusTag
+	(TrayCommand)(0),                    // 2: mediacorral.drive_coordinator.v1.TrayCommand
+	(*DriveConnectionRequest)(nil),      // 3: mediacorral.drive_coordinator.v1.DriveConnectionRequest
+	(*DiscoveryInfo)(nil),               // 4: mediacorral.drive_coordinator.v1.DiscoveryInfo
+	(*DriveStatus)(nil),                 // 5: mediacorral.drive_coordinator.v1.DriveStatus
+	(*RipStatus)(nil),                   // 6: mediacorral.drive_coordinator.v1.RipStatus
+	(*DriveConnectionResponse)(nil),     // 7: mediacorral.drive_coordinator.v1.DriveConnectionResponse
+	(*RipMediaCommand)(nil),             // 8: mediacorral.drive_coordinator.v1.RipMediaCommand
+	(*FinalizeRipJobRequest)(nil),       // 9: mediacorral.drive_coordinator.v1.FinalizeRipJobRequest
+	(*FinalizeRipJobRequestHeader)(nil), // 10: mediacorral.drive_coordinator.v1.FinalizeRipJobRequestHeader
+	(*FileDescription)(nil),             // 11: mediacorral.drive_coordinator.v1.FileDescription
+	(*FinalizeRipJobResponse)(nil),      // 12: mediacorral.drive_coordinator.v1.FinalizeRipJobResponse
 }
 var file_mediacorral_drive_coordinator_v1_main_proto_depIdxs = []int32{
 	4,  // 0: mediacorral.drive_coordinator.v1.DriveConnectionRequest.discovery:type_name -> mediacorral.drive_coordinator.v1.DiscoveryInfo
@@ -1542,16 +1500,17 @@ var file_mediacorral_drive_coordinator_v1_main_proto_depIdxs = []int32{
 	1,  // 4: mediacorral.drive_coordinator.v1.RipStatus.status:type_name -> mediacorral.drive_coordinator.v1.RipStatusTag
 	2,  // 5: mediacorral.drive_coordinator.v1.DriveConnectionResponse.tray_command:type_name -> mediacorral.drive_coordinator.v1.TrayCommand
 	8,  // 6: mediacorral.drive_coordinator.v1.DriveConnectionResponse.rip_media:type_name -> mediacorral.drive_coordinator.v1.RipMediaCommand
-	10, // 7: mediacorral.drive_coordinator.v1.UploadFileRequest.header:type_name -> mediacorral.drive_coordinator.v1.UploadFileRequestHeader
-	3,  // 8: mediacorral.drive_coordinator.v1.DriveCoordinatorService.ConnectDrive:input_type -> mediacorral.drive_coordinator.v1.DriveConnectionRequest
-	9,  // 9: mediacorral.drive_coordinator.v1.DriveCoordinatorService.UploadFile:input_type -> mediacorral.drive_coordinator.v1.UploadFileRequest
-	7,  // 10: mediacorral.drive_coordinator.v1.DriveCoordinatorService.ConnectDrive:output_type -> mediacorral.drive_coordinator.v1.DriveConnectionResponse
-	11, // 11: mediacorral.drive_coordinator.v1.DriveCoordinatorService.UploadFile:output_type -> mediacorral.drive_coordinator.v1.UploadFileResponse
-	10, // [10:12] is the sub-list for method output_type
-	8,  // [8:10] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	10, // 7: mediacorral.drive_coordinator.v1.FinalizeRipJobRequest.header:type_name -> mediacorral.drive_coordinator.v1.FinalizeRipJobRequestHeader
+	11, // 8: mediacorral.drive_coordinator.v1.FinalizeRipJobRequestHeader.upload_files:type_name -> mediacorral.drive_coordinator.v1.FileDescription
+	3,  // 9: mediacorral.drive_coordinator.v1.DriveCoordinatorService.ConnectDrive:input_type -> mediacorral.drive_coordinator.v1.DriveConnectionRequest
+	9,  // 10: mediacorral.drive_coordinator.v1.DriveCoordinatorService.FinalizeRipJob:input_type -> mediacorral.drive_coordinator.v1.FinalizeRipJobRequest
+	7,  // 11: mediacorral.drive_coordinator.v1.DriveCoordinatorService.ConnectDrive:output_type -> mediacorral.drive_coordinator.v1.DriveConnectionResponse
+	12, // 12: mediacorral.drive_coordinator.v1.DriveCoordinatorService.FinalizeRipJob:output_type -> mediacorral.drive_coordinator.v1.FinalizeRipJobResponse
+	11, // [11:13] is the sub-list for method output_type
+	9,  // [9:11] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_mediacorral_drive_coordinator_v1_main_proto_init() }
@@ -1570,9 +1529,9 @@ func file_mediacorral_drive_coordinator_v1_main_proto_init() {
 		(*driveConnectionResponse_RipMedia)(nil),
 	}
 	file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[6].OneofWrappers = []any{
-		(*uploadFileRequest_Header)(nil),
-		(*uploadFileRequest_DataChunk)(nil),
-		(*uploadFileRequest_Md5Hash)(nil),
+		(*finalizeRipJobRequest_Header)(nil),
+		(*finalizeRipJobRequest_DataChunk)(nil),
+		(*finalizeRipJobRequest_Md5Hash)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1580,7 +1539,7 @@ func file_mediacorral_drive_coordinator_v1_main_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mediacorral_drive_coordinator_v1_main_proto_rawDesc), len(file_mediacorral_drive_coordinator_v1_main_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   11,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

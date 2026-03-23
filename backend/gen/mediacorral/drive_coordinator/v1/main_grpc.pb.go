@@ -19,19 +19,45 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DriveCoordinatorService_ConnectDrive_FullMethodName = "/mediacorral.drive_coordinator.v1.DriveCoordinatorService/ConnectDrive"
-	DriveCoordinatorService_UploadFile_FullMethodName   = "/mediacorral.drive_coordinator.v1.DriveCoordinatorService/UploadFile"
+	DriveCoordinatorService_ConnectDrive_FullMethodName   = "/mediacorral.drive_coordinator.v1.DriveCoordinatorService/ConnectDrive"
+	DriveCoordinatorService_FinalizeRipJob_FullMethodName = "/mediacorral.drive_coordinator.v1.DriveCoordinatorService/FinalizeRipJob"
 )
 
 // DriveCoordinatorServiceClient is the client API for DriveCoordinatorService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DriveCoordinatorServiceClient interface {
-	// Establishes a connection between the drive and the coordinator, allowing the coordinator
-	// to send commands back to the drive, which may live on another network entirely.
+	// Establishes a connection between the drive and the coordinator, allowing
+	// the coordinator to send commands back to the drive, which may live on
+	// another network entirely.
 	ConnectDrive(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[DriveConnectionRequest, DriveConnectionResponse], error)
-	// Allows a drive to upload a file from a rip job.
-	UploadFile(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadFileRequest, UploadFileResponse], error)
+	// Finalizes a rip job, uploading media if the drive controller doesn't use a
+	// shared filesystem.
+	//
+	// The drive controller, when finalizing a rip job, must first send a
+	// `header` message. This message includes information about the operations
+	// that are about to take place. Along with the ID of the rip job, it should
+	// also contain a list of files to be uploaded, including their name and
+	// size. This list must be in the order that the files will be uploaded.
+	//
+	// Next, the drive controller should send file data in `data_chunk` objects.
+	// These objects may contain up to 3MB of data from the file, and should be
+	// transmitted in the order they appear in the file.
+	//
+	// Finally, in order to finish the upload, the drive controller must send an
+	// `md5_hash` object. This terminates the upload and begins the next file,
+	// if another file is to be uploaded. The number of `md5_hash` objects must
+	// equal the number of `upload_files` objects in the `header`.
+	//
+	// Once all files have been fully uploaded, the coordinator may return with
+	// a list of corrupted files. This indicates that the rip job is still
+	// incomplete, and the drive controller should call the RPC function again,
+	// uploading the files that the coordinator indicated were corrupted.
+	//
+	// If the coordinator responds with an empty list of `corrupted_files`, then
+	// the rip job is considered complete, and may be forgotten by the drive
+	// controller.
+	FinalizeRipJob(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[FinalizeRipJobRequest, FinalizeRipJobResponse], error)
 }
 
 type driveCoordinatorServiceClient struct {
@@ -55,28 +81,54 @@ func (c *driveCoordinatorServiceClient) ConnectDrive(ctx context.Context, opts .
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type DriveCoordinatorService_ConnectDriveClient = grpc.BidiStreamingClient[DriveConnectionRequest, DriveConnectionResponse]
 
-func (c *driveCoordinatorServiceClient) UploadFile(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadFileRequest, UploadFileResponse], error) {
+func (c *driveCoordinatorServiceClient) FinalizeRipJob(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[FinalizeRipJobRequest, FinalizeRipJobResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &DriveCoordinatorService_ServiceDesc.Streams[1], DriveCoordinatorService_UploadFile_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &DriveCoordinatorService_ServiceDesc.Streams[1], DriveCoordinatorService_FinalizeRipJob_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[UploadFileRequest, UploadFileResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[FinalizeRipJobRequest, FinalizeRipJobResponse]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DriveCoordinatorService_UploadFileClient = grpc.ClientStreamingClient[UploadFileRequest, UploadFileResponse]
+type DriveCoordinatorService_FinalizeRipJobClient = grpc.ClientStreamingClient[FinalizeRipJobRequest, FinalizeRipJobResponse]
 
 // DriveCoordinatorServiceServer is the server API for DriveCoordinatorService service.
 // All implementations should embed UnimplementedDriveCoordinatorServiceServer
 // for forward compatibility.
 type DriveCoordinatorServiceServer interface {
-	// Establishes a connection between the drive and the coordinator, allowing the coordinator
-	// to send commands back to the drive, which may live on another network entirely.
+	// Establishes a connection between the drive and the coordinator, allowing
+	// the coordinator to send commands back to the drive, which may live on
+	// another network entirely.
 	ConnectDrive(grpc.BidiStreamingServer[DriveConnectionRequest, DriveConnectionResponse]) error
-	// Allows a drive to upload a file from a rip job.
-	UploadFile(grpc.ClientStreamingServer[UploadFileRequest, UploadFileResponse]) error
+	// Finalizes a rip job, uploading media if the drive controller doesn't use a
+	// shared filesystem.
+	//
+	// The drive controller, when finalizing a rip job, must first send a
+	// `header` message. This message includes information about the operations
+	// that are about to take place. Along with the ID of the rip job, it should
+	// also contain a list of files to be uploaded, including their name and
+	// size. This list must be in the order that the files will be uploaded.
+	//
+	// Next, the drive controller should send file data in `data_chunk` objects.
+	// These objects may contain up to 3MB of data from the file, and should be
+	// transmitted in the order they appear in the file.
+	//
+	// Finally, in order to finish the upload, the drive controller must send an
+	// `md5_hash` object. This terminates the upload and begins the next file,
+	// if another file is to be uploaded. The number of `md5_hash` objects must
+	// equal the number of `upload_files` objects in the `header`.
+	//
+	// Once all files have been fully uploaded, the coordinator may return with
+	// a list of corrupted files. This indicates that the rip job is still
+	// incomplete, and the drive controller should call the RPC function again,
+	// uploading the files that the coordinator indicated were corrupted.
+	//
+	// If the coordinator responds with an empty list of `corrupted_files`, then
+	// the rip job is considered complete, and may be forgotten by the drive
+	// controller.
+	FinalizeRipJob(grpc.ClientStreamingServer[FinalizeRipJobRequest, FinalizeRipJobResponse]) error
 }
 
 // UnimplementedDriveCoordinatorServiceServer should be embedded to have
@@ -89,8 +141,8 @@ type UnimplementedDriveCoordinatorServiceServer struct{}
 func (UnimplementedDriveCoordinatorServiceServer) ConnectDrive(grpc.BidiStreamingServer[DriveConnectionRequest, DriveConnectionResponse]) error {
 	return status.Error(codes.Unimplemented, "method ConnectDrive not implemented")
 }
-func (UnimplementedDriveCoordinatorServiceServer) UploadFile(grpc.ClientStreamingServer[UploadFileRequest, UploadFileResponse]) error {
-	return status.Error(codes.Unimplemented, "method UploadFile not implemented")
+func (UnimplementedDriveCoordinatorServiceServer) FinalizeRipJob(grpc.ClientStreamingServer[FinalizeRipJobRequest, FinalizeRipJobResponse]) error {
+	return status.Error(codes.Unimplemented, "method FinalizeRipJob not implemented")
 }
 func (UnimplementedDriveCoordinatorServiceServer) testEmbeddedByValue() {}
 
@@ -119,12 +171,12 @@ func _DriveCoordinatorService_ConnectDrive_Handler(srv interface{}, stream grpc.
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type DriveCoordinatorService_ConnectDriveServer = grpc.BidiStreamingServer[DriveConnectionRequest, DriveConnectionResponse]
 
-func _DriveCoordinatorService_UploadFile_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(DriveCoordinatorServiceServer).UploadFile(&grpc.GenericServerStream[UploadFileRequest, UploadFileResponse]{ServerStream: stream})
+func _DriveCoordinatorService_FinalizeRipJob_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(DriveCoordinatorServiceServer).FinalizeRipJob(&grpc.GenericServerStream[FinalizeRipJobRequest, FinalizeRipJobResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DriveCoordinatorService_UploadFileServer = grpc.ClientStreamingServer[UploadFileRequest, UploadFileResponse]
+type DriveCoordinatorService_FinalizeRipJobServer = grpc.ClientStreamingServer[FinalizeRipJobRequest, FinalizeRipJobResponse]
 
 // DriveCoordinatorService_ServiceDesc is the grpc.ServiceDesc for DriveCoordinatorService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -141,8 +193,8 @@ var DriveCoordinatorService_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "UploadFile",
-			Handler:       _DriveCoordinatorService_UploadFile_Handler,
+			StreamName:    "FinalizeRipJob",
+			Handler:       _DriveCoordinatorService_FinalizeRipJob_Handler,
 			ClientStreams: true,
 		},
 	},

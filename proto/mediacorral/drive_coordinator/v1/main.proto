@@ -2,12 +2,38 @@ syntax = "proto3";
 package mediacorral.drive_coordinator.v1;
 
 service DriveCoordinatorService {
-  // Establishes a connection between the drive and the coordinator, allowing the coordinator
-  // to send commands back to the drive, which may live on another network entirely.
+  // Establishes a connection between the drive and the coordinator, allowing
+  // the coordinator to send commands back to the drive, which may live on
+  // another network entirely.
   rpc ConnectDrive(stream DriveConnectionRequest) returns (stream DriveConnectionResponse);
 
-  // Allows a drive to upload a file from a rip job.
-  rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
+  // Finalizes a rip job, uploading media if the drive controller doesn't use a
+  // shared filesystem.
+  //
+  // The drive controller, when finalizing a rip job, must first send a
+  // `header` message. This message includes information about the operations
+  // that are about to take place. Along with the ID of the rip job, it should
+  // also contain a list of files to be uploaded, including their name and
+  // size. This list must be in the order that the files will be uploaded.
+  //
+  // Next, the drive controller should send file data in `data_chunk` objects.
+  // These objects may contain up to 3MB of data from the file, and should be
+  // transmitted in the order they appear in the file.
+  //
+  // Finally, in order to finish the upload, the drive controller must send an
+  // `md5_hash` object. This terminates the upload and begins the next file,
+  // if another file is to be uploaded. The number of `md5_hash` objects must
+  // equal the number of `upload_files` objects in the `header`.
+  //
+  // Once all files have been fully uploaded, the coordinator may return with
+  // a list of corrupted files. This indicates that the rip job is still
+  // incomplete, and the drive controller should call the RPC function again,
+  // uploading the files that the coordinator indicated were corrupted.
+  //
+  // If the coordinator responds with an empty list of `corrupted_files`, then
+  // the rip job is considered complete, and may be forgotten by the drive
+  // controller.
+  rpc FinalizeRipJob(stream FinalizeRipJobRequest) returns (FinalizeRipJobResponse);
 }
 
 // Messages sent from the drive to the coordinator
@@ -19,7 +45,8 @@ message DriveConnectionRequest {
   }
 }
 
-// Contains identifying information about the drive, to be sent immediately upon connection.
+// Contains identifying information about the drive, to be sent immediately
+// upon connection.
 //
 // The coordinator will ignore any messages received before this one.
 message DiscoveryInfo {
@@ -85,40 +112,38 @@ message RipMediaCommand {
   bool autoeject = 2;
 }
 
-// Contains either metadata or a data chunk of a ripped file
-message UploadFileRequest {
+message FinalizeRipJobRequest {
   oneof message {
     // Contains metadata about the file being uploaded
-    UploadFileRequestHeader header = 1;
+    FinalizeRipJobRequestHeader header = 1;
+
     // Contains up to 3MB of data from the file
     bytes data_chunk = 2;
-    // Contains a hash of the file to verify its integrity.
-    // This is sent as the last message of the transfer, and the server
-    // should only respond successfully if the hash is correct. If the
-    // hash is not sent, then the upload is considered a failure, and
-    // the backing file should be deleted.
+
+    // Contains a hash of the most recent file to verify its integrity.
     bytes md5_hash = 3;
   }
 }
 
-// Contains metadata about the file being uploaded
-message UploadFileRequestHeader {
+message FinalizeRipJobRequestHeader {
   // The ID for the rip job, as used in the database
   int64 rip_job = 1;
-  // The name of the file being uploaded
-  string file_name = 2;
+
+  // A list of files to be uploaded, in the order they will be uploaded.
+  repeated FileDescription upload_files = 2;
+}
+
+message FileDescription {
+  // The name of the file to be uploaded
+  string file_name = 1;
 
   // The size in bytes of the file being uploaded.
   // This is used only as a progress indicator, and should
   // not be relied upon. A value of `0` means the file is
   // of indeterminate size.
-  uint64 file_size = 3;
+  uint64 file_size = 2;
 }
 
-// Indicates a successful upload
-message UploadFileResponse {}
-
-message FinishJobRequest {
-  int64 rip_job = 1;
+message FinalizeRipJobResponse {
+  repeated string corrupted_files = 1;
 }
-message FinishJobResponse {}

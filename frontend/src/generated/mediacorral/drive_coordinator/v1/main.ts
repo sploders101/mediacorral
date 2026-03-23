@@ -43,7 +43,8 @@ export interface DriveConnectionRequest {
     };
 }
 /**
- * Contains identifying information about the drive, to be sent immediately upon connection.
+ * Contains identifying information about the drive, to be sent immediately
+ * upon connection.
  *
  * The coordinator will ignore any messages received before this one.
  *
@@ -160,11 +161,9 @@ export interface RipMediaCommand {
     autoeject: boolean;
 }
 /**
- * Contains either metadata or a data chunk of a ripped file
- *
- * @generated from protobuf message mediacorral.drive_coordinator.v1.UploadFileRequest
+ * @generated from protobuf message mediacorral.drive_coordinator.v1.FinalizeRipJobRequest
  */
-export interface UploadFileRequest {
+export interface FinalizeRipJobRequest {
     /**
      * @generated from protobuf oneof: message
      */
@@ -173,9 +172,9 @@ export interface UploadFileRequest {
         /**
          * Contains metadata about the file being uploaded
          *
-         * @generated from protobuf field: mediacorral.drive_coordinator.v1.UploadFileRequestHeader header = 1
+         * @generated from protobuf field: mediacorral.drive_coordinator.v1.FinalizeRipJobRequestHeader header = 1
          */
-        header: UploadFileRequestHeader;
+        header: FinalizeRipJobRequestHeader;
     } | {
         oneofKind: "dataChunk";
         /**
@@ -187,11 +186,7 @@ export interface UploadFileRequest {
     } | {
         oneofKind: "md5Hash";
         /**
-         * Contains a hash of the file to verify its integrity.
-         * This is sent as the last message of the transfer, and the server
-         * should only respond successfully if the hash is correct. If the
-         * hash is not sent, then the upload is considered a failure, and
-         * the backing file should be deleted.
+         * Contains a hash of the most recent file to verify its integrity.
          *
          * @generated from protobuf field: bytes md5_hash = 3
          */
@@ -201,11 +196,9 @@ export interface UploadFileRequest {
     };
 }
 /**
- * Contains metadata about the file being uploaded
- *
- * @generated from protobuf message mediacorral.drive_coordinator.v1.UploadFileRequestHeader
+ * @generated from protobuf message mediacorral.drive_coordinator.v1.FinalizeRipJobRequestHeader
  */
-export interface UploadFileRequestHeader {
+export interface FinalizeRipJobRequestHeader {
     /**
      * The ID for the rip job, as used in the database
      *
@@ -213,9 +206,20 @@ export interface UploadFileRequestHeader {
      */
     ripJob: bigint;
     /**
-     * The name of the file being uploaded
+     * A list of files to be uploaded, in the order they will be uploaded.
      *
-     * @generated from protobuf field: string file_name = 2
+     * @generated from protobuf field: repeated mediacorral.drive_coordinator.v1.FileDescription upload_files = 2
+     */
+    uploadFiles: FileDescription[];
+}
+/**
+ * @generated from protobuf message mediacorral.drive_coordinator.v1.FileDescription
+ */
+export interface FileDescription {
+    /**
+     * The name of the file to be uploaded
+     *
+     * @generated from protobuf field: string file_name = 1
      */
     fileName: string;
     /**
@@ -224,30 +228,18 @@ export interface UploadFileRequestHeader {
      * not be relied upon. A value of `0` means the file is
      * of indeterminate size.
      *
-     * @generated from protobuf field: uint64 file_size = 3
+     * @generated from protobuf field: uint64 file_size = 2
      */
     fileSize: bigint;
 }
 /**
- * Indicates a successful upload
- *
- * @generated from protobuf message mediacorral.drive_coordinator.v1.UploadFileResponse
+ * @generated from protobuf message mediacorral.drive_coordinator.v1.FinalizeRipJobResponse
  */
-export interface UploadFileResponse {
-}
-/**
- * @generated from protobuf message mediacorral.drive_coordinator.v1.FinishJobRequest
- */
-export interface FinishJobRequest {
+export interface FinalizeRipJobResponse {
     /**
-     * @generated from protobuf field: int64 rip_job = 1
+     * @generated from protobuf field: repeated string corrupted_files = 1
      */
-    ripJob: bigint;
-}
-/**
- * @generated from protobuf message mediacorral.drive_coordinator.v1.FinishJobResponse
- */
-export interface FinishJobResponse {
+    corruptedFiles: string[];
 }
 /**
  * @generated from protobuf enum mediacorral.drive_coordinator.v1.DriveStatusTag
@@ -287,13 +279,9 @@ export enum RipStatusTag {
      */
     RUNNING = 1,
     /**
-     * @generated from protobuf enum value: RIP_STATUS_TAG_POST_PROCESSING = 2;
+     * @generated from protobuf enum value: RIP_STATUS_TAG_COMPLETED = 2;
      */
-    POST_PROCESSING = 2,
-    /**
-     * @generated from protobuf enum value: RIP_STATUS_TAG_COMPLETED = 3;
-     */
-    COMPLETED = 3,
+    COMPLETED = 2,
     /**
      * @generated from protobuf enum value: RIP_STATUS_TAG_ERROR = 4;
      */
@@ -723,30 +711,30 @@ class RipMediaCommand$Type extends MessageType<RipMediaCommand> {
  */
 export const RipMediaCommand = new RipMediaCommand$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class UploadFileRequest$Type extends MessageType<UploadFileRequest> {
+class FinalizeRipJobRequest$Type extends MessageType<FinalizeRipJobRequest> {
     constructor() {
-        super("mediacorral.drive_coordinator.v1.UploadFileRequest", [
-            { no: 1, name: "header", kind: "message", oneof: "message", T: () => UploadFileRequestHeader },
+        super("mediacorral.drive_coordinator.v1.FinalizeRipJobRequest", [
+            { no: 1, name: "header", kind: "message", oneof: "message", T: () => FinalizeRipJobRequestHeader },
             { no: 2, name: "data_chunk", kind: "scalar", oneof: "message", T: 12 /*ScalarType.BYTES*/ },
             { no: 3, name: "md5_hash", kind: "scalar", oneof: "message", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
-    create(value?: PartialMessage<UploadFileRequest>): UploadFileRequest {
+    create(value?: PartialMessage<FinalizeRipJobRequest>): FinalizeRipJobRequest {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.message = { oneofKind: undefined };
         if (value !== undefined)
-            reflectionMergePartial<UploadFileRequest>(this, message, value);
+            reflectionMergePartial<FinalizeRipJobRequest>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: UploadFileRequest): UploadFileRequest {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FinalizeRipJobRequest): FinalizeRipJobRequest {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* mediacorral.drive_coordinator.v1.UploadFileRequestHeader header */ 1:
+                case /* mediacorral.drive_coordinator.v1.FinalizeRipJobRequestHeader header */ 1:
                     message.message = {
                         oneofKind: "header",
-                        header: UploadFileRequestHeader.internalBinaryRead(reader, reader.uint32(), options, (message.message as any).header)
+                        header: FinalizeRipJobRequestHeader.internalBinaryRead(reader, reader.uint32(), options, (message.message as any).header)
                     };
                     break;
                 case /* bytes data_chunk */ 2:
@@ -772,10 +760,10 @@ class UploadFileRequest$Type extends MessageType<UploadFileRequest> {
         }
         return message;
     }
-    internalBinaryWrite(message: UploadFileRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* mediacorral.drive_coordinator.v1.UploadFileRequestHeader header = 1; */
+    internalBinaryWrite(message: FinalizeRipJobRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* mediacorral.drive_coordinator.v1.FinalizeRipJobRequestHeader header = 1; */
         if (message.message.oneofKind === "header")
-            UploadFileRequestHeader.internalBinaryWrite(message.message.header, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+            FinalizeRipJobRequestHeader.internalBinaryWrite(message.message.header, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
         /* bytes data_chunk = 2; */
         if (message.message.oneofKind === "dataChunk")
             writer.tag(2, WireType.LengthDelimited).bytes(message.message.dataChunk);
@@ -789,28 +777,26 @@ class UploadFileRequest$Type extends MessageType<UploadFileRequest> {
     }
 }
 /**
- * @generated MessageType for protobuf message mediacorral.drive_coordinator.v1.UploadFileRequest
+ * @generated MessageType for protobuf message mediacorral.drive_coordinator.v1.FinalizeRipJobRequest
  */
-export const UploadFileRequest = new UploadFileRequest$Type();
+export const FinalizeRipJobRequest = new FinalizeRipJobRequest$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class UploadFileRequestHeader$Type extends MessageType<UploadFileRequestHeader> {
+class FinalizeRipJobRequestHeader$Type extends MessageType<FinalizeRipJobRequestHeader> {
     constructor() {
-        super("mediacorral.drive_coordinator.v1.UploadFileRequestHeader", [
+        super("mediacorral.drive_coordinator.v1.FinalizeRipJobRequestHeader", [
             { no: 1, name: "rip_job", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "file_name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "file_size", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ }
+            { no: 2, name: "upload_files", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => FileDescription }
         ]);
     }
-    create(value?: PartialMessage<UploadFileRequestHeader>): UploadFileRequestHeader {
+    create(value?: PartialMessage<FinalizeRipJobRequestHeader>): FinalizeRipJobRequestHeader {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.ripJob = 0n;
-        message.fileName = "";
-        message.fileSize = 0n;
+        message.uploadFiles = [];
         if (value !== undefined)
-            reflectionMergePartial<UploadFileRequestHeader>(this, message, value);
+            reflectionMergePartial<FinalizeRipJobRequestHeader>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: UploadFileRequestHeader): UploadFileRequestHeader {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FinalizeRipJobRequestHeader): FinalizeRipJobRequestHeader {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -818,10 +804,62 @@ class UploadFileRequestHeader$Type extends MessageType<UploadFileRequestHeader> 
                 case /* int64 rip_job */ 1:
                     message.ripJob = reader.int64().toBigInt();
                     break;
-                case /* string file_name */ 2:
+                case /* repeated mediacorral.drive_coordinator.v1.FileDescription upload_files */ 2:
+                    message.uploadFiles.push(FileDescription.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: FinalizeRipJobRequestHeader, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* int64 rip_job = 1; */
+        if (message.ripJob !== 0n)
+            writer.tag(1, WireType.Varint).int64(message.ripJob);
+        /* repeated mediacorral.drive_coordinator.v1.FileDescription upload_files = 2; */
+        for (let i = 0; i < message.uploadFiles.length; i++)
+            FileDescription.internalBinaryWrite(message.uploadFiles[i], writer.tag(2, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.drive_coordinator.v1.FinalizeRipJobRequestHeader
+ */
+export const FinalizeRipJobRequestHeader = new FinalizeRipJobRequestHeader$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class FileDescription$Type extends MessageType<FileDescription> {
+    constructor() {
+        super("mediacorral.drive_coordinator.v1.FileDescription", [
+            { no: 1, name: "file_name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "file_size", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ }
+        ]);
+    }
+    create(value?: PartialMessage<FileDescription>): FileDescription {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.fileName = "";
+        message.fileSize = 0n;
+        if (value !== undefined)
+            reflectionMergePartial<FileDescription>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FileDescription): FileDescription {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string file_name */ 1:
                     message.fileName = reader.string();
                     break;
-                case /* uint64 file_size */ 3:
+                case /* uint64 file_size */ 2:
                     message.fileSize = reader.uint64().toBigInt();
                     break;
                 default:
@@ -835,16 +873,13 @@ class UploadFileRequestHeader$Type extends MessageType<UploadFileRequestHeader> 
         }
         return message;
     }
-    internalBinaryWrite(message: UploadFileRequestHeader, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* int64 rip_job = 1; */
-        if (message.ripJob !== 0n)
-            writer.tag(1, WireType.Varint).int64(message.ripJob);
-        /* string file_name = 2; */
+    internalBinaryWrite(message: FileDescription, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string file_name = 1; */
         if (message.fileName !== "")
-            writer.tag(2, WireType.LengthDelimited).string(message.fileName);
-        /* uint64 file_size = 3; */
+            writer.tag(1, WireType.LengthDelimited).string(message.fileName);
+        /* uint64 file_size = 2; */
         if (message.fileSize !== 0n)
-            writer.tag(3, WireType.Varint).uint64(message.fileSize);
+            writer.tag(2, WireType.Varint).uint64(message.fileSize);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -852,68 +887,30 @@ class UploadFileRequestHeader$Type extends MessageType<UploadFileRequestHeader> 
     }
 }
 /**
- * @generated MessageType for protobuf message mediacorral.drive_coordinator.v1.UploadFileRequestHeader
+ * @generated MessageType for protobuf message mediacorral.drive_coordinator.v1.FileDescription
  */
-export const UploadFileRequestHeader = new UploadFileRequestHeader$Type();
+export const FileDescription = new FileDescription$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class UploadFileResponse$Type extends MessageType<UploadFileResponse> {
+class FinalizeRipJobResponse$Type extends MessageType<FinalizeRipJobResponse> {
     constructor() {
-        super("mediacorral.drive_coordinator.v1.UploadFileResponse", []);
-    }
-    create(value?: PartialMessage<UploadFileResponse>): UploadFileResponse {
-        const message = globalThis.Object.create((this.messagePrototype!));
-        if (value !== undefined)
-            reflectionMergePartial<UploadFileResponse>(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: UploadFileResponse): UploadFileResponse {
-        let message = target ?? this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message: UploadFileResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message mediacorral.drive_coordinator.v1.UploadFileResponse
- */
-export const UploadFileResponse = new UploadFileResponse$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class FinishJobRequest$Type extends MessageType<FinishJobRequest> {
-    constructor() {
-        super("mediacorral.drive_coordinator.v1.FinishJobRequest", [
-            { no: 1, name: "rip_job", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
+        super("mediacorral.drive_coordinator.v1.FinalizeRipJobResponse", [
+            { no: 1, name: "corrupted_files", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
-    create(value?: PartialMessage<FinishJobRequest>): FinishJobRequest {
+    create(value?: PartialMessage<FinalizeRipJobResponse>): FinalizeRipJobResponse {
         const message = globalThis.Object.create((this.messagePrototype!));
-        message.ripJob = 0n;
+        message.corruptedFiles = [];
         if (value !== undefined)
-            reflectionMergePartial<FinishJobRequest>(this, message, value);
+            reflectionMergePartial<FinalizeRipJobResponse>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FinishJobRequest): FinishJobRequest {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FinalizeRipJobResponse): FinalizeRipJobResponse {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* int64 rip_job */ 1:
-                    message.ripJob = reader.int64().toBigInt();
+                case /* repeated string corrupted_files */ 1:
+                    message.corruptedFiles.push(reader.string());
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -926,10 +923,10 @@ class FinishJobRequest$Type extends MessageType<FinishJobRequest> {
         }
         return message;
     }
-    internalBinaryWrite(message: FinishJobRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* int64 rip_job = 1; */
-        if (message.ripJob !== 0n)
-            writer.tag(1, WireType.Varint).int64(message.ripJob);
+    internalBinaryWrite(message: FinalizeRipJobResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* repeated string corrupted_files = 1; */
+        for (let i = 0; i < message.corruptedFiles.length; i++)
+            writer.tag(1, WireType.LengthDelimited).string(message.corruptedFiles[i]);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -937,51 +934,13 @@ class FinishJobRequest$Type extends MessageType<FinishJobRequest> {
     }
 }
 /**
- * @generated MessageType for protobuf message mediacorral.drive_coordinator.v1.FinishJobRequest
+ * @generated MessageType for protobuf message mediacorral.drive_coordinator.v1.FinalizeRipJobResponse
  */
-export const FinishJobRequest = new FinishJobRequest$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class FinishJobResponse$Type extends MessageType<FinishJobResponse> {
-    constructor() {
-        super("mediacorral.drive_coordinator.v1.FinishJobResponse", []);
-    }
-    create(value?: PartialMessage<FinishJobResponse>): FinishJobResponse {
-        const message = globalThis.Object.create((this.messagePrototype!));
-        if (value !== undefined)
-            reflectionMergePartial<FinishJobResponse>(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FinishJobResponse): FinishJobResponse {
-        let message = target ?? this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message: FinishJobResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message mediacorral.drive_coordinator.v1.FinishJobResponse
- */
-export const FinishJobResponse = new FinishJobResponse$Type();
+export const FinalizeRipJobResponse = new FinalizeRipJobResponse$Type();
 /**
  * @generated ServiceType for protobuf service mediacorral.drive_coordinator.v1.DriveCoordinatorService
  */
 export const DriveCoordinatorService = new ServiceType("mediacorral.drive_coordinator.v1.DriveCoordinatorService", [
     { name: "ConnectDrive", serverStreaming: true, clientStreaming: true, options: {}, I: DriveConnectionRequest, O: DriveConnectionResponse },
-    { name: "UploadFile", clientStreaming: true, options: {}, I: UploadFileRequest, O: UploadFileResponse }
+    { name: "FinalizeRipJob", clientStreaming: true, options: {}, I: FinalizeRipJobRequest, O: FinalizeRipJobResponse }
 ]);
