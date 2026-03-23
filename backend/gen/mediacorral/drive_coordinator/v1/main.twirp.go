@@ -27,36 +27,33 @@ import url "net/url"
 // See https://twitchtv.github.io/twirp/docs/version_matrix.html
 const _ = twirp.TwirpPackageMinVersion_8_1_0
 
-// =====================
-// DemoService Interface
-// =====================
+// =================================
+// DriveCoordinatorService Interface
+// =================================
 
-type DemoService interface {
+type DriveCoordinatorService interface {
 	// Establishes a connection between the drive and the coordinator, allowing the coordinator
 	// to send commands back to the drive, which may live on another network entirely.
 	ConnectDrive(context.Context, *DriveConnectionRequest) (*DriveConnectionResponse, error)
 
 	// Allows a drive to upload a file from a rip job.
 	UploadFile(context.Context, *UploadFileRequest) (*UploadFileResponse, error)
-
-	// Marks a job as finished. This should be called once all files have been uploaded successfully.
-	FinishJob(context.Context, *FinishJobRequest) (*FinishJobResponse, error)
 }
 
-// ===========================
-// DemoService Protobuf Client
-// ===========================
+// =======================================
+// DriveCoordinatorService Protobuf Client
+// =======================================
 
-type demoServiceProtobufClient struct {
+type driveCoordinatorServiceProtobufClient struct {
 	client      HTTPClient
-	urls        [3]string
+	urls        [2]string
 	interceptor twirp.Interceptor
 	opts        twirp.ClientOptions
 }
 
-// NewDemoServiceProtobufClient creates a Protobuf client that implements the DemoService interface.
+// NewDriveCoordinatorServiceProtobufClient creates a Protobuf client that implements the DriveCoordinatorService interface.
 // It communicates using Protobuf and can be configured with a custom HTTPClient.
-func NewDemoServiceProtobufClient(baseURL string, client HTTPClient, opts ...twirp.ClientOption) DemoService {
+func NewDriveCoordinatorServiceProtobufClient(baseURL string, client HTTPClient, opts ...twirp.ClientOption) DriveCoordinatorService {
 	if c, ok := client.(*http.Client); ok {
 		client = withoutRedirects(c)
 	}
@@ -76,14 +73,13 @@ func NewDemoServiceProtobufClient(baseURL string, client HTTPClient, opts ...twi
 
 	// Build method URLs: <baseURL>[<prefix>]/<package>.<Service>/<Method>
 	serviceURL := sanitizeBaseURL(baseURL)
-	serviceURL += baseServicePath(pathPrefix, "mediacorral.drive_coordinator.v1", "DemoService")
-	urls := [3]string{
+	serviceURL += baseServicePath(pathPrefix, "mediacorral.drive_coordinator.v1", "DriveCoordinatorService")
+	urls := [2]string{
 		serviceURL + "ConnectDrive",
 		serviceURL + "UploadFile",
-		serviceURL + "FinishJob",
 	}
 
-	return &demoServiceProtobufClient{
+	return &driveCoordinatorServiceProtobufClient{
 		client:      client,
 		urls:        urls,
 		interceptor: twirp.ChainInterceptors(clientOpts.Interceptors...),
@@ -91,9 +87,9 @@ func NewDemoServiceProtobufClient(baseURL string, client HTTPClient, opts ...twi
 	}
 }
 
-func (c *demoServiceProtobufClient) ConnectDrive(ctx context.Context, in *DriveConnectionRequest) (*DriveConnectionResponse, error) {
+func (c *driveCoordinatorServiceProtobufClient) ConnectDrive(ctx context.Context, in *DriveConnectionRequest) (*DriveConnectionResponse, error) {
 	ctx = ctxsetters.WithPackageName(ctx, "mediacorral.drive_coordinator.v1")
-	ctx = ctxsetters.WithServiceName(ctx, "DemoService")
+	ctx = ctxsetters.WithServiceName(ctx, "DriveCoordinatorService")
 	ctx = ctxsetters.WithMethodName(ctx, "ConnectDrive")
 	caller := c.callConnectDrive
 	if c.interceptor != nil {
@@ -120,7 +116,7 @@ func (c *demoServiceProtobufClient) ConnectDrive(ctx context.Context, in *DriveC
 	return caller(ctx, in)
 }
 
-func (c *demoServiceProtobufClient) callConnectDrive(ctx context.Context, in *DriveConnectionRequest) (*DriveConnectionResponse, error) {
+func (c *driveCoordinatorServiceProtobufClient) callConnectDrive(ctx context.Context, in *DriveConnectionRequest) (*DriveConnectionResponse, error) {
 	out := new(DriveConnectionResponse)
 	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[0], in, out)
 	if err != nil {
@@ -137,9 +133,9 @@ func (c *demoServiceProtobufClient) callConnectDrive(ctx context.Context, in *Dr
 	return out, nil
 }
 
-func (c *demoServiceProtobufClient) UploadFile(ctx context.Context, in *UploadFileRequest) (*UploadFileResponse, error) {
+func (c *driveCoordinatorServiceProtobufClient) UploadFile(ctx context.Context, in *UploadFileRequest) (*UploadFileResponse, error) {
 	ctx = ctxsetters.WithPackageName(ctx, "mediacorral.drive_coordinator.v1")
-	ctx = ctxsetters.WithServiceName(ctx, "DemoService")
+	ctx = ctxsetters.WithServiceName(ctx, "DriveCoordinatorService")
 	ctx = ctxsetters.WithMethodName(ctx, "UploadFile")
 	caller := c.callUploadFile
 	if c.interceptor != nil {
@@ -166,7 +162,7 @@ func (c *demoServiceProtobufClient) UploadFile(ctx context.Context, in *UploadFi
 	return caller(ctx, in)
 }
 
-func (c *demoServiceProtobufClient) callUploadFile(ctx context.Context, in *UploadFileRequest) (*UploadFileResponse, error) {
+func (c *driveCoordinatorServiceProtobufClient) callUploadFile(ctx context.Context, in *UploadFileRequest) (*UploadFileResponse, error) {
 	out := new(UploadFileResponse)
 	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[1], in, out)
 	if err != nil {
@@ -183,66 +179,20 @@ func (c *demoServiceProtobufClient) callUploadFile(ctx context.Context, in *Uplo
 	return out, nil
 }
 
-func (c *demoServiceProtobufClient) FinishJob(ctx context.Context, in *FinishJobRequest) (*FinishJobResponse, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "mediacorral.drive_coordinator.v1")
-	ctx = ctxsetters.WithServiceName(ctx, "DemoService")
-	ctx = ctxsetters.WithMethodName(ctx, "FinishJob")
-	caller := c.callFinishJob
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *FinishJobRequest) (*FinishJobResponse, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FinishJobRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FinishJobRequest) when calling interceptor")
-					}
-					return c.callFinishJob(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*FinishJobResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*FinishJobResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
+// ===================================
+// DriveCoordinatorService JSON Client
+// ===================================
 
-func (c *demoServiceProtobufClient) callFinishJob(ctx context.Context, in *FinishJobRequest) (*FinishJobResponse, error) {
-	out := new(FinishJobResponse)
-	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[2], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-// =======================
-// DemoService JSON Client
-// =======================
-
-type demoServiceJSONClient struct {
+type driveCoordinatorServiceJSONClient struct {
 	client      HTTPClient
-	urls        [3]string
+	urls        [2]string
 	interceptor twirp.Interceptor
 	opts        twirp.ClientOptions
 }
 
-// NewDemoServiceJSONClient creates a JSON client that implements the DemoService interface.
+// NewDriveCoordinatorServiceJSONClient creates a JSON client that implements the DriveCoordinatorService interface.
 // It communicates using JSON and can be configured with a custom HTTPClient.
-func NewDemoServiceJSONClient(baseURL string, client HTTPClient, opts ...twirp.ClientOption) DemoService {
+func NewDriveCoordinatorServiceJSONClient(baseURL string, client HTTPClient, opts ...twirp.ClientOption) DriveCoordinatorService {
 	if c, ok := client.(*http.Client); ok {
 		client = withoutRedirects(c)
 	}
@@ -262,14 +212,13 @@ func NewDemoServiceJSONClient(baseURL string, client HTTPClient, opts ...twirp.C
 
 	// Build method URLs: <baseURL>[<prefix>]/<package>.<Service>/<Method>
 	serviceURL := sanitizeBaseURL(baseURL)
-	serviceURL += baseServicePath(pathPrefix, "mediacorral.drive_coordinator.v1", "DemoService")
-	urls := [3]string{
+	serviceURL += baseServicePath(pathPrefix, "mediacorral.drive_coordinator.v1", "DriveCoordinatorService")
+	urls := [2]string{
 		serviceURL + "ConnectDrive",
 		serviceURL + "UploadFile",
-		serviceURL + "FinishJob",
 	}
 
-	return &demoServiceJSONClient{
+	return &driveCoordinatorServiceJSONClient{
 		client:      client,
 		urls:        urls,
 		interceptor: twirp.ChainInterceptors(clientOpts.Interceptors...),
@@ -277,9 +226,9 @@ func NewDemoServiceJSONClient(baseURL string, client HTTPClient, opts ...twirp.C
 	}
 }
 
-func (c *demoServiceJSONClient) ConnectDrive(ctx context.Context, in *DriveConnectionRequest) (*DriveConnectionResponse, error) {
+func (c *driveCoordinatorServiceJSONClient) ConnectDrive(ctx context.Context, in *DriveConnectionRequest) (*DriveConnectionResponse, error) {
 	ctx = ctxsetters.WithPackageName(ctx, "mediacorral.drive_coordinator.v1")
-	ctx = ctxsetters.WithServiceName(ctx, "DemoService")
+	ctx = ctxsetters.WithServiceName(ctx, "DriveCoordinatorService")
 	ctx = ctxsetters.WithMethodName(ctx, "ConnectDrive")
 	caller := c.callConnectDrive
 	if c.interceptor != nil {
@@ -306,7 +255,7 @@ func (c *demoServiceJSONClient) ConnectDrive(ctx context.Context, in *DriveConne
 	return caller(ctx, in)
 }
 
-func (c *demoServiceJSONClient) callConnectDrive(ctx context.Context, in *DriveConnectionRequest) (*DriveConnectionResponse, error) {
+func (c *driveCoordinatorServiceJSONClient) callConnectDrive(ctx context.Context, in *DriveConnectionRequest) (*DriveConnectionResponse, error) {
 	out := new(DriveConnectionResponse)
 	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[0], in, out)
 	if err != nil {
@@ -323,9 +272,9 @@ func (c *demoServiceJSONClient) callConnectDrive(ctx context.Context, in *DriveC
 	return out, nil
 }
 
-func (c *demoServiceJSONClient) UploadFile(ctx context.Context, in *UploadFileRequest) (*UploadFileResponse, error) {
+func (c *driveCoordinatorServiceJSONClient) UploadFile(ctx context.Context, in *UploadFileRequest) (*UploadFileResponse, error) {
 	ctx = ctxsetters.WithPackageName(ctx, "mediacorral.drive_coordinator.v1")
-	ctx = ctxsetters.WithServiceName(ctx, "DemoService")
+	ctx = ctxsetters.WithServiceName(ctx, "DriveCoordinatorService")
 	ctx = ctxsetters.WithMethodName(ctx, "UploadFile")
 	caller := c.callUploadFile
 	if c.interceptor != nil {
@@ -352,7 +301,7 @@ func (c *demoServiceJSONClient) UploadFile(ctx context.Context, in *UploadFileRe
 	return caller(ctx, in)
 }
 
-func (c *demoServiceJSONClient) callUploadFile(ctx context.Context, in *UploadFileRequest) (*UploadFileResponse, error) {
+func (c *driveCoordinatorServiceJSONClient) callUploadFile(ctx context.Context, in *UploadFileRequest) (*UploadFileResponse, error) {
 	out := new(UploadFileResponse)
 	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[1], in, out)
 	if err != nil {
@@ -369,58 +318,12 @@ func (c *demoServiceJSONClient) callUploadFile(ctx context.Context, in *UploadFi
 	return out, nil
 }
 
-func (c *demoServiceJSONClient) FinishJob(ctx context.Context, in *FinishJobRequest) (*FinishJobResponse, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "mediacorral.drive_coordinator.v1")
-	ctx = ctxsetters.WithServiceName(ctx, "DemoService")
-	ctx = ctxsetters.WithMethodName(ctx, "FinishJob")
-	caller := c.callFinishJob
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *FinishJobRequest) (*FinishJobResponse, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FinishJobRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FinishJobRequest) when calling interceptor")
-					}
-					return c.callFinishJob(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*FinishJobResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*FinishJobResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
+// ======================================
+// DriveCoordinatorService Server Handler
+// ======================================
 
-func (c *demoServiceJSONClient) callFinishJob(ctx context.Context, in *FinishJobRequest) (*FinishJobResponse, error) {
-	out := new(FinishJobResponse)
-	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[2], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-// ==========================
-// DemoService Server Handler
-// ==========================
-
-type demoServiceServer struct {
-	DemoService
+type driveCoordinatorServiceServer struct {
+	DriveCoordinatorService
 	interceptor      twirp.Interceptor
 	hooks            *twirp.ServerHooks
 	pathPrefix       string // prefix for routing
@@ -428,10 +331,10 @@ type demoServiceServer struct {
 	jsonCamelCase    bool   // JSON fields are serialized as lowerCamelCase rather than keeping the original proto names
 }
 
-// NewDemoServiceServer builds a TwirpServer that can be used as an http.Handler to handle
+// NewDriveCoordinatorServiceServer builds a TwirpServer that can be used as an http.Handler to handle
 // HTTP requests that are routed to the right method in the provided svc implementation.
 // The opts are twirp.ServerOption modifiers, for example twirp.WithServerHooks(hooks).
-func NewDemoServiceServer(svc DemoService, opts ...interface{}) TwirpServer {
+func NewDriveCoordinatorServiceServer(svc DriveCoordinatorService, opts ...interface{}) TwirpServer {
 	serverOpts := newServerOpts(opts)
 
 	// Using ReadOpt allows backwards and forwards compatibility with new options in the future
@@ -444,24 +347,24 @@ func NewDemoServiceServer(svc DemoService, opts ...interface{}) TwirpServer {
 		pathPrefix = "/twirp" // default prefix
 	}
 
-	return &demoServiceServer{
-		DemoService:      svc,
-		hooks:            serverOpts.Hooks,
-		interceptor:      twirp.ChainInterceptors(serverOpts.Interceptors...),
-		pathPrefix:       pathPrefix,
-		jsonSkipDefaults: jsonSkipDefaults,
-		jsonCamelCase:    jsonCamelCase,
+	return &driveCoordinatorServiceServer{
+		DriveCoordinatorService: svc,
+		hooks:                   serverOpts.Hooks,
+		interceptor:             twirp.ChainInterceptors(serverOpts.Interceptors...),
+		pathPrefix:              pathPrefix,
+		jsonSkipDefaults:        jsonSkipDefaults,
+		jsonCamelCase:           jsonCamelCase,
 	}
 }
 
 // writeError writes an HTTP response with a valid Twirp error format, and triggers hooks.
 // If err is not a twirp.Error, it will get wrapped with twirp.InternalErrorWith(err)
-func (s *demoServiceServer) writeError(ctx context.Context, resp http.ResponseWriter, err error) {
+func (s *driveCoordinatorServiceServer) writeError(ctx context.Context, resp http.ResponseWriter, err error) {
 	writeError(ctx, resp, err, s.hooks)
 }
 
 // handleRequestBodyError is used to handle error when the twirp server cannot read request
-func (s *demoServiceServer) handleRequestBodyError(ctx context.Context, resp http.ResponseWriter, msg string, err error) {
+func (s *driveCoordinatorServiceServer) handleRequestBodyError(ctx context.Context, resp http.ResponseWriter, msg string, err error) {
 	if context.Canceled == ctx.Err() {
 		s.writeError(ctx, resp, twirp.NewError(twirp.Canceled, "failed to read request: context canceled"))
 		return
@@ -473,16 +376,16 @@ func (s *demoServiceServer) handleRequestBodyError(ctx context.Context, resp htt
 	s.writeError(ctx, resp, twirp.WrapError(malformedRequestError(msg), err))
 }
 
-// DemoServicePathPrefix is a convenience constant that may identify URL paths.
+// DriveCoordinatorServicePathPrefix is a convenience constant that may identify URL paths.
 // Should be used with caution, it only matches routes generated by Twirp Go clients,
 // with the default "/twirp" prefix and default CamelCase service and method names.
 // More info: https://twitchtv.github.io/twirp/docs/routing.html
-const DemoServicePathPrefix = "/twirp/mediacorral.drive_coordinator.v1.DemoService/"
+const DriveCoordinatorServicePathPrefix = "/twirp/mediacorral.drive_coordinator.v1.DriveCoordinatorService/"
 
-func (s *demoServiceServer) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (s *driveCoordinatorServiceServer) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	ctx = ctxsetters.WithPackageName(ctx, "mediacorral.drive_coordinator.v1")
-	ctx = ctxsetters.WithServiceName(ctx, "DemoService")
+	ctx = ctxsetters.WithServiceName(ctx, "DriveCoordinatorService")
 	ctx = ctxsetters.WithResponseWriter(ctx, resp)
 
 	var err error
@@ -500,7 +403,7 @@ func (s *demoServiceServer) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	// Verify path format: [<prefix>]/<package>.<Service>/<Method>
 	prefix, pkgService, method := parseTwirpPath(req.URL.Path)
-	if pkgService != "mediacorral.drive_coordinator.v1.DemoService" {
+	if pkgService != "mediacorral.drive_coordinator.v1.DriveCoordinatorService" {
 		msg := fmt.Sprintf("no handler for path %q", req.URL.Path)
 		s.writeError(ctx, resp, badRouteError(msg, req.Method, req.URL.Path))
 		return
@@ -518,9 +421,6 @@ func (s *demoServiceServer) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	case "UploadFile":
 		s.serveUploadFile(ctx, resp, req)
 		return
-	case "FinishJob":
-		s.serveFinishJob(ctx, resp, req)
-		return
 	default:
 		msg := fmt.Sprintf("no handler for path %q", req.URL.Path)
 		s.writeError(ctx, resp, badRouteError(msg, req.Method, req.URL.Path))
@@ -528,7 +428,7 @@ func (s *demoServiceServer) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	}
 }
 
-func (s *demoServiceServer) serveConnectDrive(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *driveCoordinatorServiceServer) serveConnectDrive(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	header := req.Header.Get("Content-Type")
 	i := strings.Index(header, ";")
 	if i == -1 {
@@ -546,7 +446,7 @@ func (s *demoServiceServer) serveConnectDrive(ctx context.Context, resp http.Res
 	}
 }
 
-func (s *demoServiceServer) serveConnectDriveJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *driveCoordinatorServiceServer) serveConnectDriveJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	var err error
 	ctx = ctxsetters.WithMethodName(ctx, "ConnectDrive")
 	ctx, err = callRequestRouted(ctx, s.hooks)
@@ -568,7 +468,7 @@ func (s *demoServiceServer) serveConnectDriveJSON(ctx context.Context, resp http
 		return
 	}
 
-	handler := s.DemoService.ConnectDrive
+	handler := s.DriveCoordinatorService.ConnectDrive
 	if s.interceptor != nil {
 		handler = func(ctx context.Context, req *DriveConnectionRequest) (*DriveConnectionResponse, error) {
 			resp, err := s.interceptor(
@@ -577,7 +477,7 @@ func (s *demoServiceServer) serveConnectDriveJSON(ctx context.Context, resp http
 					if !ok {
 						return nil, twirp.InternalError("failed type assertion req.(*DriveConnectionRequest) when calling interceptor")
 					}
-					return s.DemoService.ConnectDrive(ctx, typedReq)
+					return s.DriveCoordinatorService.ConnectDrive(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
@@ -629,7 +529,7 @@ func (s *demoServiceServer) serveConnectDriveJSON(ctx context.Context, resp http
 	callResponseSent(ctx, s.hooks)
 }
 
-func (s *demoServiceServer) serveConnectDriveProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *driveCoordinatorServiceServer) serveConnectDriveProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	var err error
 	ctx = ctxsetters.WithMethodName(ctx, "ConnectDrive")
 	ctx, err = callRequestRouted(ctx, s.hooks)
@@ -649,7 +549,7 @@ func (s *demoServiceServer) serveConnectDriveProtobuf(ctx context.Context, resp 
 		return
 	}
 
-	handler := s.DemoService.ConnectDrive
+	handler := s.DriveCoordinatorService.ConnectDrive
 	if s.interceptor != nil {
 		handler = func(ctx context.Context, req *DriveConnectionRequest) (*DriveConnectionResponse, error) {
 			resp, err := s.interceptor(
@@ -658,7 +558,7 @@ func (s *demoServiceServer) serveConnectDriveProtobuf(ctx context.Context, resp 
 					if !ok {
 						return nil, twirp.InternalError("failed type assertion req.(*DriveConnectionRequest) when calling interceptor")
 					}
-					return s.DemoService.ConnectDrive(ctx, typedReq)
+					return s.DriveCoordinatorService.ConnectDrive(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
@@ -708,7 +608,7 @@ func (s *demoServiceServer) serveConnectDriveProtobuf(ctx context.Context, resp 
 	callResponseSent(ctx, s.hooks)
 }
 
-func (s *demoServiceServer) serveUploadFile(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *driveCoordinatorServiceServer) serveUploadFile(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	header := req.Header.Get("Content-Type")
 	i := strings.Index(header, ";")
 	if i == -1 {
@@ -726,7 +626,7 @@ func (s *demoServiceServer) serveUploadFile(ctx context.Context, resp http.Respo
 	}
 }
 
-func (s *demoServiceServer) serveUploadFileJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *driveCoordinatorServiceServer) serveUploadFileJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	var err error
 	ctx = ctxsetters.WithMethodName(ctx, "UploadFile")
 	ctx, err = callRequestRouted(ctx, s.hooks)
@@ -748,7 +648,7 @@ func (s *demoServiceServer) serveUploadFileJSON(ctx context.Context, resp http.R
 		return
 	}
 
-	handler := s.DemoService.UploadFile
+	handler := s.DriveCoordinatorService.UploadFile
 	if s.interceptor != nil {
 		handler = func(ctx context.Context, req *UploadFileRequest) (*UploadFileResponse, error) {
 			resp, err := s.interceptor(
@@ -757,7 +657,7 @@ func (s *demoServiceServer) serveUploadFileJSON(ctx context.Context, resp http.R
 					if !ok {
 						return nil, twirp.InternalError("failed type assertion req.(*UploadFileRequest) when calling interceptor")
 					}
-					return s.DemoService.UploadFile(ctx, typedReq)
+					return s.DriveCoordinatorService.UploadFile(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
@@ -809,7 +709,7 @@ func (s *demoServiceServer) serveUploadFileJSON(ctx context.Context, resp http.R
 	callResponseSent(ctx, s.hooks)
 }
 
-func (s *demoServiceServer) serveUploadFileProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *driveCoordinatorServiceServer) serveUploadFileProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	var err error
 	ctx = ctxsetters.WithMethodName(ctx, "UploadFile")
 	ctx, err = callRequestRouted(ctx, s.hooks)
@@ -829,7 +729,7 @@ func (s *demoServiceServer) serveUploadFileProtobuf(ctx context.Context, resp ht
 		return
 	}
 
-	handler := s.DemoService.UploadFile
+	handler := s.DriveCoordinatorService.UploadFile
 	if s.interceptor != nil {
 		handler = func(ctx context.Context, req *UploadFileRequest) (*UploadFileResponse, error) {
 			resp, err := s.interceptor(
@@ -838,7 +738,7 @@ func (s *demoServiceServer) serveUploadFileProtobuf(ctx context.Context, resp ht
 					if !ok {
 						return nil, twirp.InternalError("failed type assertion req.(*UploadFileRequest) when calling interceptor")
 					}
-					return s.DemoService.UploadFile(ctx, typedReq)
+					return s.DriveCoordinatorService.UploadFile(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
@@ -888,199 +788,19 @@ func (s *demoServiceServer) serveUploadFileProtobuf(ctx context.Context, resp ht
 	callResponseSent(ctx, s.hooks)
 }
 
-func (s *demoServiceServer) serveFinishJob(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	header := req.Header.Get("Content-Type")
-	i := strings.Index(header, ";")
-	if i == -1 {
-		i = len(header)
-	}
-	switch strings.TrimSpace(strings.ToLower(header[:i])) {
-	case "application/json":
-		s.serveFinishJobJSON(ctx, resp, req)
-	case "application/protobuf":
-		s.serveFinishJobProtobuf(ctx, resp, req)
-	default:
-		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
-		twerr := badRouteError(msg, req.Method, req.URL.Path)
-		s.writeError(ctx, resp, twerr)
-	}
-}
-
-func (s *demoServiceServer) serveFinishJobJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "FinishJob")
-	ctx, err = callRequestRouted(ctx, s.hooks)
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-
-	d := json.NewDecoder(req.Body)
-	rawReqBody := json.RawMessage{}
-	if err := d.Decode(&rawReqBody); err != nil {
-		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
-		return
-	}
-	reqContent := new(FinishJobRequest)
-	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
-		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
-		return
-	}
-
-	handler := s.DemoService.FinishJob
-	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *FinishJobRequest) (*FinishJobResponse, error) {
-			resp, err := s.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FinishJobRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FinishJobRequest) when calling interceptor")
-					}
-					return s.DemoService.FinishJob(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*FinishJobResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*FinishJobResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-
-	// Call service method
-	var respContent *FinishJobResponse
-	func() {
-		defer ensurePanicResponses(ctx, resp, s.hooks)
-		respContent, err = handler(ctx, reqContent)
-	}()
-
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *FinishJobResponse and nil error while calling FinishJob. nil responses are not supported"))
-		return
-	}
-
-	ctx = callResponsePrepared(ctx, s.hooks)
-
-	marshaler := &protojson.MarshalOptions{UseProtoNames: !s.jsonCamelCase, EmitUnpopulated: !s.jsonSkipDefaults}
-	respBytes, err := marshaler.Marshal(respContent)
-	if err != nil {
-		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal json response"))
-		return
-	}
-
-	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
-	resp.Header().Set("Content-Type", "application/json")
-	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
-	resp.WriteHeader(http.StatusOK)
-
-	if n, err := resp.Write(respBytes); err != nil {
-		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
-		twerr := twirp.NewError(twirp.Unknown, msg)
-		ctx = callError(ctx, s.hooks, twerr)
-	}
-	callResponseSent(ctx, s.hooks)
-}
-
-func (s *demoServiceServer) serveFinishJobProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "FinishJob")
-	ctx, err = callRequestRouted(ctx, s.hooks)
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-
-	buf, err := io.ReadAll(req.Body)
-	if err != nil {
-		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
-		return
-	}
-	reqContent := new(FinishJobRequest)
-	if err = proto.Unmarshal(buf, reqContent); err != nil {
-		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
-		return
-	}
-
-	handler := s.DemoService.FinishJob
-	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *FinishJobRequest) (*FinishJobResponse, error) {
-			resp, err := s.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FinishJobRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FinishJobRequest) when calling interceptor")
-					}
-					return s.DemoService.FinishJob(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*FinishJobResponse)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*FinishJobResponse) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-
-	// Call service method
-	var respContent *FinishJobResponse
-	func() {
-		defer ensurePanicResponses(ctx, resp, s.hooks)
-		respContent, err = handler(ctx, reqContent)
-	}()
-
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *FinishJobResponse and nil error while calling FinishJob. nil responses are not supported"))
-		return
-	}
-
-	ctx = callResponsePrepared(ctx, s.hooks)
-
-	respBytes, err := proto.Marshal(respContent)
-	if err != nil {
-		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal proto response"))
-		return
-	}
-
-	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
-	resp.Header().Set("Content-Type", "application/protobuf")
-	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
-	resp.WriteHeader(http.StatusOK)
-	if n, err := resp.Write(respBytes); err != nil {
-		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
-		twerr := twirp.NewError(twirp.Unknown, msg)
-		ctx = callError(ctx, s.hooks, twerr)
-	}
-	callResponseSent(ctx, s.hooks)
-}
-
-func (s *demoServiceServer) ServiceDescriptor() ([]byte, int) {
+func (s *driveCoordinatorServiceServer) ServiceDescriptor() ([]byte, int) {
 	return twirpFileDescriptor0, 0
 }
 
-func (s *demoServiceServer) ProtocGenTwirpVersion() string {
+func (s *driveCoordinatorServiceServer) ProtocGenTwirpVersion() string {
 	return "v8.1.3"
 }
 
 // PathPrefix returns the base service path, in the form: "/<prefix>/<package>.<Service>/"
 // that is everything in a Twirp route except for the <Method>. This can be used for routing,
 // for example to identify the requests that are targeted to this service in a mux.
-func (s *demoServiceServer) PathPrefix() string {
-	return baseServicePath(s.pathPrefix, "mediacorral.drive_coordinator.v1", "DemoService")
+func (s *driveCoordinatorServiceServer) PathPrefix() string {
+	return baseServicePath(s.pathPrefix, "mediacorral.drive_coordinator.v1", "DriveCoordinatorService")
 }
 
 // =====
@@ -1649,73 +1369,74 @@ func callClientError(ctx context.Context, h *twirp.ClientHooks, err twirp.Error)
 }
 
 var twirpFileDescriptor0 = []byte{
-	// 1088 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x56, 0x4f, 0x73, 0xda, 0x46,
-	0x14, 0x47, 0xc2, 0xc1, 0xf0, 0x4c, 0x1c, 0xd8, 0xa4, 0x31, 0xb5, 0xdd, 0xd8, 0x65, 0x72, 0x70,
-	0xed, 0x29, 0x18, 0xbb, 0x99, 0x69, 0xdc, 0x13, 0x46, 0xb2, 0x21, 0x63, 0x40, 0xb3, 0x60, 0x4f,
-	0xdd, 0xf1, 0x8c, 0x66, 0x91, 0x36, 0x20, 0x07, 0x69, 0xa9, 0x24, 0x98, 0xf8, 0x13, 0xb4, 0xd3,
-	0x8f, 0xd1, 0x43, 0x0f, 0x3d, 0xb5, 0x33, 0x3d, 0xf4, 0xd0, 0x7e, 0x81, 0x7c, 0x8c, 0x1e, 0xfb,
-	0x29, 0x3a, 0xbb, 0x82, 0x20, 0x44, 0x5c, 0xec, 0x1c, 0xf5, 0x7b, 0xbf, 0xf7, 0x7b, 0x7f, 0x76,
-	0xdf, 0xd3, 0xc2, 0x9e, 0x4d, 0x4d, 0x8b, 0x18, 0xcc, 0x75, 0x49, 0xbf, 0x68, 0xba, 0xd6, 0x88,
-	0xea, 0x06, 0x63, 0xae, 0x69, 0x39, 0xc4, 0x67, 0x6e, 0x71, 0x54, 0x2a, 0xda, 0xc4, 0x72, 0x0a,
-	0x03, 0x97, 0xf9, 0x0c, 0x6d, 0x87, 0xc8, 0x85, 0x39, 0x72, 0x61, 0x54, 0xca, 0xff, 0x25, 0xc3,
-	0x53, 0x85, 0x1b, 0x2a, 0xcc, 0x71, 0xa8, 0xe1, 0x5b, 0xcc, 0xc1, 0xf4, 0xfb, 0x21, 0xf5, 0x7c,
-	0xd4, 0x84, 0x94, 0x69, 0x79, 0x06, 0x1b, 0x51, 0xf7, 0x26, 0x27, 0x6d, 0x4b, 0x3b, 0x2b, 0x07,
-	0xc5, 0xc2, 0x22, 0xc1, 0x82, 0x32, 0x71, 0xa9, 0x39, 0xaf, 0x59, 0x35, 0x86, 0xa7, 0x1a, 0x88,
-	0xc2, 0xe3, 0xc0, 0xc5, 0xf3, 0x89, 0x3f, 0xf4, 0xf4, 0xe1, 0xc0, 0x24, 0x3e, 0xcd, 0xc9, 0x42,
-	0xfa, 0xf0, 0x0e, 0xd2, 0x1c, 0x6c, 0x09, 0xdf, 0x73, 0xe1, 0x5a, 0x8d, 0xe1, 0xac, 0x19, 0x05,
-	0x91, 0x0e, 0x59, 0xd7, 0x1a, 0x44, 0x82, 0xc4, 0x45, 0x90, 0xd2, 0xe2, 0x20, 0xd8, 0x1a, 0x44,
-	0x42, 0x3c, 0x72, 0x67, 0xa1, 0xe3, 0x14, 0x2c, 0xdb, 0xd4, 0xf3, 0x48, 0x97, 0xe6, 0x6b, 0xf0,
-	0x70, 0xa6, 0x60, 0xf4, 0x29, 0x24, 0x03, 0x59, 0xcb, 0x14, 0x3d, 0x4b, 0xe1, 0x65, 0xf1, 0x5d,
-	0x33, 0xd1, 0x67, 0x00, 0x81, 0xc9, 0x21, 0x76, 0x50, 0x75, 0x0a, 0xa7, 0x04, 0xd2, 0x20, 0x36,
-	0xcd, 0xff, 0x29, 0x41, 0x76, 0xae, 0x42, 0x54, 0x85, 0x44, 0x50, 0x88, 0x50, 0x5b, 0x3d, 0xd8,
-	0xbf, 0x57, 0x9b, 0xda, 0xa4, 0x8b, 0xc7, 0xfe, 0x68, 0x23, 0x38, 0xce, 0x70, 0xf4, 0x24, 0x07,
-	0x78, 0x70, 0xf4, 0x05, 0xac, 0x12, 0xc3, 0xe7, 0x62, 0xbc, 0x75, 0xd7, 0xac, 0x23, 0x1a, 0x16,
-	0xaf, 0xc6, 0x70, 0x3a, 0xc0, 0xb1, 0x35, 0x78, 0xc5, 0x3a, 0x3f, 0x4a, 0xd2, 0x71, 0x16, 0x1e,
-	0xe9, 0xb3, 0xdc, 0xfc, 0xdf, 0x32, 0x3c, 0x8a, 0xf4, 0x0d, 0xad, 0xc1, 0xf2, 0x44, 0x8a, 0x67,
-	0x1e, 0xc7, 0x09, 0x57, 0x48, 0xa0, 0x93, 0xf7, 0x15, 0xc9, 0xa2, 0xa2, 0xc2, 0x3d, 0xce, 0x24,
-	0x5c, 0xcf, 0x16, 0xac, 0x18, 0x03, 0x97, 0x75, 0x75, 0xdf, 0xf2, 0xfb, 0xc1, 0x01, 0xa7, 0x30,
-	0x08, 0xa8, 0xcd, 0x11, 0x4e, 0xf0, 0x43, 0x84, 0xa5, 0x80, 0xe0, 0xcf, 0x10, 0x02, 0x85, 0x11,
-	0xe9, 0x0f, 0x69, 0xee, 0xc1, 0xb6, 0xb4, 0xf3, 0x70, 0xac, 0x70, 0xc1, 0x91, 0xa9, 0x42, 0x40,
-	0x48, 0x04, 0x04, 0x7f, 0x4a, 0x78, 0x0e, 0xab, 0x36, 0x79, 0xab, 0x87, 0x38, 0xcb, 0x82, 0x93,
-	0xb6, 0xc9, 0x5b, 0x2d, 0x2c, 0x43, 0x06, 0x03, 0xea, 0x98, 0x7a, 0x9f, 0x75, 0xbd, 0x5c, 0x72,
-	0x3b, 0xce, 0x13, 0x09, 0xa0, 0x33, 0xd6, 0xf5, 0xf2, 0xef, 0x24, 0x58, 0x9b, 0x1b, 0x42, 0x6f,
-	0xc0, 0x1c, 0x8f, 0x22, 0x0c, 0x69, 0xdf, 0x25, 0x37, 0xba, 0xc1, 0x6c, 0x9b, 0x38, 0xe6, 0xf8,
-	0x1a, 0x7c, 0xb9, 0xb8, 0x69, 0x6d, 0x97, 0xdc, 0x54, 0x02, 0xa7, 0x6a, 0x0c, 0xaf, 0xf8, 0xd3,
-	0x4f, 0xa4, 0x41, 0x8a, 0x9f, 0x8d, 0x90, 0x18, 0x8f, 0xdf, 0xdd, 0x26, 0xa3, 0xce, 0x39, 0x53,
-	0xd1, 0xa4, 0x3b, 0x86, 0xc2, 0x23, 0x71, 0x22, 0xee, 0x42, 0x98, 0x89, 0x3e, 0x81, 0xc4, 0x35,
-	0xeb, 0x4c, 0x46, 0x62, 0x09, 0x3f, 0xb8, 0x66, 0x9d, 0x9a, 0x89, 0x36, 0x21, 0x45, 0x86, 0x3e,
-	0xa3, 0xd7, 0xd4, 0xf0, 0x45, 0x1a, 0x49, 0x3c, 0x05, 0xf2, 0xbf, 0x4b, 0x90, 0x3d, 0x1f, 0xf4,
-	0x19, 0x31, 0x4f, 0xac, 0x3e, 0x9d, 0x2c, 0xa5, 0x16, 0x24, 0x7a, 0x94, 0x98, 0xd4, 0x1d, 0x6f,
-	0xa4, 0x97, 0x8b, 0xf3, 0x9e, 0x13, 0xa9, 0x0a, 0x81, 0x6a, 0x0c, 0x8f, 0xa5, 0xd0, 0x16, 0x80,
-	0x49, 0x7c, 0xa2, 0x1b, 0xbd, 0xa1, 0xf3, 0x46, 0x64, 0x92, 0x16, 0x9b, 0x8b, 0xf8, 0xa4, 0xc2,
-	0x21, 0xb4, 0x01, 0x49, 0xdb, 0x7c, 0xa1, 0xf7, 0x88, 0xd7, 0x13, 0x17, 0x8d, 0x9b, 0x97, 0x6d,
-	0xf3, 0x45, 0x95, 0x78, 0xbd, 0x70, 0xed, 0x4d, 0x58, 0xbb, 0x25, 0xda, 0xed, 0xf3, 0xb0, 0x01,
-	0xa9, 0xd7, 0x56, 0x7f, 0x66, 0x2b, 0x24, 0x39, 0x20, 0x96, 0xc2, 0x13, 0x40, 0x61, 0xc1, 0xe0,
-	0x4e, 0xe4, 0xf7, 0x20, 0x73, 0x62, 0x39, 0x96, 0xd7, 0x7b, 0xc5, 0x3a, 0x93, 0xc6, 0xdc, 0xa6,
-	0x9f, 0x7f, 0x0c, 0xd9, 0x10, 0x39, 0x50, 0xd8, 0xfd, 0x4d, 0x82, 0xd5, 0xd9, 0x3d, 0x81, 0xb6,
-	0x61, 0x53, 0xc1, 0xb5, 0x0b, 0x55, 0x6f, 0xb5, 0xcb, 0xed, 0xf3, 0x96, 0xde, 0x2e, 0x9f, 0xea,
-	0xe7, 0x8d, 0x96, 0xa6, 0x56, 0x6a, 0x27, 0x35, 0x55, 0xc9, 0xc4, 0xd0, 0x3a, 0x3c, 0x9d, 0x63,
-	0xa8, 0x75, 0xad, 0x7d, 0x99, 0x91, 0xd0, 0x33, 0x58, 0x9f, 0xb3, 0xb5, 0x71, 0xf9, 0x52, 0x6f,
-	0x6a, 0x6a, 0x23, 0x23, 0x7f, 0xd0, 0xde, 0x68, 0xb6, 0x75, 0xac, 0x96, 0x95, 0xcb, 0x4c, 0xfc,
-	0x83, 0xd1, 0x95, 0x5a, 0xab, 0xa2, 0x9f, 0x35, 0xcb, 0x8a, 0xaa, 0x64, 0x96, 0x76, 0x7f, 0x91,
-	0x20, 0x1d, 0x5e, 0x04, 0x5c, 0x12, 0xd7, 0xb4, 0xff, 0x4d, 0x37, 0x62, 0xc7, 0xe7, 0x8d, 0x46,
-	0xad, 0x71, 0x9a, 0x91, 0x50, 0x1e, 0x9e, 0x45, 0x6c, 0x5a, 0xb3, 0xd5, 0xd6, 0x35, 0xdc, 0xac,
-	0xa8, 0xad, 0x16, 0xe7, 0xc8, 0x68, 0x13, 0x72, 0x11, 0x4e, 0xa5, 0x59, 0xd7, 0xce, 0xd4, 0xb6,
-	0xaa, 0x64, 0xe2, 0x28, 0x07, 0x4f, 0x22, 0x56, 0x15, 0xe3, 0x26, 0xce, 0x2c, 0xed, 0x9a, 0xb0,
-	0x12, 0x9a, 0x3d, 0x2e, 0x23, 0x1a, 0x51, 0x69, 0xd6, 0xeb, 0xe5, 0x86, 0x32, 0x9f, 0xe4, 0x8c,
-	0x95, 0xb7, 0x4b, 0x34, 0x2e, 0x23, 0xa1, 0x0d, 0x58, 0x9b, 0xb1, 0x55, 0xce, 0x9a, 0x2d, 0x35,
-	0x30, 0xca, 0x07, 0x3f, 0xc5, 0x61, 0x45, 0xa1, 0x36, 0x6b, 0x51, 0x77, 0x64, 0x19, 0x14, 0xfd,
-	0x20, 0x41, 0x7a, 0xbc, 0x3e, 0xc4, 0xc1, 0xa2, 0xaf, 0xef, 0xf8, 0xa7, 0x98, 0xfb, 0xf1, 0xaf,
-	0xbf, 0xfc, 0x08, 0xcf, 0xe0, 0x5e, 0xed, 0x48, 0xfb, 0x12, 0xba, 0x01, 0x98, 0xde, 0x59, 0x74,
-	0xf8, 0x11, 0x03, 0xba, 0xfe, 0xd5, 0xfd, 0x9c, 0x26, 0xc1, 0xd1, 0x08, 0x52, 0xef, 0xef, 0x3a,
-	0x3a, 0x58, 0x2c, 0x12, 0x9d, 0xa2, 0xf5, 0xc3, 0x7b, 0xf9, 0x4c, 0xe2, 0x1e, 0xff, 0x21, 0xc3,
-	0x73, 0x83, 0xd9, 0x0b, 0x9d, 0x8f, 0x53, 0x75, 0x62, 0x39, 0x1a, 0x7f, 0x9b, 0x69, 0xd2, 0x77,
-	0x46, 0xd7, 0xf2, 0x7b, 0xc3, 0x4e, 0xc1, 0x60, 0x76, 0xd1, 0x1b, 0xf4, 0x99, 0x49, 0x5d, 0xaf,
-	0xb4, 0x5f, 0x2a, 0x86, 0x5f, 0x78, 0x1d, 0x62, 0xbc, 0xa1, 0x8e, 0x59, 0xec, 0x52, 0xa7, 0xb8,
-	0xe8, 0xe5, 0xf7, 0xcd, 0x1c, 0x38, 0x2a, 0xfd, 0x2c, 0xc7, 0xeb, 0xca, 0xb7, 0xbf, 0xca, 0x5b,
-	0xf5, 0x50, 0x6a, 0xe3, 0xd3, 0x9b, 0x66, 0x76, 0x51, 0x7a, 0x37, 0xc3, 0xb8, 0x8a, 0x32, 0xae,
-	0x2e, 0x4a, 0xff, 0xc8, 0x7b, 0x0b, 0x18, 0x57, 0xa7, 0xda, 0x71, 0x9d, 0xfa, 0x84, 0xef, 0xcd,
-	0x7f, 0xe5, 0xcf, 0x43, 0xec, 0xa3, 0xa3, 0x28, 0xfd, 0xe8, 0xe8, 0xa2, 0xd4, 0x49, 0x88, 0x57,
-	0xea, 0xe1, 0x7f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xa1, 0xab, 0x5f, 0x2d, 0xd4, 0x0a, 0x00, 0x00,
+	// 1090 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x96, 0xdf, 0x72, 0xda, 0xc6,
+	0x17, 0xc7, 0x91, 0x70, 0x30, 0x3a, 0x26, 0x0e, 0xde, 0xe4, 0x17, 0xf3, 0x73, 0xdc, 0x98, 0x32,
+	0xb9, 0x70, 0xed, 0x29, 0x18, 0xa7, 0x99, 0x69, 0xdc, 0x2b, 0xfe, 0xc8, 0x86, 0x8c, 0x01, 0xcd,
+	0x4a, 0xf6, 0xd4, 0x1d, 0xcf, 0x68, 0x16, 0x69, 0x03, 0x72, 0x90, 0x96, 0x4a, 0x82, 0x89, 0xf3,
+	0x02, 0xcd, 0x53, 0xf4, 0xa2, 0x17, 0xbd, 0xc8, 0x55, 0x3a, 0xd3, 0x57, 0xe8, 0x4d, 0x1e, 0xa3,
+	0x97, 0x7d, 0x8a, 0x8e, 0x56, 0xfc, 0x11, 0x10, 0x17, 0x3b, 0x77, 0xe8, 0x9c, 0xef, 0xf9, 0xec,
+	0x9e, 0xb3, 0x7b, 0x0e, 0x0b, 0xfb, 0x36, 0x35, 0x2d, 0x62, 0x30, 0xd7, 0x25, 0xbd, 0x82, 0xe9,
+	0x5a, 0x43, 0xaa, 0x1b, 0x8c, 0xb9, 0xa6, 0xe5, 0x10, 0x9f, 0xb9, 0x85, 0x61, 0xb1, 0x60, 0x13,
+	0xcb, 0xc9, 0xf7, 0x5d, 0xe6, 0x33, 0x94, 0x8d, 0x88, 0xf3, 0x0b, 0xe2, 0xfc, 0xb0, 0x98, 0xfb,
+	0x28, 0xc2, 0xe3, 0x6a, 0xe0, 0xa8, 0x30, 0xc7, 0xa1, 0x86, 0x6f, 0x31, 0x07, 0xd3, 0x9f, 0x07,
+	0xd4, 0xf3, 0x51, 0x0b, 0x24, 0xd3, 0xf2, 0x0c, 0x36, 0xa4, 0xee, 0x75, 0x46, 0xc8, 0x0a, 0xbb,
+	0x6b, 0x87, 0x85, 0xfc, 0x32, 0x60, 0xbe, 0x3a, 0x0e, 0xa9, 0x3b, 0xaf, 0x59, 0x2d, 0x86, 0xa7,
+	0x0c, 0xa4, 0xc3, 0xc3, 0x30, 0xc4, 0xf3, 0x89, 0x3f, 0xf0, 0xf4, 0x41, 0xdf, 0x24, 0x3e, 0xcd,
+	0x88, 0x1c, 0xfd, 0xed, 0x2d, 0xd0, 0x81, 0x51, 0xe5, 0xb1, 0xb5, 0x18, 0xde, 0x30, 0xa7, 0x9f,
+	0x67, 0x9c, 0x84, 0x2e, 0x60, 0xc3, 0xb5, 0xfa, 0x73, 0xf8, 0x38, 0xc7, 0xef, 0x2f, 0xc7, 0x63,
+	0xab, 0x3f, 0x81, 0x3f, 0x70, 0xc7, 0x1f, 0x21, 0xba, 0x2c, 0xc1, 0xaa, 0x4d, 0x3d, 0x8f, 0x74,
+	0x68, 0xae, 0x0e, 0xf7, 0x67, 0x92, 0x44, 0xff, 0x87, 0x64, 0x08, 0xb4, 0x4c, 0x5e, 0x27, 0x09,
+	0xaf, 0xf2, 0xef, 0xba, 0x89, 0xbe, 0x02, 0x08, 0x5d, 0x0e, 0xb1, 0xc3, 0x4c, 0x25, 0x2c, 0x71,
+	0x4b, 0x93, 0xd8, 0x34, 0xf7, 0x97, 0x00, 0x6b, 0x91, 0xac, 0x50, 0x0d, 0x12, 0xe1, 0xe6, 0x39,
+	0x67, 0xfd, 0xf0, 0xe0, 0x4e, 0x45, 0xd1, 0x48, 0x07, 0x8f, 0xe2, 0x51, 0x36, 0x3c, 0xbc, 0xc8,
+	0xba, 0xb5, 0x18, 0x4e, 0x06, 0xa6, 0x60, 0xe1, 0xf7, 0x82, 0x80, 0xbe, 0x81, 0x75, 0x62, 0xf8,
+	0x01, 0x31, 0xa8, 0xd9, 0x15, 0x6b, 0xf3, 0x4a, 0xc5, 0x6b, 0x02, 0x4e, 0x85, 0x76, 0x6c, 0xf5,
+	0x5f, 0xb1, 0xf6, 0x7b, 0x41, 0x28, 0xa7, 0x00, 0xf4, 0x09, 0xad, 0xbc, 0x01, 0x0f, 0xf4, 0xd9,
+	0xc8, 0xdc, 0x07, 0x11, 0xa4, 0x49, 0xf9, 0xd0, 0x26, 0xac, 0x8e, 0x91, 0x41, 0x1a, 0x71, 0x9c,
+	0x70, 0x39, 0x0a, 0x1d, 0x4f, 0xd2, 0x13, 0x79, 0x7a, 0xf9, 0x3b, 0x1c, 0x4a, 0x34, 0xb9, 0x1d,
+	0x58, 0x33, 0xfa, 0x2e, 0xeb, 0xe8, 0xbe, 0xe5, 0xf7, 0xc2, 0x13, 0x96, 0x30, 0x70, 0x93, 0x16,
+	0x58, 0x02, 0x81, 0x1f, 0x11, 0xac, 0x84, 0x02, 0x7f, 0x46, 0x10, 0x12, 0x86, 0xa4, 0x37, 0xa0,
+	0x99, 0x7b, 0x59, 0x61, 0xf7, 0xfe, 0x88, 0x70, 0x1e, 0x58, 0xa6, 0x84, 0x50, 0x90, 0x08, 0x05,
+	0xfe, 0x54, 0xf0, 0x0c, 0xd6, 0x6d, 0xf2, 0x56, 0x8f, 0x68, 0x56, 0xb9, 0x26, 0x65, 0x93, 0xb7,
+	0xca, 0x44, 0x85, 0x60, 0xa5, 0xc7, 0x3a, 0x5e, 0x26, 0x99, 0x8d, 0xef, 0x4a, 0x98, 0xff, 0xce,
+	0x7d, 0x12, 0x60, 0x73, 0xa1, 0xe5, 0xbc, 0x3e, 0x73, 0x3c, 0x8a, 0x30, 0xa4, 0x7c, 0x97, 0x5c,
+	0xeb, 0x06, 0xb3, 0x6d, 0xe2, 0x98, 0xa3, 0x6b, 0x70, 0x8b, 0xde, 0xd0, 0x5c, 0x72, 0x5d, 0x09,
+	0x83, 0x6a, 0x31, 0xbc, 0xe6, 0x4f, 0x3f, 0x91, 0x02, 0x52, 0x70, 0x1c, 0x1c, 0x31, 0x6a, 0xb6,
+	0xe2, 0xad, 0x0a, 0xdf, 0x08, 0x34, 0x53, 0x68, 0xd2, 0x1d, 0x99, 0xa2, 0xcd, 0x70, 0x0c, 0x0f,
+	0xe6, 0x94, 0xe8, 0x7f, 0x90, 0xb8, 0x62, 0xed, 0x71, 0x33, 0xc4, 0xf1, 0xbd, 0x2b, 0xd6, 0xae,
+	0x9b, 0x68, 0x1b, 0x24, 0x32, 0xf0, 0x19, 0xbd, 0xa2, 0x86, 0xcf, 0xb7, 0x91, 0xc4, 0x53, 0x43,
+	0xee, 0x0f, 0x01, 0x36, 0xce, 0xfa, 0x3d, 0x46, 0xcc, 0x63, 0xab, 0x47, 0xc7, 0x23, 0x48, 0x85,
+	0x44, 0x97, 0x12, 0x93, 0xba, 0xa3, 0xf9, 0xf3, 0x72, 0xf9, 0xbe, 0x17, 0x20, 0x35, 0x0e, 0xa8,
+	0xc5, 0xf0, 0x08, 0x85, 0x76, 0x00, 0x4c, 0xe2, 0x13, 0xdd, 0xe8, 0x0e, 0x9c, 0x37, 0x7c, 0x27,
+	0x29, 0x3e, 0xa7, 0x88, 0x4f, 0x2a, 0x81, 0x09, 0x3d, 0x81, 0xa4, 0x6d, 0xbe, 0xd0, 0xbb, 0xc4,
+	0xeb, 0xf2, 0xbb, 0x15, 0xb8, 0x57, 0x6d, 0xf3, 0x45, 0x8d, 0x78, 0xdd, 0x68, 0xee, 0x3d, 0xd8,
+	0xbc, 0x61, 0xb5, 0x9b, 0x5b, 0xe0, 0x09, 0x48, 0xaf, 0xad, 0xde, 0xcc, 0x3c, 0x48, 0x06, 0x86,
+	0xa0, 0x2b, 0x27, 0x4e, 0xcf, 0x7a, 0x17, 0xde, 0xea, 0x95, 0xd0, 0xa9, 0x5a, 0xef, 0x68, 0xee,
+	0x11, 0xa0, 0xe8, 0x6a, 0xe1, 0x85, 0xc9, 0xed, 0x43, 0xfa, 0xd8, 0x72, 0x2c, 0xaf, 0xfb, 0x8a,
+	0xb5, 0xc7, 0x55, 0xbb, 0x69, 0xf1, 0xdc, 0x43, 0xd8, 0x88, 0x88, 0x43, 0xc2, 0xde, 0x47, 0x01,
+	0xd6, 0x67, 0x87, 0x08, 0xca, 0xc2, 0x76, 0x15, 0xd7, 0xcf, 0x65, 0x5d, 0xd5, 0x4a, 0xda, 0x99,
+	0xaa, 0x6b, 0xa5, 0x13, 0xfd, 0xac, 0xa9, 0x2a, 0x72, 0xa5, 0x7e, 0x5c, 0x97, 0xab, 0xe9, 0x18,
+	0xda, 0x82, 0xc7, 0x0b, 0x0a, 0xb9, 0xa1, 0x68, 0x17, 0x69, 0x01, 0x3d, 0x85, 0xad, 0x05, 0x9f,
+	0x86, 0x4b, 0x17, 0x7a, 0x4b, 0x91, 0x9b, 0x69, 0xf1, 0xb3, 0xfe, 0x66, 0x4b, 0xd3, 0xb1, 0x5c,
+	0xaa, 0x5e, 0xa4, 0xe3, 0x9f, 0x5d, 0xbd, 0x5a, 0x57, 0x2b, 0xfa, 0x69, 0xab, 0x54, 0x95, 0xab,
+	0xe9, 0x95, 0xbd, 0xdf, 0x05, 0x48, 0x45, 0x07, 0x43, 0x80, 0xc4, 0x75, 0xe5, 0x3f, 0xb7, 0x3b,
+	0xe7, 0xc7, 0x67, 0xcd, 0x66, 0xbd, 0x79, 0x92, 0x16, 0x50, 0x0e, 0x9e, 0xce, 0xf9, 0x94, 0x96,
+	0xaa, 0xe9, 0x0a, 0x6e, 0x55, 0x64, 0x55, 0x0d, 0x34, 0x22, 0xda, 0x86, 0xcc, 0x9c, 0xa6, 0xd2,
+	0x6a, 0x28, 0xa7, 0xb2, 0x26, 0x57, 0xd3, 0x71, 0x94, 0x81, 0x47, 0x73, 0x5e, 0x19, 0xe3, 0x16,
+	0x4e, 0xaf, 0xec, 0x99, 0xb0, 0x16, 0x69, 0xcc, 0x00, 0xc3, 0x0b, 0x51, 0x69, 0x35, 0x1a, 0xa5,
+	0x66, 0x75, 0x71, 0x93, 0x33, 0xde, 0xa0, 0x5c, 0xbc, 0x70, 0x69, 0x01, 0x3d, 0x81, 0xcd, 0x19,
+	0x5f, 0xe5, 0xb4, 0xa5, 0xca, 0xa1, 0x53, 0x3c, 0xfc, 0x55, 0x9c, 0x0c, 0x94, 0x49, 0x2b, 0xa8,
+	0xd4, 0x1d, 0x5a, 0x06, 0x45, 0xbf, 0x08, 0x90, 0x1a, 0xcd, 0x19, 0x2e, 0x41, 0xdf, 0xdf, 0xf2,
+	0x2f, 0x65, 0xe1, 0x3d, 0xb0, 0xf5, 0xf2, 0x0b, 0x22, 0xc3, 0x3b, 0xb6, 0x2b, 0x1c, 0x08, 0xe8,
+	0x1a, 0x60, 0x7a, 0x7f, 0xd1, 0xf3, 0x2f, 0xe8, 0xe4, 0xad, 0xef, 0xee, 0x16, 0x34, 0x5e, 0xbc,
+	0xfc, 0xa7, 0x08, 0xcf, 0x0c, 0x66, 0x2f, 0x8d, 0x2e, 0x4b, 0x0d, 0x62, 0x39, 0x4a, 0xf0, 0x74,
+	0x52, 0x84, 0x9f, 0x8c, 0x8e, 0xe5, 0x77, 0x07, 0xed, 0xbc, 0xc1, 0xec, 0x82, 0xd7, 0xef, 0x31,
+	0x93, 0xba, 0x5e, 0xf1, 0xa0, 0x58, 0x88, 0x3e, 0xc0, 0xda, 0xc4, 0x78, 0x43, 0x1d, 0xb3, 0xd0,
+	0xa1, 0x4e, 0x61, 0xd9, 0xc3, 0xec, 0x87, 0x05, 0xe3, 0xb0, 0xf8, 0x9b, 0x18, 0x6f, 0x54, 0x7f,
+	0xfc, 0x20, 0xee, 0x34, 0x22, 0x5b, 0x9b, 0x3f, 0xcb, 0xfc, 0x79, 0xf1, 0xd3, 0x8c, 0xe2, 0x72,
+	0x5e, 0x71, 0x79, 0x5e, 0xfc, 0x5b, 0xdc, 0x5f, 0xa2, 0xb8, 0x3c, 0x51, 0xca, 0x0d, 0xea, 0x93,
+	0x60, 0xd0, 0xfd, 0x23, 0x7e, 0x1d, 0x51, 0x1f, 0x1d, 0xcd, 0xcb, 0x8f, 0x8e, 0xce, 0x8b, 0xed,
+	0x04, 0x7f, 0x44, 0x3e, 0xff, 0x37, 0x00, 0x00, 0xff, 0xff, 0x8e, 0x6d, 0x57, 0x83, 0x73, 0x0a,
+	0x00, 0x00,
 }

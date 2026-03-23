@@ -16,8 +16,9 @@ import (
 
 	"github.com/agnivade/levenshtein"
 	"github.com/sploders101/mediacorral/backend/dbapi"
+	drive_coordinator "github.com/sploders101/mediacorral/backend/drive_coordinator"
 	analysis_proto "github.com/sploders101/mediacorral/backend/gen/mediacorral/analysis/v1"
-	drive_control "github.com/sploders101/mediacorral/backend/gen/mediacorral/drive_controller/v1"
+	drive_coordinatorv1 "github.com/sploders101/mediacorral/backend/gen/mediacorral/drive_coordinator/v1"
 	server_proto "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
 	"github.com/sploders101/mediacorral/backend/helpers/blobs"
 	"github.com/sploders101/mediacorral/backend/helpers/config"
@@ -48,9 +49,6 @@ type applicationSettings struct {
 
 	// Enables automatic ripping on disc insertion
 	autoripEnabled bool
-
-	// Drive controllers are responsible for performing the actual ripping process.
-	driveControllers map[string]drive_control.DriveControllerServiceClient
 }
 
 // This is the application service layer, which separates the all-encompassing
@@ -59,6 +57,7 @@ type Application struct {
 	Db                 dbapi.Db
 	settings           applicationSettings
 	ripDir             string
+	DriveCoordinator   *drive_coordinator.DriveCoordinatorService
 	AnalysisController analysis_proto.MediaAnalysisServiceClient
 	BlobStorage        *blobs.BlobStorageController
 	TmdbImporter       *tmdb.TmdbImporter
@@ -66,7 +65,10 @@ type Application struct {
 	ExportsManager     *exports.ExportsManager
 }
 
-func NewApplication(configData config.ConfigFile) (*Application, error) {
+func NewApplication(
+	configData config.ConfigFile,
+	driveCoordinator *drive_coordinator.DriveCoordinatorService,
+) (*Application, error) {
 	ripDir := path.Join(configData.DataDirectory, "rips")
 	blobDir := path.Join(configData.DataDirectory, "blobs")
 	exportsDir := path.Join(configData.DataDirectory, "exports")
@@ -115,69 +117,19 @@ func NewApplication(configData config.ConfigFile) (*Application, error) {
 		return nil, fmt.Errorf("failed to set up exports manager: %w", err)
 	}
 
-	driveControllers := make(
-		map[string]drive_control.DriveControllerServiceClient,
-		len(configData.DriveControllers),
-	)
-	for controllerName, controllerUrl := range configData.DriveControllers {
-		conn, err := grpc.NewClient(
-			controllerUrl,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-		)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"failed create drive controller client for \"%s\": %w",
-				controllerName,
-				err,
-			)
-		}
-		driveControllers[controllerName] = drive_control.NewDriveControllerServiceClient(conn)
-	}
-
 	return &Application{
 		Db: db,
 		settings: applicationSettings{
-			autoripEnabled:   configData.EnableAutorip,
-			driveControllers: driveControllers,
+			autoripEnabled: configData.EnableAutorip,
 		},
 		ripDir:             ripDir,
+		DriveCoordinator:   driveCoordinator,
 		AnalysisController: analysisController,
 		BlobStorage:        blobStorage,
 		TmdbImporter:       tmdbImporter,
 		OstImporter:        ostImporter,
 		ExportsManager:     exportsManager,
 	}, nil
-}
-
-// Iterate over each drive controller while respecting the locks that guard them
-//
-// `cb` is run for each drive controller. If it returns `false` or an error, the loop will cease.
-// If `cb` returned an error, it will be returned by this function.
-// The loop will run sequentially, so synchronization primitives are not necessary for accessing
-// variables in the immediately-surrounding scope.
-func (app *Application) ForeachDriveController(
-	cb func(controller string, client drive_control.DriveControllerServiceClient) (cont bool, err error),
-) error {
-	app.settings.mutex.RLock()
-	defer app.settings.mutex.RUnlock()
-	for controller, client := range app.settings.driveControllers {
-		cont, err := cb(controller, client)
-		if err != nil {
-			return err
-		}
-		if !cont {
-			break
-		}
-	}
-	return nil
-}
-func (app *Application) GetDriveController(
-	controller string,
-) (drive_control.DriveControllerServiceClient, bool) {
-	app.settings.mutex.RLock()
-	defer app.settings.mutex.RUnlock()
-	client, ok := app.settings.driveControllers[controller]
-	return client, ok
 }
 
 func (app *Application) ImportTmdbTv(tmdbId int) (dbapi.TvShowsItem, error) {
@@ -201,37 +153,28 @@ func (app *Application) SetAutorip(value bool) {
 }
 
 func (app *Application) RipMedia(
-	driveController string,
-	driveId uint32,
+	driveId string,
 	suspectedContents *server_proto.SuspectedContents,
 	autoeject bool,
 ) (dbapi.RipJobsItem, error) {
-	controller, ok := app.GetDriveController(driveController)
-	if !ok {
+	controller := app.DriveCoordinator.GetDriveById(driveId)
+	if controller == nil {
 		return dbapi.RipJobsItem{}, ErrNotFound
 	}
-	driveState, err := controller.GetDriveState(
-		context.TODO(),
-		drive_control.GetDriveStateRequest_builder{DriveId: driveId}.Build(),
-	)
-	if err != nil {
-		return dbapi.RipJobsItem{}, fmt.Errorf(
-			"an error occurred while fetching drive state: %w",
-			err,
-		)
-	}
+	watcher := controller.DriveStatus()
+	driveState := watcher.Get()
 
 	// Check the status of the drive before ripping.
 	// There is a TOCTOU here, but risk is low and this is just to give more
 	// informed errors.
 	switch driveState.GetStatus() {
-	case drive_control.DriveStatusTag_DRIVE_STATUS_TAG_EMPTY:
+	case drive_coordinatorv1.DriveStatusTag_DRIVE_STATUS_TAG_EMPTY:
 		return dbapi.RipJobsItem{}, ErrNoDisc
-	case drive_control.DriveStatusTag_DRIVE_STATUS_TAG_TRAY_OPEN:
+	case drive_coordinatorv1.DriveStatusTag_DRIVE_STATUS_TAG_TRAY_OPEN:
 		return dbapi.RipJobsItem{}, ErrTrayOpen
-	case drive_control.DriveStatusTag_DRIVE_STATUS_TAG_NOT_READY:
+	case drive_coordinatorv1.DriveStatusTag_DRIVE_STATUS_TAG_NOT_READY:
 		return dbapi.RipJobsItem{}, ErrNotReady
-	case drive_control.DriveStatusTag_DRIVE_STATUS_TAG_DISC_LOADED:
+	case drive_coordinatorv1.DriveStatusTag_DRIVE_STATUS_TAG_DISC_LOADED:
 		// Success case
 	default:
 		return dbapi.RipJobsItem{}, ErrProto
@@ -264,14 +207,7 @@ func (app *Application) RipMedia(
 		return dbapi.RipJobsItem{}, fmt.Errorf("failed to create rip job in db: %w", err)
 	}
 
-	_, err = controller.RipMedia(context.TODO(), drive_control.RipMediaRequest_builder{
-		JobId:     ripJob.Id,
-		DriveId:   driveId,
-		Autoeject: autoeject,
-	}.Build())
-	if err != nil {
-		return dbapi.RipJobsItem{}, fmt.Errorf("failed to start rip job: %w", err)
-	}
+	controller.RipMedia(ripJob.Id, autoeject)
 
 	if err := dbTx.Commit(); err != nil {
 		return dbapi.RipJobsItem{}, fmt.Errorf("failed to commit db transaction: %w", err)

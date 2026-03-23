@@ -28,7 +28,9 @@ const (
 	CoordinatorApiService_RebuildExportsDir_FullMethodName    = "/mediacorral.server.v1.CoordinatorApiService/RebuildExportsDir"
 	CoordinatorApiService_AutoripStatus_FullMethodName        = "/mediacorral.server.v1.CoordinatorApiService/AutoripStatus"
 	CoordinatorApiService_StartRipJob_FullMethodName          = "/mediacorral.server.v1.CoordinatorApiService/StartRipJob"
-	CoordinatorApiService_TrayCommand_FullMethodName          = "/mediacorral.server.v1.CoordinatorApiService/TrayCommand"
+	CoordinatorApiService_Eject_FullMethodName                = "/mediacorral.server.v1.CoordinatorApiService/Eject"
+	CoordinatorApiService_Retract_FullMethodName              = "/mediacorral.server.v1.CoordinatorApiService/Retract"
+	CoordinatorApiService_ListDrives_FullMethodName           = "/mediacorral.server.v1.CoordinatorApiService/ListDrives"
 	CoordinatorApiService_GetDriveStatus_FullMethodName       = "/mediacorral.server.v1.CoordinatorApiService/GetDriveStatus"
 	CoordinatorApiService_ListMovies_FullMethodName           = "/mediacorral.server.v1.CoordinatorApiService/ListMovies"
 	CoordinatorApiService_GetMovie_FullMethodName             = "/mediacorral.server.v1.CoordinatorApiService/GetMovie"
@@ -75,7 +77,11 @@ type CoordinatorApiServiceClient interface {
 	// Starts a rip job
 	StartRipJob(ctx context.Context, in *StartRipJobRequest, opts ...grpc.CallOption) (*StartRipJobResponse, error)
 	// Ejects a disc
-	TrayCommand(ctx context.Context, in *TrayCommandRequest, opts ...grpc.CallOption) (*TrayCommandResponse, error)
+	Eject(ctx context.Context, in *EjectRequest, opts ...grpc.CallOption) (*EjectResponse, error)
+	// Retracts a disc
+	Retract(ctx context.Context, in *RetractRequest, opts ...grpc.CallOption) (*RetractResponse, error)
+	// Lists connected drives
+	ListDrives(ctx context.Context, in *ListDrivesRequest, opts ...grpc.CallOption) (*ListDrivesResponse, error)
 	// Gets the current state of the drive
 	GetDriveStatus(ctx context.Context, in *GetDriveStatusRequest, opts ...grpc.CallOption) (*GetDriveStatusResponse, error)
 	// Lists the movies in the database
@@ -218,10 +224,30 @@ func (c *coordinatorApiServiceClient) StartRipJob(ctx context.Context, in *Start
 	return out, nil
 }
 
-func (c *coordinatorApiServiceClient) TrayCommand(ctx context.Context, in *TrayCommandRequest, opts ...grpc.CallOption) (*TrayCommandResponse, error) {
+func (c *coordinatorApiServiceClient) Eject(ctx context.Context, in *EjectRequest, opts ...grpc.CallOption) (*EjectResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TrayCommandResponse)
-	err := c.cc.Invoke(ctx, CoordinatorApiService_TrayCommand_FullMethodName, in, out, cOpts...)
+	out := new(EjectResponse)
+	err := c.cc.Invoke(ctx, CoordinatorApiService_Eject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coordinatorApiServiceClient) Retract(ctx context.Context, in *RetractRequest, opts ...grpc.CallOption) (*RetractResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RetractResponse)
+	err := c.cc.Invoke(ctx, CoordinatorApiService_Retract_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coordinatorApiServiceClient) ListDrives(ctx context.Context, in *ListDrivesRequest, opts ...grpc.CallOption) (*ListDrivesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListDrivesResponse)
+	err := c.cc.Invoke(ctx, CoordinatorApiService_ListDrives_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -461,7 +487,11 @@ type CoordinatorApiServiceServer interface {
 	// Starts a rip job
 	StartRipJob(context.Context, *StartRipJobRequest) (*StartRipJobResponse, error)
 	// Ejects a disc
-	TrayCommand(context.Context, *TrayCommandRequest) (*TrayCommandResponse, error)
+	Eject(context.Context, *EjectRequest) (*EjectResponse, error)
+	// Retracts a disc
+	Retract(context.Context, *RetractRequest) (*RetractResponse, error)
+	// Lists connected drives
+	ListDrives(context.Context, *ListDrivesRequest) (*ListDrivesResponse, error)
 	// Gets the current state of the drive
 	GetDriveStatus(context.Context, *GetDriveStatusRequest) (*GetDriveStatusResponse, error)
 	// Lists the movies in the database
@@ -540,8 +570,14 @@ func (UnimplementedCoordinatorApiServiceServer) AutoripStatus(context.Context, *
 func (UnimplementedCoordinatorApiServiceServer) StartRipJob(context.Context, *StartRipJobRequest) (*StartRipJobResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method StartRipJob not implemented")
 }
-func (UnimplementedCoordinatorApiServiceServer) TrayCommand(context.Context, *TrayCommandRequest) (*TrayCommandResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method TrayCommand not implemented")
+func (UnimplementedCoordinatorApiServiceServer) Eject(context.Context, *EjectRequest) (*EjectResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Eject not implemented")
+}
+func (UnimplementedCoordinatorApiServiceServer) Retract(context.Context, *RetractRequest) (*RetractResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Retract not implemented")
+}
+func (UnimplementedCoordinatorApiServiceServer) ListDrives(context.Context, *ListDrivesRequest) (*ListDrivesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListDrives not implemented")
 }
 func (UnimplementedCoordinatorApiServiceServer) GetDriveStatus(context.Context, *GetDriveStatusRequest) (*GetDriveStatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetDriveStatus not implemented")
@@ -788,20 +824,56 @@ func _CoordinatorApiService_StartRipJob_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CoordinatorApiService_TrayCommand_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TrayCommandRequest)
+func _CoordinatorApiService_Eject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EjectRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CoordinatorApiServiceServer).TrayCommand(ctx, in)
+		return srv.(CoordinatorApiServiceServer).Eject(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: CoordinatorApiService_TrayCommand_FullMethodName,
+		FullMethod: CoordinatorApiService_Eject_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CoordinatorApiServiceServer).TrayCommand(ctx, req.(*TrayCommandRequest))
+		return srv.(CoordinatorApiServiceServer).Eject(ctx, req.(*EjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoordinatorApiService_Retract_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RetractRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoordinatorApiServiceServer).Retract(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoordinatorApiService_Retract_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoordinatorApiServiceServer).Retract(ctx, req.(*RetractRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoordinatorApiService_ListDrives_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDrivesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoordinatorApiServiceServer).ListDrives(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoordinatorApiService_ListDrives_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoordinatorApiServiceServer).ListDrives(ctx, req.(*ListDrivesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1228,8 +1300,16 @@ var CoordinatorApiService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CoordinatorApiService_StartRipJob_Handler,
 		},
 		{
-			MethodName: "TrayCommand",
-			Handler:    _CoordinatorApiService_TrayCommand_Handler,
+			MethodName: "Eject",
+			Handler:    _CoordinatorApiService_Eject_Handler,
+		},
+		{
+			MethodName: "Retract",
+			Handler:    _CoordinatorApiService_Retract_Handler,
+		},
+		{
+			MethodName: "ListDrives",
+			Handler:    _CoordinatorApiService_ListDrives_Handler,
 		},
 		{
 			MethodName: "GetDriveStatus",

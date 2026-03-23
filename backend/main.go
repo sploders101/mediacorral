@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/sploders101/mediacorral/backend/application"
-	grpcservices "github.com/sploders101/mediacorral/backend/grpc_services"
+	"github.com/sploders101/mediacorral/backend/drive_coordinator"
 	"github.com/sploders101/mediacorral/backend/helpers/config"
 	twirpservices "github.com/sploders101/mediacorral/backend/twirp_services"
 )
@@ -32,7 +32,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	app, err := application.NewApplication(config)
+	driveCoordinator := drive_coordinator.NewDriveCoordinatorService()
+
+	app, err := application.NewApplication(config, driveCoordinator)
 	if err != nil {
 		slog.Error("Failed to initialize application service.", "error", err.Error())
 		os.Exit(1)
@@ -55,7 +57,7 @@ func main() {
 
 	// Set up gRPC server & services
 	grpcServer := grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
-	grpcservices.RegisterNotificationService(grpcServer, app)
+	driveCoordinator.RegisterGrpc(grpcServer)
 	reflection.Register(grpcServer)
 	grpcListener, err := net.Listen("tcp", config.GrpcServeAddress)
 	if err != nil {

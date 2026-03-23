@@ -19,35 +19,32 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DemoService_ConnectDrive_FullMethodName = "/mediacorral.drive_coordinator.v1.DemoService/ConnectDrive"
-	DemoService_UploadFile_FullMethodName   = "/mediacorral.drive_coordinator.v1.DemoService/UploadFile"
-	DemoService_FinishJob_FullMethodName    = "/mediacorral.drive_coordinator.v1.DemoService/FinishJob"
+	DriveCoordinatorService_ConnectDrive_FullMethodName = "/mediacorral.drive_coordinator.v1.DriveCoordinatorService/ConnectDrive"
+	DriveCoordinatorService_UploadFile_FullMethodName   = "/mediacorral.drive_coordinator.v1.DriveCoordinatorService/UploadFile"
 )
 
-// DemoServiceClient is the client API for DemoService service.
+// DriveCoordinatorServiceClient is the client API for DriveCoordinatorService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type DemoServiceClient interface {
+type DriveCoordinatorServiceClient interface {
 	// Establishes a connection between the drive and the coordinator, allowing the coordinator
 	// to send commands back to the drive, which may live on another network entirely.
 	ConnectDrive(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[DriveConnectionRequest, DriveConnectionResponse], error)
 	// Allows a drive to upload a file from a rip job.
 	UploadFile(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadFileRequest, UploadFileResponse], error)
-	// Marks a job as finished. This should be called once all files have been uploaded successfully.
-	FinishJob(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[FinishJobRequest, FinishJobResponse], error)
 }
 
-type demoServiceClient struct {
+type driveCoordinatorServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewDemoServiceClient(cc grpc.ClientConnInterface) DemoServiceClient {
-	return &demoServiceClient{cc}
+func NewDriveCoordinatorServiceClient(cc grpc.ClientConnInterface) DriveCoordinatorServiceClient {
+	return &driveCoordinatorServiceClient{cc}
 }
 
-func (c *demoServiceClient) ConnectDrive(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[DriveConnectionRequest, DriveConnectionResponse], error) {
+func (c *driveCoordinatorServiceClient) ConnectDrive(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[DriveConnectionRequest, DriveConnectionResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &DemoService_ServiceDesc.Streams[0], DemoService_ConnectDrive_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &DriveCoordinatorService_ServiceDesc.Streams[0], DriveCoordinatorService_ConnectDrive_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -56,11 +53,11 @@ func (c *demoServiceClient) ConnectDrive(ctx context.Context, opts ...grpc.CallO
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DemoService_ConnectDriveClient = grpc.BidiStreamingClient[DriveConnectionRequest, DriveConnectionResponse]
+type DriveCoordinatorService_ConnectDriveClient = grpc.BidiStreamingClient[DriveConnectionRequest, DriveConnectionResponse]
 
-func (c *demoServiceClient) UploadFile(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadFileRequest, UploadFileResponse], error) {
+func (c *driveCoordinatorServiceClient) UploadFile(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadFileRequest, UploadFileResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &DemoService_ServiceDesc.Streams[1], DemoService_UploadFile_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &DriveCoordinatorService_ServiceDesc.Streams[1], DriveCoordinatorService_UploadFile_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -69,113 +66,83 @@ func (c *demoServiceClient) UploadFile(ctx context.Context, opts ...grpc.CallOpt
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DemoService_UploadFileClient = grpc.ClientStreamingClient[UploadFileRequest, UploadFileResponse]
+type DriveCoordinatorService_UploadFileClient = grpc.ClientStreamingClient[UploadFileRequest, UploadFileResponse]
 
-func (c *demoServiceClient) FinishJob(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[FinishJobRequest, FinishJobResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &DemoService_ServiceDesc.Streams[2], DemoService_FinishJob_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[FinishJobRequest, FinishJobResponse]{ClientStream: stream}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DemoService_FinishJobClient = grpc.ClientStreamingClient[FinishJobRequest, FinishJobResponse]
-
-// DemoServiceServer is the server API for DemoService service.
-// All implementations should embed UnimplementedDemoServiceServer
+// DriveCoordinatorServiceServer is the server API for DriveCoordinatorService service.
+// All implementations should embed UnimplementedDriveCoordinatorServiceServer
 // for forward compatibility.
-type DemoServiceServer interface {
+type DriveCoordinatorServiceServer interface {
 	// Establishes a connection between the drive and the coordinator, allowing the coordinator
 	// to send commands back to the drive, which may live on another network entirely.
 	ConnectDrive(grpc.BidiStreamingServer[DriveConnectionRequest, DriveConnectionResponse]) error
 	// Allows a drive to upload a file from a rip job.
 	UploadFile(grpc.ClientStreamingServer[UploadFileRequest, UploadFileResponse]) error
-	// Marks a job as finished. This should be called once all files have been uploaded successfully.
-	FinishJob(grpc.ClientStreamingServer[FinishJobRequest, FinishJobResponse]) error
 }
 
-// UnimplementedDemoServiceServer should be embedded to have
+// UnimplementedDriveCoordinatorServiceServer should be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedDemoServiceServer struct{}
+type UnimplementedDriveCoordinatorServiceServer struct{}
 
-func (UnimplementedDemoServiceServer) ConnectDrive(grpc.BidiStreamingServer[DriveConnectionRequest, DriveConnectionResponse]) error {
+func (UnimplementedDriveCoordinatorServiceServer) ConnectDrive(grpc.BidiStreamingServer[DriveConnectionRequest, DriveConnectionResponse]) error {
 	return status.Error(codes.Unimplemented, "method ConnectDrive not implemented")
 }
-func (UnimplementedDemoServiceServer) UploadFile(grpc.ClientStreamingServer[UploadFileRequest, UploadFileResponse]) error {
+func (UnimplementedDriveCoordinatorServiceServer) UploadFile(grpc.ClientStreamingServer[UploadFileRequest, UploadFileResponse]) error {
 	return status.Error(codes.Unimplemented, "method UploadFile not implemented")
 }
-func (UnimplementedDemoServiceServer) FinishJob(grpc.ClientStreamingServer[FinishJobRequest, FinishJobResponse]) error {
-	return status.Error(codes.Unimplemented, "method FinishJob not implemented")
-}
-func (UnimplementedDemoServiceServer) testEmbeddedByValue() {}
+func (UnimplementedDriveCoordinatorServiceServer) testEmbeddedByValue() {}
 
-// UnsafeDemoServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to DemoServiceServer will
+// UnsafeDriveCoordinatorServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to DriveCoordinatorServiceServer will
 // result in compilation errors.
-type UnsafeDemoServiceServer interface {
-	mustEmbedUnimplementedDemoServiceServer()
+type UnsafeDriveCoordinatorServiceServer interface {
+	mustEmbedUnimplementedDriveCoordinatorServiceServer()
 }
 
-func RegisterDemoServiceServer(s grpc.ServiceRegistrar, srv DemoServiceServer) {
-	// If the following call panics, it indicates UnimplementedDemoServiceServer was
+func RegisterDriveCoordinatorServiceServer(s grpc.ServiceRegistrar, srv DriveCoordinatorServiceServer) {
+	// If the following call panics, it indicates UnimplementedDriveCoordinatorServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&DemoService_ServiceDesc, srv)
+	s.RegisterService(&DriveCoordinatorService_ServiceDesc, srv)
 }
 
-func _DemoService_ConnectDrive_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(DemoServiceServer).ConnectDrive(&grpc.GenericServerStream[DriveConnectionRequest, DriveConnectionResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DemoService_ConnectDriveServer = grpc.BidiStreamingServer[DriveConnectionRequest, DriveConnectionResponse]
-
-func _DemoService_UploadFile_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(DemoServiceServer).UploadFile(&grpc.GenericServerStream[UploadFileRequest, UploadFileResponse]{ServerStream: stream})
+func _DriveCoordinatorService_ConnectDrive_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(DriveCoordinatorServiceServer).ConnectDrive(&grpc.GenericServerStream[DriveConnectionRequest, DriveConnectionResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DemoService_UploadFileServer = grpc.ClientStreamingServer[UploadFileRequest, UploadFileResponse]
+type DriveCoordinatorService_ConnectDriveServer = grpc.BidiStreamingServer[DriveConnectionRequest, DriveConnectionResponse]
 
-func _DemoService_FinishJob_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(DemoServiceServer).FinishJob(&grpc.GenericServerStream[FinishJobRequest, FinishJobResponse]{ServerStream: stream})
+func _DriveCoordinatorService_UploadFile_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(DriveCoordinatorServiceServer).UploadFile(&grpc.GenericServerStream[UploadFileRequest, UploadFileResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DemoService_FinishJobServer = grpc.ClientStreamingServer[FinishJobRequest, FinishJobResponse]
+type DriveCoordinatorService_UploadFileServer = grpc.ClientStreamingServer[UploadFileRequest, UploadFileResponse]
 
-// DemoService_ServiceDesc is the grpc.ServiceDesc for DemoService service.
+// DriveCoordinatorService_ServiceDesc is the grpc.ServiceDesc for DriveCoordinatorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var DemoService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "mediacorral.drive_coordinator.v1.DemoService",
-	HandlerType: (*DemoServiceServer)(nil),
+var DriveCoordinatorService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "mediacorral.drive_coordinator.v1.DriveCoordinatorService",
+	HandlerType: (*DriveCoordinatorServiceServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "ConnectDrive",
-			Handler:       _DemoService_ConnectDrive_Handler,
+			Handler:       _DriveCoordinatorService_ConnectDrive_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
 		{
 			StreamName:    "UploadFile",
-			Handler:       _DemoService_UploadFile_Handler,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "FinishJob",
-			Handler:       _DemoService_FinishJob_Handler,
+			Handler:       _DriveCoordinatorService_UploadFile_Handler,
 			ClientStreams: true,
 		},
 	},

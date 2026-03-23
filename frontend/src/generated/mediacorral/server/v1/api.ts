@@ -12,7 +12,6 @@ import type { PartialMessage } from "@protobuf-ts/runtime";
 import { reflectionMergePartial } from "@protobuf-ts/runtime";
 import { MessageType } from "@protobuf-ts/runtime";
 import { MediaDetails } from "../../analysis/v1/main";
-import { TrayCommand } from "../../drive_coordinator/v1/main";
 import { TmdbMovieResult } from "./tmdb";
 import { TmdbTvResult } from "./tmdb";
 import { TmdbAnyTitle } from "./tmdb";
@@ -252,10 +251,6 @@ export interface StartRipJobRequest {
      */
     driveId: string;
     /**
-     * @generated from protobuf field: optional string disc_name = 2
-     */
-    discName?: string;
-    /**
      * @generated from protobuf field: optional mediacorral.server.v1.SuspectedContents suspected_contents = 3
      */
     suspectedContents?: SuspectedContents;
@@ -315,43 +310,77 @@ export interface SuspectedContents_TvEpisodes {
     episodeTmdbIds: number[];
 }
 /**
- * @generated from protobuf message mediacorral.server.v1.TrayCommandRequest
+ * @generated from protobuf message mediacorral.server.v1.EjectRequest
  */
-export interface TrayCommandRequest {
+export interface EjectRequest {
     /**
      * @generated from protobuf field: string drive_id = 1
      */
     driveId: string;
-    /**
-     * @generated from protobuf field: mediacorral.drive_coordinator.v1.TrayCommand command = 2
-     */
-    command: TrayCommand;
 }
 /**
- * @generated from protobuf message mediacorral.server.v1.TrayCommandResponse
+ * @generated from protobuf message mediacorral.server.v1.EjectResponse
  */
-export interface TrayCommandResponse {
+export interface EjectResponse {
+}
+/**
+ * @generated from protobuf message mediacorral.server.v1.RetractRequest
+ */
+export interface RetractRequest {
+    /**
+     * @generated from protobuf field: string drive_id = 1
+     */
+    driveId: string;
+}
+/**
+ * @generated from protobuf message mediacorral.server.v1.RetractResponse
+ */
+export interface RetractResponse {
+}
+/**
+ * @generated from protobuf message mediacorral.server.v1.ListDrivesRequest
+ */
+export interface ListDrivesRequest {
+}
+/**
+ * @generated from protobuf message mediacorral.server.v1.ListDrivesResponse
+ */
+export interface ListDrivesResponse {
+    /**
+     * @generated from protobuf field: repeated mediacorral.server.v1.DiscDrive drives = 1
+     */
+    drives: DiscDrive[];
+}
+/**
+ * @generated from protobuf message mediacorral.server.v1.DiscDrive
+ */
+export interface DiscDrive {
+    /**
+     * @generated from protobuf field: string id = 1
+     */
+    id: string;
+    /**
+     * @generated from protobuf field: string name = 2
+     */
+    name: string;
 }
 /**
  * @generated from protobuf message mediacorral.server.v1.GetDriveStatusRequest
  */
 export interface GetDriveStatusRequest {
     /**
-     * List the IDs of the drives you'd like the status for. An empty list will return
-     * statuses for all drives.
-     *
-     * @generated from protobuf field: repeated string drive_ids = 1
+     * @generated from protobuf field: string drive_id = 1
      */
-    driveIds: string[];
+    driveId: string;
 }
 /**
  * @generated from protobuf message mediacorral.server.v1.GetDriveStatusResponse
  */
 export interface GetDriveStatusResponse {
     /**
-     * @generated from protobuf field: repeated mediacorral.server.v1.DriveStatus drive_status = 1
+     * @generated from protobuf field: mediacorral.server.v1.DriveStatus drive_status = 1
      */
-    driveStatus: DriveStatus[];
+    driveStatus?: DriveStatus;
 }
 /**
  * @generated from protobuf message mediacorral.server.v1.DriveStatus
@@ -366,9 +395,9 @@ export interface DriveStatus {
      */
     status: DriveStatusTag;
     /**
-     * @generated from protobuf field: string disc_name = 3
+     * @generated from protobuf field: optional string disc_name = 3
      */
-    discName: string;
+    discName?: string;
     /**
      * @generated from protobuf field: mediacorral.server.v1.RipJobStatus rip_job = 4
      */
@@ -1113,27 +1142,27 @@ export enum DriveStatusTag {
     /**
      * @generated from protobuf enum value: DRIVE_STATUS_TAG_UNSPECIFIED = 0;
      */
-    DRIVE_STATUS_TAG_UNSPECIFIED = 0,
+    UNSPECIFIED = 0,
     /**
      * @generated from protobuf enum value: DRIVE_STATUS_TAG_EMPTY = 1;
      */
-    DRIVE_STATUS_TAG_EMPTY = 1,
+    EMPTY = 1,
     /**
      * @generated from protobuf enum value: DRIVE_STATUS_TAG_TRAY_OPEN = 2;
      */
-    DRIVE_STATUS_TAG_TRAY_OPEN = 2,
+    TRAY_OPEN = 2,
     /**
      * @generated from protobuf enum value: DRIVE_STATUS_TAG_NOT_READY = 3;
      */
-    DRIVE_STATUS_TAG_NOT_READY = 3,
+    NOT_READY = 3,
     /**
      * @generated from protobuf enum value: DRIVE_STATUS_TAG_DISC_LOADED = 4;
      */
-    DRIVE_STATUS_TAG_DISC_LOADED = 4,
+    DISC_LOADED = 4,
     /**
-     * @generated from protobuf enum value: DRIVE_STATUS_RIPPING = 5;
+     * @generated from protobuf enum value: DRIVE_STATUS_TAG_RIPPING = 5;
      */
-    DRIVE_STATUS_RIPPING = 5
+    RIPPING = 5
 }
 /**
  * @generated from protobuf enum mediacorral.server.v1.VideoType
@@ -2053,7 +2082,6 @@ class StartRipJobRequest$Type extends MessageType<StartRipJobRequest> {
     constructor() {
         super("mediacorral.server.v1.StartRipJobRequest", [
             { no: 1, name: "drive_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "disc_name", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 3, name: "suspected_contents", kind: "message", T: () => SuspectedContents },
             { no: 4, name: "autoeject", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
@@ -2073,9 +2101,6 @@ class StartRipJobRequest$Type extends MessageType<StartRipJobRequest> {
             switch (fieldNo) {
                 case /* string drive_id */ 1:
                     message.driveId = reader.string();
-                    break;
-                case /* optional string disc_name */ 2:
-                    message.discName = reader.string();
                     break;
                 case /* optional mediacorral.server.v1.SuspectedContents suspected_contents */ 3:
                     message.suspectedContents = SuspectedContents.internalBinaryRead(reader, reader.uint32(), options, message.suspectedContents);
@@ -2098,9 +2123,6 @@ class StartRipJobRequest$Type extends MessageType<StartRipJobRequest> {
         /* string drive_id = 1; */
         if (message.driveId !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.driveId);
-        /* optional string disc_name = 2; */
-        if (message.discName !== undefined)
-            writer.tag(2, WireType.LengthDelimited).string(message.discName);
         /* optional mediacorral.server.v1.SuspectedContents suspected_contents = 3; */
         if (message.suspectedContents)
             SuspectedContents.internalBinaryWrite(message.suspectedContents, writer.tag(3, WireType.LengthDelimited).fork(), options).join();
@@ -2327,22 +2349,20 @@ class SuspectedContents_TvEpisodes$Type extends MessageType<SuspectedContents_Tv
  */
 export const SuspectedContents_TvEpisodes = new SuspectedContents_TvEpisodes$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class TrayCommandRequest$Type extends MessageType<TrayCommandRequest> {
+class EjectRequest$Type extends MessageType<EjectRequest> {
     constructor() {
-        super("mediacorral.server.v1.TrayCommandRequest", [
-            { no: 1, name: "drive_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "command", kind: "enum", T: () => ["mediacorral.drive_coordinator.v1.TrayCommand", TrayCommand, "TRAY_COMMAND_"] }
+        super("mediacorral.server.v1.EjectRequest", [
+            { no: 1, name: "drive_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
-    create(value?: PartialMessage<TrayCommandRequest>): TrayCommandRequest {
+    create(value?: PartialMessage<EjectRequest>): EjectRequest {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.driveId = "";
-        message.command = 0;
         if (value !== undefined)
-            reflectionMergePartial<TrayCommandRequest>(this, message, value);
+            reflectionMergePartial<EjectRequest>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TrayCommandRequest): TrayCommandRequest {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: EjectRequest): EjectRequest {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -2350,9 +2370,6 @@ class TrayCommandRequest$Type extends MessageType<TrayCommandRequest> {
                 case /* string drive_id */ 1:
                     message.driveId = reader.string();
                     break;
-                case /* mediacorral.drive_coordinator.v1.TrayCommand command */ 2:
-                    message.command = reader.int32();
-                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -2364,13 +2381,10 @@ class TrayCommandRequest$Type extends MessageType<TrayCommandRequest> {
         }
         return message;
     }
-    internalBinaryWrite(message: TrayCommandRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: EjectRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         /* string drive_id = 1; */
         if (message.driveId !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.driveId);
-        /* mediacorral.drive_coordinator.v1.TrayCommand command = 2; */
-        if (message.command !== 0)
-            writer.tag(2, WireType.Varint).int32(message.command);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -2378,21 +2392,21 @@ class TrayCommandRequest$Type extends MessageType<TrayCommandRequest> {
     }
 }
 /**
- * @generated MessageType for protobuf message mediacorral.server.v1.TrayCommandRequest
+ * @generated MessageType for protobuf message mediacorral.server.v1.EjectRequest
  */
-export const TrayCommandRequest = new TrayCommandRequest$Type();
+export const EjectRequest = new EjectRequest$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class TrayCommandResponse$Type extends MessageType<TrayCommandResponse> {
+class EjectResponse$Type extends MessageType<EjectResponse> {
     constructor() {
-        super("mediacorral.server.v1.TrayCommandResponse", []);
+        super("mediacorral.server.v1.EjectResponse", []);
     }
-    create(value?: PartialMessage<TrayCommandResponse>): TrayCommandResponse {
+    create(value?: PartialMessage<EjectResponse>): EjectResponse {
         const message = globalThis.Object.create((this.messagePrototype!));
         if (value !== undefined)
-            reflectionMergePartial<TrayCommandResponse>(this, message, value);
+            reflectionMergePartial<EjectResponse>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TrayCommandResponse): TrayCommandResponse {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: EjectResponse): EjectResponse {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -2408,7 +2422,7 @@ class TrayCommandResponse$Type extends MessageType<TrayCommandResponse> {
         }
         return message;
     }
-    internalBinaryWrite(message: TrayCommandResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: EjectResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -2416,19 +2430,244 @@ class TrayCommandResponse$Type extends MessageType<TrayCommandResponse> {
     }
 }
 /**
- * @generated MessageType for protobuf message mediacorral.server.v1.TrayCommandResponse
+ * @generated MessageType for protobuf message mediacorral.server.v1.EjectResponse
  */
-export const TrayCommandResponse = new TrayCommandResponse$Type();
+export const EjectResponse = new EjectResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class RetractRequest$Type extends MessageType<RetractRequest> {
+    constructor() {
+        super("mediacorral.server.v1.RetractRequest", [
+            { no: 1, name: "drive_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<RetractRequest>): RetractRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.driveId = "";
+        if (value !== undefined)
+            reflectionMergePartial<RetractRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: RetractRequest): RetractRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string drive_id */ 1:
+                    message.driveId = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: RetractRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string drive_id = 1; */
+        if (message.driveId !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.driveId);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.RetractRequest
+ */
+export const RetractRequest = new RetractRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class RetractResponse$Type extends MessageType<RetractResponse> {
+    constructor() {
+        super("mediacorral.server.v1.RetractResponse", []);
+    }
+    create(value?: PartialMessage<RetractResponse>): RetractResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<RetractResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: RetractResponse): RetractResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: RetractResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.RetractResponse
+ */
+export const RetractResponse = new RetractResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ListDrivesRequest$Type extends MessageType<ListDrivesRequest> {
+    constructor() {
+        super("mediacorral.server.v1.ListDrivesRequest", []);
+    }
+    create(value?: PartialMessage<ListDrivesRequest>): ListDrivesRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<ListDrivesRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ListDrivesRequest): ListDrivesRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ListDrivesRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.ListDrivesRequest
+ */
+export const ListDrivesRequest = new ListDrivesRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ListDrivesResponse$Type extends MessageType<ListDrivesResponse> {
+    constructor() {
+        super("mediacorral.server.v1.ListDrivesResponse", [
+            { no: 1, name: "drives", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => DiscDrive }
+        ]);
+    }
+    create(value?: PartialMessage<ListDrivesResponse>): ListDrivesResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.drives = [];
+        if (value !== undefined)
+            reflectionMergePartial<ListDrivesResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ListDrivesResponse): ListDrivesResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* repeated mediacorral.server.v1.DiscDrive drives */ 1:
+                    message.drives.push(DiscDrive.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ListDrivesResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* repeated mediacorral.server.v1.DiscDrive drives = 1; */
+        for (let i = 0; i < message.drives.length; i++)
+            DiscDrive.internalBinaryWrite(message.drives[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.ListDrivesResponse
+ */
+export const ListDrivesResponse = new ListDrivesResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class DiscDrive$Type extends MessageType<DiscDrive> {
+    constructor() {
+        super("mediacorral.server.v1.DiscDrive", [
+            { no: 1, name: "id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<DiscDrive>): DiscDrive {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.id = "";
+        message.name = "";
+        if (value !== undefined)
+            reflectionMergePartial<DiscDrive>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: DiscDrive): DiscDrive {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string id */ 1:
+                    message.id = reader.string();
+                    break;
+                case /* string name */ 2:
+                    message.name = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: DiscDrive, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string id = 1; */
+        if (message.id !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.id);
+        /* string name = 2; */
+        if (message.name !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.name);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message mediacorral.server.v1.DiscDrive
+ */
+export const DiscDrive = new DiscDrive$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class GetDriveStatusRequest$Type extends MessageType<GetDriveStatusRequest> {
     constructor() {
         super("mediacorral.server.v1.GetDriveStatusRequest", [
-            { no: 1, name: "drive_ids", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
+            { no: 1, name: "drive_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<GetDriveStatusRequest>): GetDriveStatusRequest {
         const message = globalThis.Object.create((this.messagePrototype!));
-        message.driveIds = [];
+        message.driveId = "";
         if (value !== undefined)
             reflectionMergePartial<GetDriveStatusRequest>(this, message, value);
         return message;
@@ -2438,8 +2677,8 @@ class GetDriveStatusRequest$Type extends MessageType<GetDriveStatusRequest> {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* repeated string drive_ids */ 1:
-                    message.driveIds.push(reader.string());
+                case /* string drive_id */ 1:
+                    message.driveId = reader.string();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -2453,9 +2692,9 @@ class GetDriveStatusRequest$Type extends MessageType<GetDriveStatusRequest> {
         return message;
     }
     internalBinaryWrite(message: GetDriveStatusRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* repeated string drive_ids = 1; */
-        for (let i = 0; i < message.driveIds.length; i++)
-            writer.tag(1, WireType.LengthDelimited).string(message.driveIds[i]);
+        /* string drive_id = 1; */
+        if (message.driveId !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.driveId);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -2470,12 +2709,11 @@ export const GetDriveStatusRequest = new GetDriveStatusRequest$Type();
 class GetDriveStatusResponse$Type extends MessageType<GetDriveStatusResponse> {
     constructor() {
         super("mediacorral.server.v1.GetDriveStatusResponse", [
-            { no: 1, name: "drive_status", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => DriveStatus }
+            { no: 1, name: "drive_status", kind: "message", T: () => DriveStatus }
         ]);
     }
     create(value?: PartialMessage<GetDriveStatusResponse>): GetDriveStatusResponse {
         const message = globalThis.Object.create((this.messagePrototype!));
-        message.driveStatus = [];
         if (value !== undefined)
             reflectionMergePartial<GetDriveStatusResponse>(this, message, value);
         return message;
@@ -2485,8 +2723,8 @@ class GetDriveStatusResponse$Type extends MessageType<GetDriveStatusResponse> {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* repeated mediacorral.server.v1.DriveStatus drive_status */ 1:
-                    message.driveStatus.push(DriveStatus.internalBinaryRead(reader, reader.uint32(), options));
+                case /* mediacorral.server.v1.DriveStatus drive_status */ 1:
+                    message.driveStatus = DriveStatus.internalBinaryRead(reader, reader.uint32(), options, message.driveStatus);
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -2500,9 +2738,9 @@ class GetDriveStatusResponse$Type extends MessageType<GetDriveStatusResponse> {
         return message;
     }
     internalBinaryWrite(message: GetDriveStatusResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* repeated mediacorral.server.v1.DriveStatus drive_status = 1; */
-        for (let i = 0; i < message.driveStatus.length; i++)
-            DriveStatus.internalBinaryWrite(message.driveStatus[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        /* mediacorral.server.v1.DriveStatus drive_status = 1; */
+        if (message.driveStatus)
+            DriveStatus.internalBinaryWrite(message.driveStatus, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -2518,8 +2756,8 @@ class DriveStatus$Type extends MessageType<DriveStatus> {
     constructor() {
         super("mediacorral.server.v1.DriveStatus", [
             { no: 1, name: "drive_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "status", kind: "enum", T: () => ["mediacorral.server.v1.DriveStatusTag", DriveStatusTag] },
-            { no: 3, name: "disc_name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "status", kind: "enum", T: () => ["mediacorral.server.v1.DriveStatusTag", DriveStatusTag, "DRIVE_STATUS_TAG_"] },
+            { no: 3, name: "disc_name", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 4, name: "rip_job", kind: "message", T: () => RipJobStatus }
         ]);
     }
@@ -2527,7 +2765,6 @@ class DriveStatus$Type extends MessageType<DriveStatus> {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.driveId = "";
         message.status = 0;
-        message.discName = "";
         if (value !== undefined)
             reflectionMergePartial<DriveStatus>(this, message, value);
         return message;
@@ -2543,7 +2780,7 @@ class DriveStatus$Type extends MessageType<DriveStatus> {
                 case /* mediacorral.server.v1.DriveStatusTag status */ 2:
                     message.status = reader.int32();
                     break;
-                case /* string disc_name */ 3:
+                case /* optional string disc_name */ 3:
                     message.discName = reader.string();
                     break;
                 case /* mediacorral.server.v1.RipJobStatus rip_job */ 4:
@@ -2567,8 +2804,8 @@ class DriveStatus$Type extends MessageType<DriveStatus> {
         /* mediacorral.server.v1.DriveStatusTag status = 2; */
         if (message.status !== 0)
             writer.tag(2, WireType.Varint).int32(message.status);
-        /* string disc_name = 3; */
-        if (message.discName !== "")
+        /* optional string disc_name = 3; */
+        if (message.discName !== undefined)
             writer.tag(3, WireType.LengthDelimited).string(message.discName);
         /* mediacorral.server.v1.RipJobStatus rip_job = 4; */
         if (message.ripJob)
@@ -5395,7 +5632,9 @@ export const CoordinatorApiService = new ServiceType("mediacorral.server.v1.Coor
     { name: "RebuildExportsDir", options: {}, I: RebuildExportsDirRequest, O: RebuildExportsDirResponse },
     { name: "AutoripStatus", options: {}, I: AutoripStatusRequest, O: AutoripStatusResponse },
     { name: "StartRipJob", options: {}, I: StartRipJobRequest, O: StartRipJobResponse },
-    { name: "TrayCommand", options: {}, I: TrayCommandRequest, O: TrayCommandResponse },
+    { name: "Eject", options: {}, I: EjectRequest, O: EjectResponse },
+    { name: "Retract", options: {}, I: RetractRequest, O: RetractResponse },
+    { name: "ListDrives", options: {}, I: ListDrivesRequest, O: ListDrivesResponse },
     { name: "GetDriveStatus", options: {}, I: GetDriveStatusRequest, O: GetDriveStatusResponse },
     { name: "ListMovies", options: {}, I: ListMoviesRequest, O: ListMoviesResponse },
     { name: "GetMovie", options: {}, I: GetMovieRequest, O: GetMovieResponse },

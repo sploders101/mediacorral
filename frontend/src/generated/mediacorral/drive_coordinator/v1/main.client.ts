@@ -3,9 +3,7 @@
 // tslint:disable
 import type { RpcTransport } from "@protobuf-ts/runtime-rpc";
 import type { ServiceInfo } from "@protobuf-ts/runtime-rpc";
-import { DemoService } from "./main";
-import type { FinishJobResponse } from "./main";
-import type { FinishJobRequest } from "./main";
+import { DriveCoordinatorService } from "./main";
 import type { UploadFileResponse } from "./main";
 import type { UploadFileRequest } from "./main";
 import type { ClientStreamingCall } from "@protobuf-ts/runtime-rpc";
@@ -15,9 +13,9 @@ import type { DriveConnectionRequest } from "./main";
 import type { DuplexStreamingCall } from "@protobuf-ts/runtime-rpc";
 import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
 /**
- * @generated from protobuf service mediacorral.drive_coordinator.v1.DemoService
+ * @generated from protobuf service mediacorral.drive_coordinator.v1.DriveCoordinatorService
  */
-export interface IDemoServiceClient {
+export interface IDriveCoordinatorServiceClient {
     /**
      * Establishes a connection between the drive and the coordinator, allowing the coordinator
      * to send commands back to the drive, which may live on another network entirely.
@@ -31,20 +29,14 @@ export interface IDemoServiceClient {
      * @generated from protobuf rpc: UploadFile
      */
     uploadFile(options?: RpcOptions): ClientStreamingCall<UploadFileRequest, UploadFileResponse>;
-    /**
-     * Marks a job as finished. This should be called once all files have been uploaded successfully.
-     *
-     * @generated from protobuf rpc: FinishJob
-     */
-    finishJob(options?: RpcOptions): ClientStreamingCall<FinishJobRequest, FinishJobResponse>;
 }
 /**
- * @generated from protobuf service mediacorral.drive_coordinator.v1.DemoService
+ * @generated from protobuf service mediacorral.drive_coordinator.v1.DriveCoordinatorService
  */
-export class DemoServiceClient implements IDemoServiceClient, ServiceInfo {
-    typeName = DemoService.typeName;
-    methods = DemoService.methods;
-    options = DemoService.options;
+export class DriveCoordinatorServiceClient implements IDriveCoordinatorServiceClient, ServiceInfo {
+    typeName = DriveCoordinatorService.typeName;
+    methods = DriveCoordinatorService.methods;
+    options = DriveCoordinatorService.options;
     constructor(private readonly _transport: RpcTransport) {
     }
     /**
@@ -65,14 +57,5 @@ export class DemoServiceClient implements IDemoServiceClient, ServiceInfo {
     uploadFile(options?: RpcOptions): ClientStreamingCall<UploadFileRequest, UploadFileResponse> {
         const method = this.methods[1], opt = this._transport.mergeOptions(options);
         return stackIntercept<UploadFileRequest, UploadFileResponse>("clientStreaming", this._transport, method, opt);
-    }
-    /**
-     * Marks a job as finished. This should be called once all files have been uploaded successfully.
-     *
-     * @generated from protobuf rpc: FinishJob
-     */
-    finishJob(options?: RpcOptions): ClientStreamingCall<FinishJobRequest, FinishJobResponse> {
-        const method = this.methods[2], opt = this._transport.mergeOptions(options);
-        return stackIntercept<FinishJobRequest, FinishJobResponse>("clientStreaming", this._transport, method, opt);
     }
 }

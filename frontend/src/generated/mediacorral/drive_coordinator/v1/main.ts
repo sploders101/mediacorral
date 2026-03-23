@@ -29,15 +29,15 @@ export interface DriveConnectionRequest {
     } | {
         oneofKind: "driveStatusUpdate";
         /**
-         * @generated from protobuf field: mediacorral.drive_coordinator.v1.DriveStatusUpdate drive_status_update = 2
+         * @generated from protobuf field: mediacorral.drive_coordinator.v1.DriveStatus drive_status_update = 2
          */
-        driveStatusUpdate: DriveStatusUpdate;
+        driveStatusUpdate: DriveStatus;
     } | {
         oneofKind: "ripStatusUpdate";
         /**
-         * @generated from protobuf field: mediacorral.drive_coordinator.v1.RipStatusUpdate rip_status_update = 3
+         * @generated from protobuf field: mediacorral.drive_coordinator.v1.RipStatus rip_status_update = 3
          */
-        ripStatusUpdate: RipStatusUpdate;
+        ripStatusUpdate: RipStatus;
     } | {
         oneofKind: undefined;
     };
@@ -62,17 +62,17 @@ export interface DiscoveryInfo {
 /**
  * Provides a status update for the drive
  *
- * @generated from protobuf message mediacorral.drive_coordinator.v1.DriveStatusUpdate
+ * @generated from protobuf message mediacorral.drive_coordinator.v1.DriveStatus
  */
-export interface DriveStatusUpdate {
+export interface DriveStatus {
     /**
      * @generated from protobuf field: mediacorral.drive_coordinator.v1.DriveStatusTag status = 1
      */
     status: DriveStatusTag;
     /**
-     * @generated from protobuf field: string disc_name = 2
+     * @generated from protobuf field: optional string disc_name = 2
      */
-    discName: string;
+    discName?: string;
     /**
      * @generated from protobuf field: optional int64 active_rip_job = 3
      */
@@ -81,9 +81,9 @@ export interface DriveStatusUpdate {
 /**
  * Provides a status update for the specified rip job
  *
- * @generated from protobuf message mediacorral.drive_coordinator.v1.RipStatusUpdate
+ * @generated from protobuf message mediacorral.drive_coordinator.v1.RipStatus
  */
-export interface RipStatusUpdate {
+export interface RipStatus {
     /**
      * @generated from protobuf field: int64 rip_job = 1
      */
@@ -113,11 +113,9 @@ export interface RipStatusUpdate {
      */
     maxProgValue: number;
     /**
-     * Contains new logs since the last update
-     *
-     * @generated from protobuf field: repeated string append_logs = 8
+     * @generated from protobuf field: repeated string logs = 8
      */
-    appendLogs: string[];
+    logs: string[];
 }
 /**
  * Messages sent from the coordinator to the drive
@@ -151,7 +149,7 @@ export interface RipMediaCommand {
     /**
      * The ID for the rip job, as used in the database
      *
-     * @generated from protobuf field: uint64 job_id = 1
+     * @generated from protobuf field: int64 job_id = 1
      */
     jobId: bigint;
     /**
@@ -191,7 +189,9 @@ export interface UploadFileRequest {
         /**
          * Contains a hash of the file to verify its integrity.
          * This is sent as the last message of the transfer, and the server
-         * should only respond successfully if the hash is correct.
+         * should only respond successfully if the hash is correct. If the
+         * hash is not sent, then the upload is considered a failure, and
+         * the backing file should be deleted.
          *
          * @generated from protobuf field: bytes md5_hash = 3
          */
@@ -218,6 +218,15 @@ export interface UploadFileRequestHeader {
      * @generated from protobuf field: string file_name = 2
      */
     fileName: string;
+    /**
+     * The size in bytes of the file being uploaded.
+     * This is used only as a progress indicator, and should
+     * not be relied upon. A value of `0` means the file is
+     * of indeterminate size.
+     *
+     * @generated from protobuf field: uint64 file_size = 3
+     */
+    fileSize: bigint;
 }
 /**
  * Indicates a successful upload
@@ -314,8 +323,8 @@ class DriveConnectionRequest$Type extends MessageType<DriveConnectionRequest> {
     constructor() {
         super("mediacorral.drive_coordinator.v1.DriveConnectionRequest", [
             { no: 1, name: "discovery", kind: "message", oneof: "message", T: () => DiscoveryInfo },
-            { no: 2, name: "drive_status_update", kind: "message", oneof: "message", T: () => DriveStatusUpdate },
-            { no: 3, name: "rip_status_update", kind: "message", oneof: "message", T: () => RipStatusUpdate }
+            { no: 2, name: "drive_status_update", kind: "message", oneof: "message", T: () => DriveStatus },
+            { no: 3, name: "rip_status_update", kind: "message", oneof: "message", T: () => RipStatus }
         ]);
     }
     create(value?: PartialMessage<DriveConnectionRequest>): DriveConnectionRequest {
@@ -336,16 +345,16 @@ class DriveConnectionRequest$Type extends MessageType<DriveConnectionRequest> {
                         discovery: DiscoveryInfo.internalBinaryRead(reader, reader.uint32(), options, (message.message as any).discovery)
                     };
                     break;
-                case /* mediacorral.drive_coordinator.v1.DriveStatusUpdate drive_status_update */ 2:
+                case /* mediacorral.drive_coordinator.v1.DriveStatus drive_status_update */ 2:
                     message.message = {
                         oneofKind: "driveStatusUpdate",
-                        driveStatusUpdate: DriveStatusUpdate.internalBinaryRead(reader, reader.uint32(), options, (message.message as any).driveStatusUpdate)
+                        driveStatusUpdate: DriveStatus.internalBinaryRead(reader, reader.uint32(), options, (message.message as any).driveStatusUpdate)
                     };
                     break;
-                case /* mediacorral.drive_coordinator.v1.RipStatusUpdate rip_status_update */ 3:
+                case /* mediacorral.drive_coordinator.v1.RipStatus rip_status_update */ 3:
                     message.message = {
                         oneofKind: "ripStatusUpdate",
-                        ripStatusUpdate: RipStatusUpdate.internalBinaryRead(reader, reader.uint32(), options, (message.message as any).ripStatusUpdate)
+                        ripStatusUpdate: RipStatus.internalBinaryRead(reader, reader.uint32(), options, (message.message as any).ripStatusUpdate)
                     };
                     break;
                 default:
@@ -363,12 +372,12 @@ class DriveConnectionRequest$Type extends MessageType<DriveConnectionRequest> {
         /* mediacorral.drive_coordinator.v1.DiscoveryInfo discovery = 1; */
         if (message.message.oneofKind === "discovery")
             DiscoveryInfo.internalBinaryWrite(message.message.discovery, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        /* mediacorral.drive_coordinator.v1.DriveStatusUpdate drive_status_update = 2; */
+        /* mediacorral.drive_coordinator.v1.DriveStatus drive_status_update = 2; */
         if (message.message.oneofKind === "driveStatusUpdate")
-            DriveStatusUpdate.internalBinaryWrite(message.message.driveStatusUpdate, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
-        /* mediacorral.drive_coordinator.v1.RipStatusUpdate rip_status_update = 3; */
+            DriveStatus.internalBinaryWrite(message.message.driveStatusUpdate, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
+        /* mediacorral.drive_coordinator.v1.RipStatus rip_status_update = 3; */
         if (message.message.oneofKind === "ripStatusUpdate")
-            RipStatusUpdate.internalBinaryWrite(message.message.ripStatusUpdate, writer.tag(3, WireType.LengthDelimited).fork(), options).join();
+            RipStatus.internalBinaryWrite(message.message.ripStatusUpdate, writer.tag(3, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -435,23 +444,22 @@ class DiscoveryInfo$Type extends MessageType<DiscoveryInfo> {
  */
 export const DiscoveryInfo = new DiscoveryInfo$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class DriveStatusUpdate$Type extends MessageType<DriveStatusUpdate> {
+class DriveStatus$Type extends MessageType<DriveStatus> {
     constructor() {
-        super("mediacorral.drive_coordinator.v1.DriveStatusUpdate", [
+        super("mediacorral.drive_coordinator.v1.DriveStatus", [
             { no: 1, name: "status", kind: "enum", T: () => ["mediacorral.drive_coordinator.v1.DriveStatusTag", DriveStatusTag, "DRIVE_STATUS_TAG_"] },
-            { no: 2, name: "disc_name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "disc_name", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 3, name: "active_rip_job", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
         ]);
     }
-    create(value?: PartialMessage<DriveStatusUpdate>): DriveStatusUpdate {
+    create(value?: PartialMessage<DriveStatus>): DriveStatus {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.status = 0;
-        message.discName = "";
         if (value !== undefined)
-            reflectionMergePartial<DriveStatusUpdate>(this, message, value);
+            reflectionMergePartial<DriveStatus>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: DriveStatusUpdate): DriveStatusUpdate {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: DriveStatus): DriveStatus {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -459,7 +467,7 @@ class DriveStatusUpdate$Type extends MessageType<DriveStatusUpdate> {
                 case /* mediacorral.drive_coordinator.v1.DriveStatusTag status */ 1:
                     message.status = reader.int32();
                     break;
-                case /* string disc_name */ 2:
+                case /* optional string disc_name */ 2:
                     message.discName = reader.string();
                     break;
                 case /* optional int64 active_rip_job */ 3:
@@ -476,12 +484,12 @@ class DriveStatusUpdate$Type extends MessageType<DriveStatusUpdate> {
         }
         return message;
     }
-    internalBinaryWrite(message: DriveStatusUpdate, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: DriveStatus, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         /* mediacorral.drive_coordinator.v1.DriveStatusTag status = 1; */
         if (message.status !== 0)
             writer.tag(1, WireType.Varint).int32(message.status);
-        /* string disc_name = 2; */
-        if (message.discName !== "")
+        /* optional string disc_name = 2; */
+        if (message.discName !== undefined)
             writer.tag(2, WireType.LengthDelimited).string(message.discName);
         /* optional int64 active_rip_job = 3; */
         if (message.activeRipJob !== undefined)
@@ -493,13 +501,13 @@ class DriveStatusUpdate$Type extends MessageType<DriveStatusUpdate> {
     }
 }
 /**
- * @generated MessageType for protobuf message mediacorral.drive_coordinator.v1.DriveStatusUpdate
+ * @generated MessageType for protobuf message mediacorral.drive_coordinator.v1.DriveStatus
  */
-export const DriveStatusUpdate = new DriveStatusUpdate$Type();
+export const DriveStatus = new DriveStatus$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class RipStatusUpdate$Type extends MessageType<RipStatusUpdate> {
+class RipStatus$Type extends MessageType<RipStatus> {
     constructor() {
-        super("mediacorral.drive_coordinator.v1.RipStatusUpdate", [
+        super("mediacorral.drive_coordinator.v1.RipStatus", [
             { no: 1, name: "rip_job", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 2, name: "status", kind: "enum", T: () => ["mediacorral.drive_coordinator.v1.RipStatusTag", RipStatusTag, "RIP_STATUS_TAG_"] },
             { no: 3, name: "cprog_title", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
@@ -507,10 +515,10 @@ class RipStatusUpdate$Type extends MessageType<RipStatusUpdate> {
             { no: 5, name: "cprog_value", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
             { no: 6, name: "tprog_value", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
             { no: 7, name: "max_prog_value", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
-            { no: 8, name: "append_logs", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
+            { no: 8, name: "logs", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
-    create(value?: PartialMessage<RipStatusUpdate>): RipStatusUpdate {
+    create(value?: PartialMessage<RipStatus>): RipStatus {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.ripJob = 0n;
         message.status = 0;
@@ -519,12 +527,12 @@ class RipStatusUpdate$Type extends MessageType<RipStatusUpdate> {
         message.cprogValue = 0;
         message.tprogValue = 0;
         message.maxProgValue = 0;
-        message.appendLogs = [];
+        message.logs = [];
         if (value !== undefined)
-            reflectionMergePartial<RipStatusUpdate>(this, message, value);
+            reflectionMergePartial<RipStatus>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: RipStatusUpdate): RipStatusUpdate {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: RipStatus): RipStatus {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -550,8 +558,8 @@ class RipStatusUpdate$Type extends MessageType<RipStatusUpdate> {
                 case /* uint32 max_prog_value */ 7:
                     message.maxProgValue = reader.uint32();
                     break;
-                case /* repeated string append_logs */ 8:
-                    message.appendLogs.push(reader.string());
+                case /* repeated string logs */ 8:
+                    message.logs.push(reader.string());
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -564,7 +572,7 @@ class RipStatusUpdate$Type extends MessageType<RipStatusUpdate> {
         }
         return message;
     }
-    internalBinaryWrite(message: RipStatusUpdate, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: RipStatus, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         /* int64 rip_job = 1; */
         if (message.ripJob !== 0n)
             writer.tag(1, WireType.Varint).int64(message.ripJob);
@@ -586,9 +594,9 @@ class RipStatusUpdate$Type extends MessageType<RipStatusUpdate> {
         /* uint32 max_prog_value = 7; */
         if (message.maxProgValue !== 0)
             writer.tag(7, WireType.Varint).uint32(message.maxProgValue);
-        /* repeated string append_logs = 8; */
-        for (let i = 0; i < message.appendLogs.length; i++)
-            writer.tag(8, WireType.LengthDelimited).string(message.appendLogs[i]);
+        /* repeated string logs = 8; */
+        for (let i = 0; i < message.logs.length; i++)
+            writer.tag(8, WireType.LengthDelimited).string(message.logs[i]);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -596,9 +604,9 @@ class RipStatusUpdate$Type extends MessageType<RipStatusUpdate> {
     }
 }
 /**
- * @generated MessageType for protobuf message mediacorral.drive_coordinator.v1.RipStatusUpdate
+ * @generated MessageType for protobuf message mediacorral.drive_coordinator.v1.RipStatus
  */
-export const RipStatusUpdate = new RipStatusUpdate$Type();
+export const RipStatus = new RipStatus$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class DriveConnectionResponse$Type extends MessageType<DriveConnectionResponse> {
     constructor() {
@@ -663,7 +671,7 @@ export const DriveConnectionResponse = new DriveConnectionResponse$Type();
 class RipMediaCommand$Type extends MessageType<RipMediaCommand> {
     constructor() {
         super("mediacorral.drive_coordinator.v1.RipMediaCommand", [
-            { no: 1, name: "job_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 1, name: "job_id", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 2, name: "autoeject", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
@@ -680,8 +688,8 @@ class RipMediaCommand$Type extends MessageType<RipMediaCommand> {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* uint64 job_id */ 1:
-                    message.jobId = reader.uint64().toBigInt();
+                case /* int64 job_id */ 1:
+                    message.jobId = reader.int64().toBigInt();
                     break;
                 case /* bool autoeject */ 2:
                     message.autoeject = reader.bool();
@@ -698,9 +706,9 @@ class RipMediaCommand$Type extends MessageType<RipMediaCommand> {
         return message;
     }
     internalBinaryWrite(message: RipMediaCommand, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* uint64 job_id = 1; */
+        /* int64 job_id = 1; */
         if (message.jobId !== 0n)
-            writer.tag(1, WireType.Varint).uint64(message.jobId);
+            writer.tag(1, WireType.Varint).int64(message.jobId);
         /* bool autoeject = 2; */
         if (message.autoeject !== false)
             writer.tag(2, WireType.Varint).bool(message.autoeject);
@@ -789,13 +797,15 @@ class UploadFileRequestHeader$Type extends MessageType<UploadFileRequestHeader> 
     constructor() {
         super("mediacorral.drive_coordinator.v1.UploadFileRequestHeader", [
             { no: 1, name: "rip_job", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "file_name", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+            { no: 2, name: "file_name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "file_size", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ }
         ]);
     }
     create(value?: PartialMessage<UploadFileRequestHeader>): UploadFileRequestHeader {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.ripJob = 0n;
         message.fileName = "";
+        message.fileSize = 0n;
         if (value !== undefined)
             reflectionMergePartial<UploadFileRequestHeader>(this, message, value);
         return message;
@@ -810,6 +820,9 @@ class UploadFileRequestHeader$Type extends MessageType<UploadFileRequestHeader> 
                     break;
                 case /* string file_name */ 2:
                     message.fileName = reader.string();
+                    break;
+                case /* uint64 file_size */ 3:
+                    message.fileSize = reader.uint64().toBigInt();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -829,6 +842,9 @@ class UploadFileRequestHeader$Type extends MessageType<UploadFileRequestHeader> 
         /* string file_name = 2; */
         if (message.fileName !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.fileName);
+        /* uint64 file_size = 3; */
+        if (message.fileSize !== 0n)
+            writer.tag(3, WireType.Varint).uint64(message.fileSize);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -963,10 +979,9 @@ class FinishJobResponse$Type extends MessageType<FinishJobResponse> {
  */
 export const FinishJobResponse = new FinishJobResponse$Type();
 /**
- * @generated ServiceType for protobuf service mediacorral.drive_coordinator.v1.DemoService
+ * @generated ServiceType for protobuf service mediacorral.drive_coordinator.v1.DriveCoordinatorService
  */
-export const DemoService = new ServiceType("mediacorral.drive_coordinator.v1.DemoService", [
+export const DriveCoordinatorService = new ServiceType("mediacorral.drive_coordinator.v1.DriveCoordinatorService", [
     { name: "ConnectDrive", serverStreaming: true, clientStreaming: true, options: {}, I: DriveConnectionRequest, O: DriveConnectionResponse },
-    { name: "UploadFile", clientStreaming: true, options: {}, I: UploadFileRequest, O: UploadFileResponse },
-    { name: "FinishJob", clientStreaming: true, options: {}, I: FinishJobRequest, O: FinishJobResponse }
+    { name: "UploadFile", clientStreaming: true, options: {}, I: UploadFileRequest, O: UploadFileResponse }
 ]);

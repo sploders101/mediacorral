@@ -2,8 +2,6 @@ syntax = "proto3";
 package mediacorral.server.v1;
 
 import "mediacorral/server/v1/tmdb.proto";
-
-import "mediacorral/drive_coordinator/v1/main.proto";
 import "mediacorral/analysis/v1/main.proto";
 
 service CoordinatorApiService {
@@ -35,7 +33,13 @@ service CoordinatorApiService {
   rpc StartRipJob (StartRipJobRequest) returns (StartRipJobResponse);
 
   // Ejects a disc
-  rpc TrayCommand (TrayCommandRequest) returns (TrayCommandResponse);
+  rpc Eject (EjectRequest) returns (EjectResponse);
+
+  // Retracts a disc
+  rpc Retract (RetractRequest) returns (RetractResponse);
+
+  // Lists connected drives
+  rpc ListDrives (ListDrivesRequest) returns (ListDrivesResponse);
 
   // Gets the current state of the drive
   rpc GetDriveStatus (GetDriveStatusRequest) returns (GetDriveStatusResponse);
@@ -187,7 +191,7 @@ message AutoripStatusResponse {
 
 message StartRipJobRequest {
   string drive_id = 1;
-  optional string disc_name = 2;
+  reserved 2; // Disc Name
   optional SuspectedContents suspected_contents = 3;
   bool autoeject = 4;
 }
@@ -207,24 +211,35 @@ message SuspectedContents {
   }
 }
 
-message TrayCommandRequest {
+message EjectRequest {
   string drive_id = 1;
-  mediacorral.drive_coordinator.v1.TrayCommand command = 2;
 }
-message TrayCommandResponse {}
+message EjectResponse {}
+
+message RetractRequest {
+  string drive_id = 1;
+}
+message RetractResponse {}
+
+message ListDrivesRequest {}
+message ListDrivesResponse {
+  repeated DiscDrive drives = 1;
+}
+message DiscDrive {
+  string id = 1;
+  string name = 2;
+}
 
 message GetDriveStatusRequest {
-  // List the IDs of the drives you'd like the status for. An empty list will return
-  // statuses for all drives.
-  repeated string drive_ids = 1;
+  string drive_id = 1;
 }
 message GetDriveStatusResponse {
-  repeated DriveStatus drive_status = 1;
+  DriveStatus drive_status = 1;
 }
 message DriveStatus {
   string drive_id = 1;
   DriveStatusTag status = 2;
-  string disc_name = 3;
+  optional string disc_name = 3;
   RipJobStatus rip_job = 4;
 }
 enum DriveStatusTag {
@@ -233,7 +248,7 @@ enum DriveStatusTag {
   DRIVE_STATUS_TAG_TRAY_OPEN = 2;
   DRIVE_STATUS_TAG_NOT_READY = 3;
   DRIVE_STATUS_TAG_DISC_LOADED = 4;
-  DRIVE_STATUS_RIPPING = 5;
+  DRIVE_STATUS_TAG_RIPPING = 5;
 }
 message RipJobStatus {
   // The ID of the rip job

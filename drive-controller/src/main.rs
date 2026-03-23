@@ -11,7 +11,10 @@ use anyhow::Context;
 use clap::Parser;
 use futures::StreamExt;
 use serde::Deserialize;
-use tokio::{io::{AsyncReadExt, BufReader}, process::Command};
+use tokio::{
+    io::{AsyncReadExt, BufReader},
+    process::Command,
+};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::{Channel, Endpoint};
 use tracing_subscriber::EnvFilter;
@@ -84,6 +87,7 @@ pub struct DriveControllerConfig {
     coordinator_address: String,
     drives: Vec<DriveInfo>,
     max_upload_queue: usize,
+    drive_poll_frequency_ms: u64,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -163,10 +167,10 @@ fn main() {
 #[tracing::instrument]
 async fn rip_job_postprocessor(
     mut client: DriveCoordinatorServiceClient<Channel>,
-    mut upload_queue: tokio::sync::mpsc::Receiver<(tokio::sync::watch::Sender<RipStatus>, RipDir)>,
+    mut upload_queue: tokio::sync::mpsc::Receiver<(RipStatus, RipDir)>,
 ) {
     while let Some((status, dir)) = upload_queue.recv().await {
-        let rip_job = status.borrow().rip_job;
+        let rip_job = status.rip_job;
         let mut contents = match tokio::fs::read_dir(&dir.dir).await {
             Ok(contents) => contents,
             Err(err) => {
@@ -287,7 +291,6 @@ async fn rip_job_postprocessor(
                 tracing::error!("Failed to upload file: {}", err);
             }
         }
-        status.send_modify(|job| job.set_status(RipStatusTag::Completed));
     }
 }
 
@@ -307,7 +310,7 @@ async fn control_drive(
     coordinator_client: DriveCoordinatorServiceClient<Channel>,
     drive: Drive,
     config: Arc<DriveControllerConfig>,
-    upload_queue: tokio::sync::mpsc::Sender<(tokio::sync::watch::Sender<RipStatus>, RipDir)>,
+    upload_queue: tokio::sync::mpsc::Sender<(RipStatus, RipDir)>,
 ) {
     let (command_sender, mut command_receiver) =
         tokio::sync::mpsc::channel::<DriveConnectionResponse>(50);
@@ -341,7 +344,8 @@ async fn control_drive(
         });
     }
 
-    let mut update_interval = tokio::time::interval(Duration::from_secs(1));
+    let mut update_interval =
+        tokio::time::interval(Duration::from_millis(config.drive_poll_frequency_ms));
     update_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
     struct RipJobCtx {
@@ -371,14 +375,20 @@ async fn control_drive(
                     match TrayCommand::try_from(tray_command).unwrap_or_default() {
                         TrayCommand::Unspecified => continue,
                         TrayCommand::OpenTray => {
-                            if let Err(err) = drive.ejector.eject() {
-                                tracing::error!("Failed to eject drive: {err}");
-                            }
+                            let ejector = Arc::clone(&drive.ejector);
+                            tokio::task::spawn_blocking(move || {
+                                if let Err(err) = ejector.eject() {
+                                    tracing::error!("Failed to eject drive: {err}");
+                                }
+                            });
                         }
                         TrayCommand::CloseTray => {
-                            if let Err(err) = drive.ejector.retract() {
-                                tracing::error!("Failed to eject drive: {err}");
-                            }
+                            let ejector = Arc::clone(&drive.ejector);
+                            tokio::task::spawn_blocking(move || {
+                                if let Err(err) = ejector.retract() {
+                                    tracing::error!("Failed to retract drive: {err}");
+                                }
+                            });
                         }
                     }
                 }
@@ -411,6 +421,10 @@ async fn control_drive(
                         rip_dir,
                         makemkv: mmkv,
                         autoeject,
+                    });
+                    // Trigger a status update
+                    drive_status_sender.send_modify(|status| {
+                        status.active_rip_job = Some(job_id);
                     });
                 }
                 None => continue,
@@ -447,8 +461,9 @@ async fn control_drive(
                             .take()
                             .expect("Rip job context missing in update handler");
                         ctx.status
-                            .send_modify(|job| job.set_status(RipStatusTag::PostProcessing));
-                        let _ = upload_queue.send((ctx.status, ctx.rip_dir)).await;
+                            .send_modify(|job| job.set_status(RipStatusTag::Completed));
+                        let status = ctx.status.borrow().clone();
+                        let _ = upload_queue.send((status, ctx.rip_dir)).await;
                         if ctx.autoeject {
                             if let Err(err) = drive.ejector.eject() {
                                 tracing::error!("Failed to eject drive: {}", err);
@@ -471,7 +486,9 @@ async fn control_drive(
                                 eject::device::DriveStatus::Loaded => DriveStatusTag::DiscLoaded,
                             } as _,
                             disc_name,
-                            active_rip_job: None,
+                            active_rip_job: rip_job
+                                .as_ref()
+                                .map(|rip_job| rip_job.status.borrow().rip_job),
                         };
                         drive_status_sender.send_if_modified(move |oldval| {
                             let modified = status != *oldval;

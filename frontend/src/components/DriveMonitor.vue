@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import {
 	DriveStatusTag,
-	RipStatus,
-	type DriveState,
-} from "@/generated/mediacorral/drive_controller/v1/main";
+	RipJobStatus,
+	type DriveStatus,
+} from "@/generated/mediacorral/server/v1/api";
 import type { DiscDrive, RipJob } from "@/generated/mediacorral/server/v1/api";
 import { injectKeys } from "@/scripts/config";
 import { reportErrorsFactory } from "@/scripts/uiUtils";
@@ -15,12 +15,14 @@ const props = defineProps<{
 	drive: DiscDrive;
 	visible: boolean;
 }>();
-const driveStatus = ref<DriveState | null>(null);
+const driveStatus = ref<DriveStatus | undefined>(undefined);
 const discTitle = computed(() => {
 	if (driveStatus.value === null) {
 		return "Loading...";
 	}
-	switch (driveStatus.value.status) {
+	switch (driveStatus.value?.status) {
+		case undefined:
+			return "Disconnected";
 		case DriveStatusTag.UNSPECIFIED:
 			return "Unknown";
 		case DriveStatusTag.EMPTY:
@@ -40,12 +42,14 @@ const currentStatus = computed(() => {
 	if (driveStatus.value === null) {
 		return "Fetching drive status...";
 	}
-	if (driveStatus.value.activeRipJob !== undefined) {
-		return `Ripping - Job #${driveStatus.value.activeRipJob}`;
+	if (driveStatus.value?.ripJob !== undefined) {
+		return `Ripping - Job #${driveStatus.value.ripJob.jobId}`;
 	}
-	switch (driveStatus.value.status) {
+	switch (driveStatus.value?.status) {
+		case undefined:
+			return "Disconnected"
 		case DriveStatusTag.UNSPECIFIED:
-			return "Unknown3";
+			return "Unknown";
 		case DriveStatusTag.EMPTY:
 			return "Closed - Empty";
 		case DriveStatusTag.TRAY_OPEN:
@@ -57,9 +61,9 @@ const currentStatus = computed(() => {
 	}
 });
 const showTrayAction = computed(() => {
-	if (driveStatus.value === null) return [];
+	if (driveStatus.value === undefined) return [];
 
-	if (driveStatus.value.activeRipJob !== undefined) {
+	if (driveStatus.value?.ripJob !== undefined) {
 		return [];
 	}
 
@@ -75,12 +79,13 @@ const showTrayAction = computed(() => {
 		case DriveStatusTag.NOT_READY:
 			return [];
 	}
+	return [];
 });
 
 async function openTray() {
 	await reportErrors(
 		rpc.eject({
-			drive: props.drive,
+			driveId: props.drive.id,
 		}),
 		"Failed to eject the disc"
 	);
@@ -88,7 +93,9 @@ async function openTray() {
 
 async function closeTray() {
 	await reportErrors(
-		rpc.retract({ drive: props.drive }),
+		rpc.retract({
+			driveId: props.drive.id,
+		}),
 		"Failed to close the drive tray"
 	);
 }
@@ -96,7 +103,7 @@ async function closeTray() {
 async function ripDisc() {
 	await reportErrors(
 		rpc.startRipJob({
-			drive: props.drive,
+			driveId: props.drive.id,
 			autoeject: false,
 		}),
 		"Failed to rip disc"
@@ -125,17 +132,16 @@ onBeforeUnmount(() => {
 async function pollDrive() {
 	// TODO: Add error handling for this. The current implementation will
 	//       get ***REALLY*** annoying if added here.
-	let result = await rpc.getDriveState({
-		controllerId: props.drive.controller,
-		driveId: props.drive.driveId,
+	let result = await rpc.getDriveStatus({
+		driveId: props.drive.id,
 	});
-	driveStatus.value = result.response;
+	driveStatus.value = result.response.driveStatus;
 }
 
 const jobInfo = ref<RipJob | undefined>(undefined);
-const jobStatus = ref<RipStatus | undefined>(undefined);
+const jobStatus = computed(() => driveStatus.value?.ripJob);
 watch(
-	() => driveStatus.value?.activeRipJob,
+	() => driveStatus.value?.ripJob?.jobId,
 	async (jobId) => {
 		if (jobId === undefined) {
 			jobInfo.value = undefined;
@@ -151,68 +157,11 @@ watch(
 	}
 );
 
-let jobTrackerInterval = ref<number | undefined>(undefined);
-function trackJob() {
-	if (jobTrackerInterval.value !== undefined) {
-		clearInterval(jobTrackerInterval.value);
-	}
-	jobStatus.value = RipStatus.create();
-	let inflight = false;
-	const update = async () => {
-		if (inflight) return;
-		if (jobInfo.value === undefined) return;
-		inflight = true;
-		let requestingJob = jobInfo.value.id;
-		try {
-			let { response } = await rpc.getRipJobStatus({
-				jobId: requestingJob,
-			});
-			if (requestingJob === jobInfo.value.id) {
-				jobStatus.value = response.status;
-			}
-		} finally {
-			inflight = false;
-		}
-	};
-	jobTrackerInterval.value = setInterval(update, 1000);
-	update();
-}
-watch(
-	() => props.visible,
-	() => {
-		if (!props.visible && jobTrackerInterval.value !== undefined) {
-			clearInterval(jobTrackerInterval.value);
-			jobTrackerInterval.value = undefined;
-		}
-	}
-);
-watch(
-	() => jobInfo.value?.id,
-	(id) => {
-		if (id === undefined) {
-			if (jobTrackerInterval.value !== undefined) {
-				clearInterval(jobTrackerInterval.value);
-				jobTrackerInterval.value = undefined;
-			}
-		} else {
-			jobStatus.value = RipStatus.create();
-			trackJob();
-		}
-	},
-	{ immediate: true }
-);
-onBeforeUnmount(() => {
-	if (jobTrackerInterval.value !== undefined) {
-		clearInterval(jobTrackerInterval.value);
-		jobTrackerInterval.value = undefined;
-	}
-});
-
 const allowRename = computed(
-	() => driveStatus.value?.activeRipJob !== undefined
+	() => driveStatus.value?.ripJob !== undefined
 );
 async function renameJob() {
-	if (driveStatus.value?.activeRipJob === undefined) return;
+	if (driveStatus.value?.ripJob === undefined) return;
 	if (jobInfo.value === undefined) return;
 	const newName = prompt(
 		"What would you like to name the job?",
@@ -248,8 +197,8 @@ async function renameJob() {
 				<v-label :text="`Current: ${jobStatus.cprogTitle}`" />
 				<v-progress-linear
 					:model-value="
-						((jobStatus.progress?.cprogValue || 0) /
-							(jobStatus.progress?.maxValue || 1)) *
+						((jobStatus.cprogValue || 0) /
+							(jobStatus.maxProgValue || 1)) *
 						100
 					"
 					buffer-value="0"
@@ -259,8 +208,8 @@ async function renameJob() {
 				<v-label :text="`Total: ${jobStatus.tprogTitle}`" />
 				<v-progress-linear
 					:model-value="
-						((jobStatus.progress?.tprogValue || 0) /
-							(jobStatus.progress?.maxValue || 1)) *
+						((jobStatus.tprogValue || 0) /
+							(jobStatus.maxProgValue || 1)) *
 						100
 					"
 					buffer-value="0"

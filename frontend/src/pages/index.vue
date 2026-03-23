@@ -15,13 +15,13 @@ const drives = ref<DiscDrive[]>([]);
 onMounted(async () => {
 	drives.value = (
 		await reportErrors(rpc.listDrives({}), "Error listing drives")
-	).response.drives;
+	).response.drives.sort((a, b) => {
+		if (a.id > b.id) return 1;
+		if (a.id < b.id) return -1;
+		return 0;
+	});
 	driveSelection.value = drives.value[0];
 });
-
-function driveKey(drive: DiscDrive) {
-	return `${drive.controller}/${drive.driveId}`;
-}
 
 const appbar = inject(injectKeys.appbar);
 const autorip = ref<AutoripStatus>(AutoripStatus.UNSPECIFIED);
@@ -46,14 +46,14 @@ async function changeAutorip(status: boolean) {
 
 <template>
 	<v-tabs v-model="driveSelection" align-tabs="center">
-		<v-tab v-for="drive in drives" :value="drive" :key="driveKey(drive)">
+		<v-tab v-for="drive in drives" :value="drive" :key="drive.id">
 			{{ drive.name }}
 		</v-tab>
 	</v-tabs>
 	<v-tabs-window v-model="driveSelection">
 		<v-tabs-window-item
 			v-for="drive in drives"
-			:key="driveKey(drive)"
+			:key="drive.id"
 			:value="drive"
 		>
 			<v-container fluid>

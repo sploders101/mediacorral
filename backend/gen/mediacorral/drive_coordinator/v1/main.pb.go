@@ -207,7 +207,7 @@ func (x *DriveConnectionRequest) GetDiscovery() *DiscoveryInfo {
 	return nil
 }
 
-func (x *DriveConnectionRequest) GetDriveStatusUpdate() *DriveStatusUpdate {
+func (x *DriveConnectionRequest) GetDriveStatusUpdate() *DriveStatus {
 	if x != nil {
 		if x, ok := x.xxx_hidden_Message.(*driveConnectionRequest_DriveStatusUpdate); ok {
 			return x.DriveStatusUpdate
@@ -216,7 +216,7 @@ func (x *DriveConnectionRequest) GetDriveStatusUpdate() *DriveStatusUpdate {
 	return nil
 }
 
-func (x *DriveConnectionRequest) GetRipStatusUpdate() *RipStatusUpdate {
+func (x *DriveConnectionRequest) GetRipStatusUpdate() *RipStatus {
 	if x != nil {
 		if x, ok := x.xxx_hidden_Message.(*driveConnectionRequest_RipStatusUpdate); ok {
 			return x.RipStatusUpdate
@@ -233,7 +233,7 @@ func (x *DriveConnectionRequest) SetDiscovery(v *DiscoveryInfo) {
 	x.xxx_hidden_Message = &driveConnectionRequest_Discovery{v}
 }
 
-func (x *DriveConnectionRequest) SetDriveStatusUpdate(v *DriveStatusUpdate) {
+func (x *DriveConnectionRequest) SetDriveStatusUpdate(v *DriveStatus) {
 	if v == nil {
 		x.xxx_hidden_Message = nil
 		return
@@ -241,7 +241,7 @@ func (x *DriveConnectionRequest) SetDriveStatusUpdate(v *DriveStatusUpdate) {
 	x.xxx_hidden_Message = &driveConnectionRequest_DriveStatusUpdate{v}
 }
 
-func (x *DriveConnectionRequest) SetRipStatusUpdate(v *RipStatusUpdate) {
+func (x *DriveConnectionRequest) SetRipStatusUpdate(v *RipStatus) {
 	if v == nil {
 		x.xxx_hidden_Message = nil
 		return
@@ -328,8 +328,8 @@ type DriveConnectionRequest_builder struct {
 
 	// Fields of oneof xxx_hidden_Message:
 	Discovery         *DiscoveryInfo
-	DriveStatusUpdate *DriveStatusUpdate
-	RipStatusUpdate   *RipStatusUpdate
+	DriveStatusUpdate *DriveStatus
+	RipStatusUpdate   *RipStatus
 	// -- end of xxx_hidden_Message
 }
 
@@ -368,11 +368,11 @@ type driveConnectionRequest_Discovery struct {
 }
 
 type driveConnectionRequest_DriveStatusUpdate struct {
-	DriveStatusUpdate *DriveStatusUpdate `protobuf:"bytes,2,opt,name=drive_status_update,json=driveStatusUpdate,proto3,oneof"`
+	DriveStatusUpdate *DriveStatus `protobuf:"bytes,2,opt,name=drive_status_update,json=driveStatusUpdate,proto3,oneof"`
 }
 
 type driveConnectionRequest_RipStatusUpdate struct {
-	RipStatusUpdate *RipStatusUpdate `protobuf:"bytes,3,opt,name=rip_status_update,json=ripStatusUpdate,proto3,oneof"`
+	RipStatusUpdate *RipStatus `protobuf:"bytes,3,opt,name=rip_status_update,json=ripStatusUpdate,proto3,oneof"`
 }
 
 func (*driveConnectionRequest_Discovery) isDriveConnectionRequest_Message() {}
@@ -456,10 +456,10 @@ func (b0 DiscoveryInfo_builder) Build() *DiscoveryInfo {
 }
 
 // Provides a status update for the drive
-type DriveStatusUpdate struct {
+type DriveStatus struct {
 	state                   protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Status       DriveStatusTag         `protobuf:"varint,1,opt,name=status,proto3,enum=mediacorral.drive_coordinator.v1.DriveStatusTag"`
-	xxx_hidden_DiscName     string                 `protobuf:"bytes,2,opt,name=disc_name,json=discName,proto3"`
+	xxx_hidden_DiscName     *string                `protobuf:"bytes,2,opt,name=disc_name,json=discName,proto3,oneof"`
 	xxx_hidden_ActiveRipJob int64                  `protobuf:"varint,3,opt,name=active_rip_job,json=activeRipJob,proto3,oneof"`
 	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
 	XXX_presence            [1]uint32
@@ -467,20 +467,20 @@ type DriveStatusUpdate struct {
 	sizeCache               protoimpl.SizeCache
 }
 
-func (x *DriveStatusUpdate) Reset() {
-	*x = DriveStatusUpdate{}
+func (x *DriveStatus) Reset() {
+	*x = DriveStatus{}
 	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DriveStatusUpdate) String() string {
+func (x *DriveStatus) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DriveStatusUpdate) ProtoMessage() {}
+func (*DriveStatus) ProtoMessage() {}
 
-func (x *DriveStatusUpdate) ProtoReflect() protoreflect.Message {
+func (x *DriveStatus) ProtoReflect() protoreflect.Message {
 	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -492,66 +492,85 @@ func (x *DriveStatusUpdate) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *DriveStatusUpdate) GetStatus() DriveStatusTag {
+func (x *DriveStatus) GetStatus() DriveStatusTag {
 	if x != nil {
 		return x.xxx_hidden_Status
 	}
 	return DriveStatusTag_DRIVE_STATUS_TAG_UNSPECIFIED
 }
 
-func (x *DriveStatusUpdate) GetDiscName() string {
+func (x *DriveStatus) GetDiscName() string {
 	if x != nil {
-		return x.xxx_hidden_DiscName
+		if x.xxx_hidden_DiscName != nil {
+			return *x.xxx_hidden_DiscName
+		}
+		return ""
 	}
 	return ""
 }
 
-func (x *DriveStatusUpdate) GetActiveRipJob() int64 {
+func (x *DriveStatus) GetActiveRipJob() int64 {
 	if x != nil {
 		return x.xxx_hidden_ActiveRipJob
 	}
 	return 0
 }
 
-func (x *DriveStatusUpdate) SetStatus(v DriveStatusTag) {
+func (x *DriveStatus) SetStatus(v DriveStatusTag) {
 	x.xxx_hidden_Status = v
 }
 
-func (x *DriveStatusUpdate) SetDiscName(v string) {
-	x.xxx_hidden_DiscName = v
+func (x *DriveStatus) SetDiscName(v string) {
+	x.xxx_hidden_DiscName = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
 }
 
-func (x *DriveStatusUpdate) SetActiveRipJob(v int64) {
+func (x *DriveStatus) SetActiveRipJob(v int64) {
 	x.xxx_hidden_ActiveRipJob = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
 }
 
-func (x *DriveStatusUpdate) HasActiveRipJob() bool {
+func (x *DriveStatus) HasDiscName() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *DriveStatus) HasActiveRipJob() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
-func (x *DriveStatusUpdate) ClearActiveRipJob() {
+func (x *DriveStatus) ClearDiscName() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_DiscName = nil
+}
+
+func (x *DriveStatus) ClearActiveRipJob() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
 	x.xxx_hidden_ActiveRipJob = 0
 }
 
-type DriveStatusUpdate_builder struct {
+type DriveStatus_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Status       DriveStatusTag
-	DiscName     string
+	DiscName     *string
 	ActiveRipJob *int64
 }
 
-func (b0 DriveStatusUpdate_builder) Build() *DriveStatusUpdate {
-	m0 := &DriveStatusUpdate{}
+func (b0 DriveStatus_builder) Build() *DriveStatus {
+	m0 := &DriveStatus{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Status = b.Status
-	x.xxx_hidden_DiscName = b.DiscName
+	if b.DiscName != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
+		x.xxx_hidden_DiscName = b.DiscName
+	}
 	if b.ActiveRipJob != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
 		x.xxx_hidden_ActiveRipJob = *b.ActiveRipJob
@@ -560,7 +579,7 @@ func (b0 DriveStatusUpdate_builder) Build() *DriveStatusUpdate {
 }
 
 // Provides a status update for the specified rip job
-type RipStatusUpdate struct {
+type RipStatus struct {
 	state                   protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_RipJob       int64                  `protobuf:"varint,1,opt,name=rip_job,json=ripJob,proto3"`
 	xxx_hidden_Status       RipStatusTag           `protobuf:"varint,2,opt,name=status,proto3,enum=mediacorral.drive_coordinator.v1.RipStatusTag"`
@@ -569,25 +588,25 @@ type RipStatusUpdate struct {
 	xxx_hidden_CprogValue   uint32                 `protobuf:"varint,5,opt,name=cprog_value,json=cprogValue,proto3"`
 	xxx_hidden_TprogValue   uint32                 `protobuf:"varint,6,opt,name=tprog_value,json=tprogValue,proto3"`
 	xxx_hidden_MaxProgValue uint32                 `protobuf:"varint,7,opt,name=max_prog_value,json=maxProgValue,proto3"`
-	xxx_hidden_AppendLogs   []string               `protobuf:"bytes,8,rep,name=append_logs,json=appendLogs,proto3"`
+	xxx_hidden_Logs         []string               `protobuf:"bytes,8,rep,name=logs,proto3"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
 
-func (x *RipStatusUpdate) Reset() {
-	*x = RipStatusUpdate{}
+func (x *RipStatus) Reset() {
+	*x = RipStatus{}
 	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RipStatusUpdate) String() string {
+func (x *RipStatus) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RipStatusUpdate) ProtoMessage() {}
+func (*RipStatus) ProtoMessage() {}
 
-func (x *RipStatusUpdate) ProtoReflect() protoreflect.Message {
+func (x *RipStatus) ProtoReflect() protoreflect.Message {
 	mi := &file_mediacorral_drive_coordinator_v1_main_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -599,95 +618,95 @@ func (x *RipStatusUpdate) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *RipStatusUpdate) GetRipJob() int64 {
+func (x *RipStatus) GetRipJob() int64 {
 	if x != nil {
 		return x.xxx_hidden_RipJob
 	}
 	return 0
 }
 
-func (x *RipStatusUpdate) GetStatus() RipStatusTag {
+func (x *RipStatus) GetStatus() RipStatusTag {
 	if x != nil {
 		return x.xxx_hidden_Status
 	}
 	return RipStatusTag_RIP_STATUS_TAG_UNSPECIFIED
 }
 
-func (x *RipStatusUpdate) GetCprogTitle() string {
+func (x *RipStatus) GetCprogTitle() string {
 	if x != nil {
 		return x.xxx_hidden_CprogTitle
 	}
 	return ""
 }
 
-func (x *RipStatusUpdate) GetTprogTitle() string {
+func (x *RipStatus) GetTprogTitle() string {
 	if x != nil {
 		return x.xxx_hidden_TprogTitle
 	}
 	return ""
 }
 
-func (x *RipStatusUpdate) GetCprogValue() uint32 {
+func (x *RipStatus) GetCprogValue() uint32 {
 	if x != nil {
 		return x.xxx_hidden_CprogValue
 	}
 	return 0
 }
 
-func (x *RipStatusUpdate) GetTprogValue() uint32 {
+func (x *RipStatus) GetTprogValue() uint32 {
 	if x != nil {
 		return x.xxx_hidden_TprogValue
 	}
 	return 0
 }
 
-func (x *RipStatusUpdate) GetMaxProgValue() uint32 {
+func (x *RipStatus) GetMaxProgValue() uint32 {
 	if x != nil {
 		return x.xxx_hidden_MaxProgValue
 	}
 	return 0
 }
 
-func (x *RipStatusUpdate) GetAppendLogs() []string {
+func (x *RipStatus) GetLogs() []string {
 	if x != nil {
-		return x.xxx_hidden_AppendLogs
+		return x.xxx_hidden_Logs
 	}
 	return nil
 }
 
-func (x *RipStatusUpdate) SetRipJob(v int64) {
+func (x *RipStatus) SetRipJob(v int64) {
 	x.xxx_hidden_RipJob = v
 }
 
-func (x *RipStatusUpdate) SetStatus(v RipStatusTag) {
+func (x *RipStatus) SetStatus(v RipStatusTag) {
 	x.xxx_hidden_Status = v
 }
 
-func (x *RipStatusUpdate) SetCprogTitle(v string) {
+func (x *RipStatus) SetCprogTitle(v string) {
 	x.xxx_hidden_CprogTitle = v
 }
 
-func (x *RipStatusUpdate) SetTprogTitle(v string) {
+func (x *RipStatus) SetTprogTitle(v string) {
 	x.xxx_hidden_TprogTitle = v
 }
 
-func (x *RipStatusUpdate) SetCprogValue(v uint32) {
+func (x *RipStatus) SetCprogValue(v uint32) {
 	x.xxx_hidden_CprogValue = v
 }
 
-func (x *RipStatusUpdate) SetTprogValue(v uint32) {
+func (x *RipStatus) SetTprogValue(v uint32) {
 	x.xxx_hidden_TprogValue = v
 }
 
-func (x *RipStatusUpdate) SetMaxProgValue(v uint32) {
+func (x *RipStatus) SetMaxProgValue(v uint32) {
 	x.xxx_hidden_MaxProgValue = v
 }
 
-func (x *RipStatusUpdate) SetAppendLogs(v []string) {
-	x.xxx_hidden_AppendLogs = v
+func (x *RipStatus) SetLogs(v []string) {
+	x.xxx_hidden_Logs = v
 }
 
-type RipStatusUpdate_builder struct {
+type RipStatus_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	RipJob       int64
@@ -697,12 +716,11 @@ type RipStatusUpdate_builder struct {
 	CprogValue   uint32
 	TprogValue   uint32
 	MaxProgValue uint32
-	// Contains new logs since the last update
-	AppendLogs []string
+	Logs         []string
 }
 
-func (b0 RipStatusUpdate_builder) Build() *RipStatusUpdate {
-	m0 := &RipStatusUpdate{}
+func (b0 RipStatus_builder) Build() *RipStatus {
+	m0 := &RipStatus{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_RipJob = b.RipJob
@@ -712,7 +730,7 @@ func (b0 RipStatusUpdate_builder) Build() *RipStatusUpdate {
 	x.xxx_hidden_CprogValue = b.CprogValue
 	x.xxx_hidden_TprogValue = b.TprogValue
 	x.xxx_hidden_MaxProgValue = b.MaxProgValue
-	x.xxx_hidden_AppendLogs = b.AppendLogs
+	x.xxx_hidden_Logs = b.Logs
 	return m0
 }
 
@@ -886,7 +904,7 @@ func (*driveConnectionResponse_RipMedia) isDriveConnectionResponse_Message() {}
 
 type RipMediaCommand struct {
 	state                protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_JobId     uint64                 `protobuf:"varint,1,opt,name=job_id,json=jobId,proto3"`
+	xxx_hidden_JobId     int64                  `protobuf:"varint,1,opt,name=job_id,json=jobId,proto3"`
 	xxx_hidden_Autoeject bool                   `protobuf:"varint,2,opt,name=autoeject,proto3"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -917,7 +935,7 @@ func (x *RipMediaCommand) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *RipMediaCommand) GetJobId() uint64 {
+func (x *RipMediaCommand) GetJobId() int64 {
 	if x != nil {
 		return x.xxx_hidden_JobId
 	}
@@ -931,7 +949,7 @@ func (x *RipMediaCommand) GetAutoeject() bool {
 	return false
 }
 
-func (x *RipMediaCommand) SetJobId(v uint64) {
+func (x *RipMediaCommand) SetJobId(v int64) {
 	x.xxx_hidden_JobId = v
 }
 
@@ -943,7 +961,7 @@ type RipMediaCommand_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// The ID for the rip job, as used in the database
-	JobId uint64
+	JobId int64
 	// Whether or not to automatically eject the drive upon completion
 	Autoeject bool
 }
@@ -1123,7 +1141,9 @@ type UploadFileRequest_builder struct {
 	DataChunk []byte
 	// Contains a hash of the file to verify its integrity.
 	// This is sent as the last message of the transfer, and the server
-	// should only respond successfully if the hash is correct.
+	// should only respond successfully if the hash is correct. If the
+	// hash is not sent, then the upload is considered a failure, and
+	// the backing file should be deleted.
 	Md5Hash []byte
 	// -- end of xxx_hidden_Message
 }
@@ -1171,7 +1191,9 @@ type uploadFileRequest_DataChunk struct {
 type uploadFileRequest_Md5Hash struct {
 	// Contains a hash of the file to verify its integrity.
 	// This is sent as the last message of the transfer, and the server
-	// should only respond successfully if the hash is correct.
+	// should only respond successfully if the hash is correct. If the
+	// hash is not sent, then the upload is considered a failure, and
+	// the backing file should be deleted.
 	Md5Hash []byte `protobuf:"bytes,3,opt,name=md5_hash,json=md5Hash,proto3,oneof"`
 }
 
@@ -1186,6 +1208,7 @@ type UploadFileRequestHeader struct {
 	state               protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_RipJob   int64                  `protobuf:"varint,1,opt,name=rip_job,json=ripJob,proto3"`
 	xxx_hidden_FileName string                 `protobuf:"bytes,2,opt,name=file_name,json=fileName,proto3"`
+	xxx_hidden_FileSize uint64                 `protobuf:"varint,3,opt,name=file_size,json=fileSize,proto3"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -1229,12 +1252,23 @@ func (x *UploadFileRequestHeader) GetFileName() string {
 	return ""
 }
 
+func (x *UploadFileRequestHeader) GetFileSize() uint64 {
+	if x != nil {
+		return x.xxx_hidden_FileSize
+	}
+	return 0
+}
+
 func (x *UploadFileRequestHeader) SetRipJob(v int64) {
 	x.xxx_hidden_RipJob = v
 }
 
 func (x *UploadFileRequestHeader) SetFileName(v string) {
 	x.xxx_hidden_FileName = v
+}
+
+func (x *UploadFileRequestHeader) SetFileSize(v uint64) {
+	x.xxx_hidden_FileSize = v
 }
 
 type UploadFileRequestHeader_builder struct {
@@ -1244,6 +1278,11 @@ type UploadFileRequestHeader_builder struct {
 	RipJob int64
 	// The name of the file being uploaded
 	FileName string
+	// The size in bytes of the file being uploaded.
+	// This is used only as a progress indicator, and should
+	// not be relied upon. A value of `0` means the file is
+	// of indeterminate size.
+	FileSize uint64
 }
 
 func (b0 UploadFileRequestHeader_builder) Build() *UploadFileRequestHeader {
@@ -1252,6 +1291,7 @@ func (b0 UploadFileRequestHeader_builder) Build() *UploadFileRequestHeader {
 	_, _ = b, x
 	x.xxx_hidden_RipJob = b.RipJob
 	x.xxx_hidden_FileName = b.FileName
+	x.xxx_hidden_FileSize = b.FileSize
 	return m0
 }
 
@@ -1403,22 +1443,24 @@ var File_mediacorral_drive_coordinator_v1_main_proto protoreflect.FileDescriptor
 
 const file_mediacorral_drive_coordinator_v1_main_proto_rawDesc = "" +
 	"\n" +
-	"+mediacorral/drive_coordinator/v1/main.proto\x12 mediacorral.drive_coordinator.v1\"\xbc\x02\n" +
+	"+mediacorral/drive_coordinator/v1/main.proto\x12 mediacorral.drive_coordinator.v1\"\xb0\x02\n" +
 	"\x16DriveConnectionRequest\x12O\n" +
-	"\tdiscovery\x18\x01 \x01(\v2/.mediacorral.drive_coordinator.v1.DiscoveryInfoH\x00R\tdiscovery\x12e\n" +
-	"\x13drive_status_update\x18\x02 \x01(\v23.mediacorral.drive_coordinator.v1.DriveStatusUpdateH\x00R\x11driveStatusUpdate\x12_\n" +
-	"\x11rip_status_update\x18\x03 \x01(\v21.mediacorral.drive_coordinator.v1.RipStatusUpdateH\x00R\x0fripStatusUpdateB\t\n" +
+	"\tdiscovery\x18\x01 \x01(\v2/.mediacorral.drive_coordinator.v1.DiscoveryInfoH\x00R\tdiscovery\x12_\n" +
+	"\x13drive_status_update\x18\x02 \x01(\v2-.mediacorral.drive_coordinator.v1.DriveStatusH\x00R\x11driveStatusUpdate\x12Y\n" +
+	"\x11rip_status_update\x18\x03 \x01(\v2+.mediacorral.drive_coordinator.v1.RipStatusH\x00R\x0fripStatusUpdateB\t\n" +
 	"\amessage\"I\n" +
 	"\rDiscoveryInfo\x12\x19\n" +
 	"\bdrive_id\x18\x01 \x01(\tR\adriveId\x12\x1d\n" +
 	"\n" +
-	"drive_name\x18\x02 \x01(\tR\tdriveName\"\xb8\x01\n" +
-	"\x11DriveStatusUpdate\x12H\n" +
-	"\x06status\x18\x01 \x01(\x0e20.mediacorral.drive_coordinator.v1.DriveStatusTagR\x06status\x12\x1b\n" +
-	"\tdisc_name\x18\x02 \x01(\tR\bdiscName\x12)\n" +
-	"\x0eactive_rip_job\x18\x03 \x01(\x03H\x00R\factiveRipJob\x88\x01\x01B\x11\n" +
-	"\x0f_active_rip_job\"\xbd\x02\n" +
-	"\x0fRipStatusUpdate\x12\x17\n" +
+	"drive_name\x18\x02 \x01(\tR\tdriveName\"\xc5\x01\n" +
+	"\vDriveStatus\x12H\n" +
+	"\x06status\x18\x01 \x01(\x0e20.mediacorral.drive_coordinator.v1.DriveStatusTagR\x06status\x12 \n" +
+	"\tdisc_name\x18\x02 \x01(\tH\x00R\bdiscName\x88\x01\x01\x12)\n" +
+	"\x0eactive_rip_job\x18\x03 \x01(\x03H\x01R\factiveRipJob\x88\x01\x01B\f\n" +
+	"\n" +
+	"_disc_nameB\x11\n" +
+	"\x0f_active_rip_job\"\xaa\x02\n" +
+	"\tRipStatus\x12\x17\n" +
 	"\arip_job\x18\x01 \x01(\x03R\x06ripJob\x12F\n" +
 	"\x06status\x18\x02 \x01(\x0e2..mediacorral.drive_coordinator.v1.RipStatusTagR\x06status\x12\x1f\n" +
 	"\vcprog_title\x18\x03 \x01(\tR\n" +
@@ -1429,25 +1471,25 @@ const file_mediacorral_drive_coordinator_v1_main_proto_rawDesc = "" +
 	"cprogValue\x12\x1f\n" +
 	"\vtprog_value\x18\x06 \x01(\rR\n" +
 	"tprogValue\x12$\n" +
-	"\x0emax_prog_value\x18\a \x01(\rR\fmaxProgValue\x12\x1f\n" +
-	"\vappend_logs\x18\b \x03(\tR\n" +
-	"appendLogs\"\xca\x01\n" +
+	"\x0emax_prog_value\x18\a \x01(\rR\fmaxProgValue\x12\x12\n" +
+	"\x04logs\x18\b \x03(\tR\x04logs\"\xca\x01\n" +
 	"\x17DriveConnectionResponse\x12R\n" +
 	"\ftray_command\x18\x01 \x01(\x0e2-.mediacorral.drive_coordinator.v1.TrayCommandH\x00R\vtrayCommand\x12P\n" +
 	"\trip_media\x18\x02 \x01(\v21.mediacorral.drive_coordinator.v1.RipMediaCommandH\x00R\bripMediaB\t\n" +
 	"\amessage\"F\n" +
 	"\x0fRipMediaCommand\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\x04R\x05jobId\x12\x1c\n" +
+	"\x06job_id\x18\x01 \x01(\x03R\x05jobId\x12\x1c\n" +
 	"\tautoeject\x18\x02 \x01(\bR\tautoeject\"\xb1\x01\n" +
 	"\x11UploadFileRequest\x12S\n" +
 	"\x06header\x18\x01 \x01(\v29.mediacorral.drive_coordinator.v1.UploadFileRequestHeaderH\x00R\x06header\x12\x1f\n" +
 	"\n" +
 	"data_chunk\x18\x02 \x01(\fH\x00R\tdataChunk\x12\x1b\n" +
 	"\bmd5_hash\x18\x03 \x01(\fH\x00R\amd5HashB\t\n" +
-	"\amessage\"O\n" +
+	"\amessage\"l\n" +
 	"\x17UploadFileRequestHeader\x12\x17\n" +
 	"\arip_job\x18\x01 \x01(\x03R\x06ripJob\x12\x1b\n" +
-	"\tfile_name\x18\x02 \x01(\tR\bfileName\"\x14\n" +
+	"\tfile_name\x18\x02 \x01(\tR\bfileName\x12\x1b\n" +
+	"\tfile_size\x18\x03 \x01(\x04R\bfileSize\"\x14\n" +
 	"\x12UploadFileResponse\"+\n" +
 	"\x10FinishJobRequest\x12\x17\n" +
 	"\arip_job\x18\x01 \x01(\x03R\x06ripJob\"\x13\n" +
@@ -1467,12 +1509,11 @@ const file_mediacorral_drive_coordinator_v1_main_proto_rawDesc = "" +
 	"\vTrayCommand\x12\x1c\n" +
 	"\x18TRAY_COMMAND_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16TRAY_COMMAND_OPEN_TRAY\x10\x01\x12\x1b\n" +
-	"\x17TRAY_COMMAND_CLOSE_TRAY\x10\x022\x8a\x03\n" +
-	"\vDemoService\x12\x87\x01\n" +
+	"\x17TRAY_COMMAND_CLOSE_TRAY\x10\x022\x9e\x02\n" +
+	"\x17DriveCoordinatorService\x12\x87\x01\n" +
 	"\fConnectDrive\x128.mediacorral.drive_coordinator.v1.DriveConnectionRequest\x1a9.mediacorral.drive_coordinator.v1.DriveConnectionResponse(\x010\x01\x12y\n" +
 	"\n" +
-	"UploadFile\x123.mediacorral.drive_coordinator.v1.UploadFileRequest\x1a4.mediacorral.drive_coordinator.v1.UploadFileResponse(\x01\x12v\n" +
-	"\tFinishJob\x122.mediacorral.drive_coordinator.v1.FinishJobRequest\x1a3.mediacorral.drive_coordinator.v1.FinishJobResponse(\x01B\xb4\x02\n" +
+	"UploadFile\x123.mediacorral.drive_coordinator.v1.UploadFileRequest\x1a4.mediacorral.drive_coordinator.v1.UploadFileResponse(\x01B\xb4\x02\n" +
 	"$com.mediacorral.drive_coordinator.v1B\tMainProtoP\x01Zcgithub.com/sploders101/mediacorral/backend/gen/mediacorral/drive_coordinator/v1;drive_coordinatorv1\xa2\x02\x03MDX\xaa\x02\x1fMediacorral.DriveCoordinator.V1\xca\x02\x1fMediacorral\\DriveCoordinator\\V1\xe2\x02+Mediacorral\\DriveCoordinator\\V1\\GPBMetadata\xea\x02!Mediacorral::DriveCoordinator::V1b\x06proto3"
 
 var file_mediacorral_drive_coordinator_v1_main_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
@@ -1483,8 +1524,8 @@ var file_mediacorral_drive_coordinator_v1_main_proto_goTypes = []any{
 	(TrayCommand)(0),                // 2: mediacorral.drive_coordinator.v1.TrayCommand
 	(*DriveConnectionRequest)(nil),  // 3: mediacorral.drive_coordinator.v1.DriveConnectionRequest
 	(*DiscoveryInfo)(nil),           // 4: mediacorral.drive_coordinator.v1.DiscoveryInfo
-	(*DriveStatusUpdate)(nil),       // 5: mediacorral.drive_coordinator.v1.DriveStatusUpdate
-	(*RipStatusUpdate)(nil),         // 6: mediacorral.drive_coordinator.v1.RipStatusUpdate
+	(*DriveStatus)(nil),             // 5: mediacorral.drive_coordinator.v1.DriveStatus
+	(*RipStatus)(nil),               // 6: mediacorral.drive_coordinator.v1.RipStatus
 	(*DriveConnectionResponse)(nil), // 7: mediacorral.drive_coordinator.v1.DriveConnectionResponse
 	(*RipMediaCommand)(nil),         // 8: mediacorral.drive_coordinator.v1.RipMediaCommand
 	(*UploadFileRequest)(nil),       // 9: mediacorral.drive_coordinator.v1.UploadFileRequest
@@ -1495,21 +1536,19 @@ var file_mediacorral_drive_coordinator_v1_main_proto_goTypes = []any{
 }
 var file_mediacorral_drive_coordinator_v1_main_proto_depIdxs = []int32{
 	4,  // 0: mediacorral.drive_coordinator.v1.DriveConnectionRequest.discovery:type_name -> mediacorral.drive_coordinator.v1.DiscoveryInfo
-	5,  // 1: mediacorral.drive_coordinator.v1.DriveConnectionRequest.drive_status_update:type_name -> mediacorral.drive_coordinator.v1.DriveStatusUpdate
-	6,  // 2: mediacorral.drive_coordinator.v1.DriveConnectionRequest.rip_status_update:type_name -> mediacorral.drive_coordinator.v1.RipStatusUpdate
-	0,  // 3: mediacorral.drive_coordinator.v1.DriveStatusUpdate.status:type_name -> mediacorral.drive_coordinator.v1.DriveStatusTag
-	1,  // 4: mediacorral.drive_coordinator.v1.RipStatusUpdate.status:type_name -> mediacorral.drive_coordinator.v1.RipStatusTag
+	5,  // 1: mediacorral.drive_coordinator.v1.DriveConnectionRequest.drive_status_update:type_name -> mediacorral.drive_coordinator.v1.DriveStatus
+	6,  // 2: mediacorral.drive_coordinator.v1.DriveConnectionRequest.rip_status_update:type_name -> mediacorral.drive_coordinator.v1.RipStatus
+	0,  // 3: mediacorral.drive_coordinator.v1.DriveStatus.status:type_name -> mediacorral.drive_coordinator.v1.DriveStatusTag
+	1,  // 4: mediacorral.drive_coordinator.v1.RipStatus.status:type_name -> mediacorral.drive_coordinator.v1.RipStatusTag
 	2,  // 5: mediacorral.drive_coordinator.v1.DriveConnectionResponse.tray_command:type_name -> mediacorral.drive_coordinator.v1.TrayCommand
 	8,  // 6: mediacorral.drive_coordinator.v1.DriveConnectionResponse.rip_media:type_name -> mediacorral.drive_coordinator.v1.RipMediaCommand
 	10, // 7: mediacorral.drive_coordinator.v1.UploadFileRequest.header:type_name -> mediacorral.drive_coordinator.v1.UploadFileRequestHeader
-	3,  // 8: mediacorral.drive_coordinator.v1.DemoService.ConnectDrive:input_type -> mediacorral.drive_coordinator.v1.DriveConnectionRequest
-	9,  // 9: mediacorral.drive_coordinator.v1.DemoService.UploadFile:input_type -> mediacorral.drive_coordinator.v1.UploadFileRequest
-	12, // 10: mediacorral.drive_coordinator.v1.DemoService.FinishJob:input_type -> mediacorral.drive_coordinator.v1.FinishJobRequest
-	7,  // 11: mediacorral.drive_coordinator.v1.DemoService.ConnectDrive:output_type -> mediacorral.drive_coordinator.v1.DriveConnectionResponse
-	11, // 12: mediacorral.drive_coordinator.v1.DemoService.UploadFile:output_type -> mediacorral.drive_coordinator.v1.UploadFileResponse
-	13, // 13: mediacorral.drive_coordinator.v1.DemoService.FinishJob:output_type -> mediacorral.drive_coordinator.v1.FinishJobResponse
-	11, // [11:14] is the sub-list for method output_type
-	8,  // [8:11] is the sub-list for method input_type
+	3,  // 8: mediacorral.drive_coordinator.v1.DriveCoordinatorService.ConnectDrive:input_type -> mediacorral.drive_coordinator.v1.DriveConnectionRequest
+	9,  // 9: mediacorral.drive_coordinator.v1.DriveCoordinatorService.UploadFile:input_type -> mediacorral.drive_coordinator.v1.UploadFileRequest
+	7,  // 10: mediacorral.drive_coordinator.v1.DriveCoordinatorService.ConnectDrive:output_type -> mediacorral.drive_coordinator.v1.DriveConnectionResponse
+	11, // 11: mediacorral.drive_coordinator.v1.DriveCoordinatorService.UploadFile:output_type -> mediacorral.drive_coordinator.v1.UploadFileResponse
+	10, // [10:12] is the sub-list for method output_type
+	8,  // [8:10] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
 	8,  // [8:8] is the sub-list for extension extendee
 	0,  // [0:8] is the sub-list for field type_name
