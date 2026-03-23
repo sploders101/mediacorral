@@ -12,20 +12,22 @@ use clap::Parser;
 use futures::StreamExt;
 use serde::Deserialize;
 use tokio::{
-    io::{AsyncReadExt, BufReader},
+    io::{AsyncReadExt, AsyncSeekExt, BufReader},
     process::Command,
 };
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::{Channel, Endpoint};
+use tracing::Instrument;
 use tracing_subscriber::EnvFilter;
 
 use crate::{
     makemkv::{Makemkv, messaging::MakemkvMessage},
     proto::mediacorral::drive_coordinator::v1::{
         DiscoveryInfo, DriveConnectionRequest, DriveConnectionResponse, DriveStatus,
-        DriveStatusTag, RipMediaCommand, RipStatus, RipStatusTag, TrayCommand, UploadFileRequest,
-        UploadFileRequestHeader, drive_connection_request, drive_connection_response,
-        drive_coordinator_service_client::DriveCoordinatorServiceClient, upload_file_request,
+        DriveStatusTag, FileDescription, FinalizeRipJobRequest, FinalizeRipJobRequestHeader,
+        RipMediaCommand, RipStatus, RipStatusTag, TrayCommand, drive_connection_request,
+        drive_connection_response, drive_coordinator_service_client::DriveCoordinatorServiceClient,
+        finalize_rip_job_request,
     },
 };
 
@@ -178,6 +180,9 @@ async fn rip_job_postprocessor(
                 continue;
             }
         };
+
+        // Collect files to be uploaded
+        let mut files_to_upload: Vec<(FileDescription, tokio::fs::File)> = Vec::new();
         while let Some(dir_entry) = rev_ro(contents.next_entry().await) {
             let dir_entry = match dir_entry {
                 Ok(dir_entry) => dir_entry,
@@ -225,70 +230,113 @@ async fn rip_job_postprocessor(
                 .map(|stats| stats.size())
                 .ok()
                 .unwrap_or_default();
-            let mut file = BufReader::new(file);
+            files_to_upload.push((
+                FileDescription {
+                    file_name,
+                    file_size,
+                },
+                file,
+            ));
+        }
+
+        while files_to_upload.len() > 0 {
             let (upload_sender, upload_receiver) = tokio::sync::mpsc::channel(1);
-            tokio::task::spawn(async move {
+
+            // Send header with file list. Channel has a buffer of 1, so this is fine.
+            upload_sender
+                .send(FinalizeRipJobRequest {
+                    message: Some(finalize_rip_job_request::Message::Header(
+                        FinalizeRipJobRequestHeader {
+                            rip_job,
+                            upload_files: files_to_upload
+                                .iter()
+                                .map(|(desc, _)| desc.clone())
+                                .collect(),
+                        },
+                    )),
+                })
+                .await
+                .expect("FinalizeRipJobRequest sender dropped.");
+
+            // Create future to upload file contents
+            let uploader = async {
                 let mut buf = [0u8; UPLOAD_CHUNK_SIZE];
                 let mut hasher = md5::Context::new();
-                if let Err(err) = upload_sender
-                    .send(UploadFileRequest {
-                        message: Some(upload_file_request::Message::Header(
-                            UploadFileRequestHeader {
-                                rip_job,
-                                file_name,
-                                file_size,
-                            },
-                        )),
-                    })
-                    .await
-                {
-                    tracing::error!("Failed to upload file: {}", err);
-                    return;
-                }
-                loop {
-                    match file.read(&mut buf).await {
-                        Ok(0) => {
-                            let digest = hasher.finalize();
-                            if let Err(err) = upload_sender
-                                .send(UploadFileRequest {
-                                    message: Some(upload_file_request::Message::Md5Hash(
-                                        digest.0.into(),
-                                    )),
-                                })
-                                .await
-                            {
-                                tracing::error!("Failed to upload file: {}", err);
-                            };
-                            return;
-                        }
-                        Ok(bytes_read) => {
-                            hasher.consume(&buf[0..bytes_read]);
-                            if let Err(err) = upload_sender
-                                .send(UploadFileRequest {
-                                    message: Some(upload_file_request::Message::DataChunk(
-                                        buf[0..bytes_read].into(),
-                                    )),
-                                })
-                                .await
-                            {
-                                tracing::error!("Failed to upload file: {}", err);
+                for (_, file) in files_to_upload.iter_mut() {
+                    if let Err(err) = file.seek(std::io::SeekFrom::Start(0)).await {
+                        tracing::error!("Failed to seek file: {}", err);
+                        return;
+                    }
+
+                    let mut file = BufReader::new(file);
+
+                    loop {
+                        match file.read(&mut buf).await {
+                            Ok(0) => {
+                                let digest = std::mem::take(&mut hasher).finalize();
+                                if let Err(err) = upload_sender
+                                    .send(FinalizeRipJobRequest {
+                                        message: Some(finalize_rip_job_request::Message::Md5Hash(
+                                            digest.0.into(),
+                                        )),
+                                    })
+                                    .await
+                                {
+                                    tracing::error!("Failed to upload file: {}", err);
+                                    return;
+                                }
+                                break;
+                            }
+                            Ok(bytes_read) => {
+                                hasher.consume(&buf[0..bytes_read]);
+                                if let Err(err) = upload_sender
+                                    .send(FinalizeRipJobRequest {
+                                        message: Some(
+                                            finalize_rip_job_request::Message::DataChunk(
+                                                buf[0..bytes_read].into(),
+                                            ),
+                                        ),
+                                    })
+                                    .await
+                                {
+                                    tracing::error!("Failed to upload file: {}", err);
+                                    return;
+                                }
+                            }
+                            Err(err) => {
+                                tracing::error!("Error reading file: {}", err);
+                                // Return immediately. This will prevent the hash from being
+                                // sent and cancel the request.
                                 return;
-                            };
-                        }
-                        Err(err) => {
-                            tracing::error!("Error reading file: {}", err);
-                            // Return immediately. This will prevent the hash from being sent
-                            // and cancel the request.
-                            return;
+                            }
                         }
                     }
                 }
-            });
-            if let Err(err) = client
-                .upload_file(ReceiverStream::new(upload_receiver))
-                .await
-            {
-                tracing::error!("Failed to upload file: {}", err);
+            }
+            .instrument(tracing::info_span!("uploader"));
+
+            // Listen for result. Running the uploader with `join` scopes the future to this task,
+            // eliminating the need for a mutex on `files_to_upload`.
+            let result = tokio::join!(
+                uploader,
+                client.finalize_rip_job(ReceiverStream::new(upload_receiver)),
+            )
+            .1;
+
+            match result {
+                Ok(result) => {
+                    let result = result.into_inner();
+                    // Retain files that were marked corrupted and re-upload on next loop iteration.
+                    // When all files have been uploaded, this function will leave `files_to_upload`
+                    // empty, prompting the loop to end.
+                    files_to_upload
+                        .retain(move |(desc, _)| result.corrupted_files.contains(&desc.file_name));
+                }
+                Err(err) => {
+                    tracing::error!("Failed to upload file: {}", err);
+                    // TODO: Error handling & automatic retry
+                    break;
+                }
             }
         }
     }
