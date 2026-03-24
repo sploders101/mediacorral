@@ -260,7 +260,8 @@ async fn rip_job_postprocessor(
 
             // Create future to upload file contents
             let uploader = async {
-                let mut buf = [0u8; UPLOAD_CHUNK_SIZE];
+                let mut buf = Vec::<u8>::with_capacity(UPLOAD_CHUNK_SIZE);
+                buf.resize(UPLOAD_CHUNK_SIZE, 0);
                 let mut hasher = md5::Context::new();
                 for (_, file) in files_to_upload.iter_mut() {
                     if let Err(err) = file.seek(std::io::SeekFrom::Start(0)).await {
@@ -524,25 +525,36 @@ async fn control_drive(
                 // Update the drive status
                 match drive.ejector.status() {
                     Ok(status) => {
-                        let disc_name = get_disc_name(&drive.path).await;
-                        tracing::debug!("Got disc name {disc_name:?}");
-                        let status = DriveStatus {
-                            status: match status {
-                                eject::device::DriveStatus::Empty => DriveStatusTag::Empty,
-                                eject::device::DriveStatus::TrayOpen => DriveStatusTag::TrayOpen,
-                                eject::device::DriveStatus::NotReady => DriveStatusTag::NotReady,
-                                eject::device::DriveStatus::Loaded => DriveStatusTag::DiscLoaded,
-                            } as _,
-                            disc_name,
-                            active_rip_job: rip_job
-                                .as_ref()
-                                .map(|rip_job| rip_job.status.borrow().rip_job),
+                        let new_status = match status {
+                            eject::device::DriveStatus::Empty => DriveStatusTag::Empty,
+                            eject::device::DriveStatus::TrayOpen => DriveStatusTag::TrayOpen,
+                            eject::device::DriveStatus::NotReady => DriveStatusTag::NotReady,
+                            eject::device::DriveStatus::Loaded => DriveStatusTag::DiscLoaded,
                         };
-                        drive_status_sender.send_if_modified(move |oldval| {
-                            let modified = status != *oldval;
-                            *oldval = status;
-                            return modified;
-                        });
+                        let active_rip_job = rip_job
+                            .as_ref()
+                            .map(|rip_job| rip_job.status.borrow().rip_job);
+                        let old_status =
+                            DriveStatusTag::try_from(drive_status_sender.borrow().status)
+                                .unwrap_or_default();
+                        let disc_name = if new_status == DriveStatusTag::DiscLoaded
+                            && old_status != DriveStatusTag::DiscLoaded
+                        {
+                            let disc_name = get_disc_name(&drive.path).await;
+                            tracing::debug!("Got disc name {disc_name:?}");
+                            Some(disc_name)
+                        } else {
+                            None
+                        };
+                        if new_status != old_status {
+                            drive_status_sender.send_modify(|status| {
+                                status.status = new_status as _;
+                                if let Some(disc_name) = disc_name {
+                                    status.disc_name = disc_name;
+                                }
+                                status.active_rip_job = active_rip_job;
+                            });
+                        }
                     }
                     Err(err) => {
                         tracing::error!("Failed to get drive status: {err}");
