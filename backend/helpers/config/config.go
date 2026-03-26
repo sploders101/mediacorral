@@ -20,8 +20,7 @@ type ConfigFile struct {
 	TmdbApiKey             *string               `json:"tmdb_api_key"`
 	TmdbApiKeyFile         *string               `json:"tmdb_api_key_file"`
 	OstLogin               OstLoginConfig        `json:"ost_login"`
-	WebServeAddress        string                `json:"web_serve_address"`
-	GrpcServeAddress       string                `json:"grpc_serve_address"`
+	ServeAddress           string                `json:"serve_address"`
 	DriveControllerPsk     *string               `json:"drive_controller_psk"`
 	DriveControllerPskFile *string               `json:"drive_controller_psk_file"`
 	ExportsDirs            map[string]ExportsDir `json:"exports_dirs"`
@@ -104,7 +103,10 @@ func LoadConfig() (ConfigFile, error) {
 	// Resolve drive controller preshared key
 	if config.DriveControllerPsk == nil {
 		if config.DriveControllerPskFile == nil {
-			return ConfigFile{}, fmt.Errorf("%w: missing drive_controller_psk[_file]", ErrInvalidConfig)
+			return ConfigFile{}, fmt.Errorf(
+				"%w: missing drive_controller_psk[_file]",
+				ErrInvalidConfig,
+			)
 		}
 		driveControllerPsk, err := os.ReadFile(*config.DriveControllerPsk)
 		if err != nil {

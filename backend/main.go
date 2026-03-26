@@ -5,11 +5,13 @@ import (
 	"embed"
 	"io/fs"
 	"log/slog"
-	"net"
 	"net/http"
 	"os"
 	"path"
+	"strings"
 
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -55,12 +57,6 @@ func main() {
 	}
 	router.Handle("GET /", http.FileServerFS(subFs))
 	twirpservices.RegisterApiService(router, app)
-	go func() {
-		if err := http.ListenAndServe(config.WebServeAddress, router); err != nil {
-			slog.Error("An error occurred while starting the web server.", "error", err.Error())
-			os.Exit(1)
-		}
-	}()
 
 	// Set up gRPC server & services
 	grpcServer := grpc.NewServer(
@@ -70,14 +66,34 @@ func main() {
 	)
 	driveCoordinator.RegisterGrpc(grpcServer)
 	reflection.Register(grpcServer)
-	grpcListener, err := net.Listen("tcp", config.GrpcServeAddress)
-	if err != nil {
-		slog.Error("An error occurred while binding the gRPC server.", "error", err.Error())
+
+	// Listen for private routes & gRPC calls on private router.
+	// h2c makes this a little more complicated here.
+	// I would like to add some basic auth in the future, but this is going behind my authenticated proxy for now
+	h2s := &http2.Server{}
+	server := http.Server{
+		Addr: config.ServeAddress,
+		Handler: h2c.NewHandler(
+			http.HandlerFunc(
+				func(response http.ResponseWriter, request *http.Request) {
+					if strings.Contains(request.Header.Get("content-type"), "application/grpc") {
+						grpcServer.ServeHTTP(response, request)
+						return
+					}
+
+					router.ServeHTTP(response, request)
+				},
+			),
+			h2s,
+		),
+	}
+	if err := http2.ConfigureServer(&server, h2s); err != nil {
+		slog.Error("An error occurred while setting up h2s.", "error", err.Error())
 		os.Exit(1)
 	}
-	if err := grpcServer.Serve(grpcListener); err != nil {
-		slog.Error("An error occurred while starting the gRPC server.", "error", err.Error())
-		os.Exit(1)
+	err = server.ListenAndServe()
+	if err != nil {
+		slog.Error("An error occurred while listening on private address.", "error", err.Error())
 	}
 }
 
