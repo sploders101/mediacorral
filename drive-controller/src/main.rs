@@ -85,11 +85,36 @@ pub struct Args {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct DriveControllerConfig {
+    // The directory to put rip jobs in.
+    //
+    // If this directory is the same as the coordinator's rip directory ($datadir/rips),
+    // then `max_upload_queue` should be set to 0 to disable file uploads.
     rip_directory: PathBuf,
+
+    // The gRPC address for the coordinator/backend
     coordinator_address: String,
+
+    // A list of drives to offer to the coordinator
     drives: Vec<DriveInfo>,
+
+    // The number of upload jobs that can wait in the queue before preventing more rip
+    // jobs from being created.
+    //
+    // This value should be set to `0` if the drive controller shares a rip directory
+    // with the coordinator/backend (uploads are not needed).
     max_upload_queue: usize,
+
+    // Drive status must be polled. This value configures how often we should poll the
+    // drive for its current status. Lower values mean lower latency, but increased CPU
+    // and I/O. Higher values mean higher latency, but decreased CPU and I/O.
+    //
+    // Defaults to 1000 (1 second).
+    #[serde(default = "default_drive_poll_frequency_ms")]
     drive_poll_frequency_ms: u64,
+}
+
+fn default_drive_poll_frequency_ms() -> u64 {
+    return 1000;
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -144,8 +169,12 @@ fn main() {
 
             let coordinator_client = DriveCoordinatorServiceClient::new(endpoint);
 
-            let (upload_queue_sender, upload_queue_receiver) =
-                tokio::sync::mpsc::channel(config.max_upload_queue);
+            let (upload_queue_sender, upload_queue_receiver) = if config.max_upload_queue == 0 {
+                let (sender, receiver) = tokio::sync::mpsc::channel(config.max_upload_queue);
+                (Some(sender), Some(receiver))
+            } else {
+                (None, None)
+            };
 
             for drive in drives {
                 tokio::task::spawn(control_drive(
@@ -157,7 +186,9 @@ fn main() {
             }
 
             // This blocks the main task so it never exits.
-            rip_job_postprocessor(coordinator_client.clone(), upload_queue_receiver).await;
+            if let Some(upload_queue_receiver) = upload_queue_receiver {
+                rip_job_postprocessor(coordinator_client.clone(), upload_queue_receiver).await;
+            }
         });
 }
 
@@ -343,6 +374,33 @@ async fn rip_job_postprocessor(
     }
 }
 
+/// This function signals the coordinator that the rip job has been completed.
+async fn signal_rip_job_complete(
+    mut client: DriveCoordinatorServiceClient<Channel>,
+    status: RipStatus,
+    dir: RipDir,
+) {
+    std::mem::forget(dir);
+    // Listen for result. Running the uploader with `join` scopes the future to this task,
+    // eliminating the need for a mutex on `files_to_upload`.
+    let result = client
+        .finalize_rip_job(futures::stream::once(std::future::ready(
+            FinalizeRipJobRequest {
+                message: Some(finalize_rip_job_request::Message::Header(
+                    FinalizeRipJobRequestHeader {
+                        rip_job: status.rip_job,
+                        upload_files: Vec::new(),
+                    },
+                )),
+            },
+        )))
+        .await;
+
+    if let Err(err) = result {
+        tracing::error!("Failed to complete rip job: {}", err);
+    }
+}
+
 /// Reverses `Result<Option<T>, E>` types into `Option<Result<T, E>>`. Useful for async loops.
 fn rev_ro<T, E>(item: Result<Option<T>, E>) -> Option<Result<T, E>> {
     return match item {
@@ -359,7 +417,7 @@ async fn control_drive(
     coordinator_client: DriveCoordinatorServiceClient<Channel>,
     drive: Drive,
     config: Arc<DriveControllerConfig>,
-    upload_queue: tokio::sync::mpsc::Sender<(RipStatus, RipDir)>,
+    upload_queue: Option<tokio::sync::mpsc::Sender<(RipStatus, RipDir)>>,
 ) {
     let (command_sender, mut command_receiver) =
         tokio::sync::mpsc::channel::<DriveConnectionResponse>(50);
@@ -512,7 +570,19 @@ async fn control_drive(
                         ctx.status
                             .send_modify(|job| job.set_status(RipStatusTag::Completed));
                         let status = ctx.status.borrow().clone();
-                        let _ = upload_queue.send((status, ctx.rip_dir)).await;
+                        match upload_queue {
+                            Some(ref upload_queue) => {
+                                let _ = upload_queue.send((status, ctx.rip_dir)).await;
+                            }
+                            None => {
+                                signal_rip_job_complete(
+                                    coordinator_client.clone(),
+                                    status,
+                                    ctx.rip_dir,
+                                )
+                                .await;
+                            }
+                        }
                         drive_status_sender.send_modify(|status| status.active_rip_job = None);
                         if ctx.autoeject {
                             if let Err(err) = drive.ejector.eject() {
