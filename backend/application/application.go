@@ -100,14 +100,14 @@ func NewApplication(
 	if err != nil {
 		return nil, fmt.Errorf("failed to set up blob storage: %w", err)
 	}
-	tmdbImporter, err := tmdb.NewImporter(db, configData.TmdbApiKey)
+	tmdbImporter, err := tmdb.NewImporter(db, *configData.TmdbApiKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set up tmdb importer: %w", err)
 	}
 	ostImporter, err := opensubtitles.NewOstImporter(
-		configData.OstLogin.ApiKey,
-		configData.OstLogin.Username,
-		configData.OstLogin.Password,
+		*configData.OstLogin.ApiKey,
+		*configData.OstLogin.Username,
+		*configData.OstLogin.Password,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set up ost importer: %w", err)

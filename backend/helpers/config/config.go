@@ -9,23 +9,30 @@ import (
 	"slices"
 )
 
+var (
+	ErrInvalidConfig = errors.New("Invalid config")
+)
+
 type ConfigFile struct {
 	AnalysisUrl      string                `json:"analysis_url"`
 	BasePath         *string               `json:"base_path"`
 	DataDirectory    string                `json:"data_directory"`
-	TmdbApiKey       string                `json:"tmdb_api_key"`
+	TmdbApiKey       *string               `json:"tmdb_api_key"`
+	TmdbApiKeyFile   *string               `json:"tmdb_api_key_file"`
 	OstLogin         OstLoginConfig        `json:"ost_login"`
 	WebServeAddress  string                `json:"web_serve_address"`
 	GrpcServeAddress string                `json:"grpc_serve_address"`
 	ExportsDirs      map[string]ExportsDir `json:"exports_dirs"`
 	EnableAutorip    bool                  `json:"enable_autorip"`
-	DriveControllers map[string]string     `json:"drive_controllers"`
 }
 
 type OstLoginConfig struct {
-	ApiKey   string `json:"api_key"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	ApiKey       *string `json:"api_key"`
+	ApiKeyFile   *string `json:"api_key_file"`
+	Username     *string `json:"username"`
+	UsernameFile *string `json:"username_file"`
+	Password     *string `json:"password"`
+	PasswordFile *string `json:"password_file"`
 }
 
 type ExportsDir struct {
@@ -90,6 +97,58 @@ func LoadConfig() (ConfigFile, error) {
 		}, details.LinkType) {
 			return ConfigFile{}, fmt.Errorf("invalid link_type %s", details.LinkType)
 		}
+	}
+
+	// Resolve TMDB API key
+	if config.TmdbApiKey == nil {
+		if config.TmdbApiKeyFile == nil {
+			return ConfigFile{}, fmt.Errorf("%w: missing tmdb_api_key[_file]", ErrInvalidConfig)
+		}
+		apiKeyRaw, err := os.ReadFile(*config.TmdbApiKeyFile)
+		if err != nil {
+			return ConfigFile{}, fmt.Errorf("error reading tmdb_api_key_file: %w", err)
+		}
+		apiKey := string(apiKeyRaw)
+		config.TmdbApiKey = &apiKey
+	}
+
+	// Resolve OST API key
+	if config.OstLogin.ApiKey == nil {
+		if config.OstLogin.ApiKey == nil {
+			return ConfigFile{}, fmt.Errorf("%w: missing ost_login.api_key[_file]", ErrInvalidConfig)
+		}
+		apiKeyRaw, err := os.ReadFile(*config.OstLogin.ApiKeyFile)
+		if err != nil {
+			return ConfigFile{}, fmt.Errorf("error reading ost_login.api_key_file: %w", err)
+		}
+		apiKey := string(apiKeyRaw)
+		config.OstLogin.ApiKey = &apiKey
+	}
+
+	// Resolve OST Username
+	if config.OstLogin.Username == nil {
+		if config.OstLogin.Username == nil {
+			return ConfigFile{}, fmt.Errorf("%w: missing ost_login.username[_file]", ErrInvalidConfig)
+		}
+		apiKeyRaw, err := os.ReadFile(*config.OstLogin.Username)
+		if err != nil {
+			return ConfigFile{}, fmt.Errorf("error reading ost_login.username_file: %w", err)
+		}
+		apiKey := string(apiKeyRaw)
+		config.OstLogin.Username = &apiKey
+	}
+
+	// Resolve OST Password
+	if config.OstLogin.Password == nil {
+		if config.OstLogin.Password == nil {
+			return ConfigFile{}, fmt.Errorf("%w: missing ost_login.password[_file]", ErrInvalidConfig)
+		}
+		apiKeyRaw, err := os.ReadFile(*config.OstLogin.Password)
+		if err != nil {
+			return ConfigFile{}, fmt.Errorf("error reading ost_login.password_file: %w", err)
+		}
+		apiKey := string(apiKeyRaw)
+		config.OstLogin.Password = &apiKey
 	}
 
 	return config, nil
