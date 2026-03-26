@@ -513,6 +513,7 @@ async fn control_drive(
                             .send_modify(|job| job.set_status(RipStatusTag::Completed));
                         let status = ctx.status.borrow().clone();
                         let _ = upload_queue.send((status, ctx.rip_dir)).await;
+                        drive_status_sender.send_modify(|status| status.active_rip_job = None);
                         if ctx.autoeject {
                             if let Err(err) = drive.ejector.eject() {
                                 tracing::error!("Failed to eject drive: {}", err);

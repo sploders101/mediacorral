@@ -248,9 +248,11 @@ func (receiver *WatchReceiverLocked[T]) Get() (T, func()) {
 func (receiver *WatchReceiverLocked[T]) Changed() (T, func(), error) {
 	val, gen, finished, err := receiver.watcher.wait(receiver.context, receiver.generation, false)
 	if err != nil {
+		receiver.watcher.mu.Unlock()
 		return val, func() {}, err
 	}
 	if finished && receiver.generation == gen {
+		receiver.watcher.mu.Unlock()
 		return val, func() {}, ErrImmutable
 	}
 	receiver.generation = gen
