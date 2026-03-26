@@ -117,7 +117,7 @@ func NewApplication(
 		return nil, fmt.Errorf("failed to set up exports manager: %w", err)
 	}
 
-	return &Application{
+	app := &Application{
 		Db: db,
 		settings: applicationSettings{
 			autoripEnabled: configData.EnableAutorip,
@@ -129,7 +129,12 @@ func NewApplication(
 		TmdbImporter:       tmdbImporter,
 		OstImporter:        ostImporter,
 		ExportsManager:     exportsManager,
-	}, nil
+	}
+
+	go app.autoripper()
+	go app.importJobs()
+
+	return app, nil
 }
 
 func (app *Application) ImportTmdbTv(tmdbId int) (dbapi.TvShowsItem, error) {

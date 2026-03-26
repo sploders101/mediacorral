@@ -1,11 +1,19 @@
 package drive_coordinator
 
 import (
+	"bufio"
 	"context"
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
+	"maps"
+	"os"
+	"path"
+	"slices"
+	"strconv"
+	"sync"
 
 	drive_coordinatorv1 "github.com/sploders101/mediacorral/backend/gen/mediacorral/drive_coordinator/v1"
 	"github.com/sploders101/mediacorral/backend/helpers/sync_extras"
@@ -20,12 +28,17 @@ var (
 type DriveCoordinatorService struct {
 	// Holds the list of active controllers. Update signals are shallow (ie. addition, removal, replacement).
 	driveControllers *sync_extras.Watch[map[string]*DriveController]
+	ripJobUploads    *sync_extras.Watch[map[int64]*RipUploadTracker]
 	ripDir           string
+	ImportQueue      chan int64
 }
 
-func NewDriveCoordinatorService() *DriveCoordinatorService {
+func NewDriveCoordinatorService(ripDir string) *DriveCoordinatorService {
 	return &DriveCoordinatorService{
 		driveControllers: sync_extras.NewWatch(map[string]*DriveController{}),
+		ripJobUploads:    sync_extras.NewWatch(map[int64]*RipUploadTracker{}),
+		ripDir:           ripDir,
+		ImportQueue:      make(chan int64),
 	}
 }
 
@@ -168,9 +181,177 @@ func (coordinator *DriveCoordinatorService) ConnectDrive(
 	}
 }
 
-func (coordinator *DriveCoordinatorService) UploadFile(
-	fileStream drive_coordinatorv1.DriveCoordinatorService_UploadFileServer,
+func (coordinator *DriveCoordinatorService) FinalizeRipJob(
+	request drive_coordinatorv1.DriveCoordinatorService_FinalizeRipJobServer,
 ) error {
+	// Watch for header message
+	headerRaw, err := request.Recv()
+	if err != nil && !errors.Is(err, io.EOF) {
+		slog.Error("Finalization read error", "error", err.Error())
+		return err
+	}
+	if !headerRaw.HasHeader() {
+		// First packet must always be a discovery packet so we know how to catalog it
+		slog.Error("Finalization protocol error", "error", "first message was not discovery")
+		return ErrProtocol
+	}
+	header := headerRaw.GetHeader()
+	ripJob := header.GetRipJob()
+	files := header.GetUploadFiles()
+
+	uploadProgress := make(map[string]int, len(files))
+	for _, file := range files {
+		uploadProgress[file.GetFileName()] = 0
+	}
+	uploadTracker := &RipUploadTracker{
+		FileList:       files,
+		uploadProgress: sync_extras.NewWatch(uploadProgress),
+	}
+
+	// Set up rip tracker
+	coordinator.ripJobUploads.ConditionalSet(func(uploads *map[int64]*RipUploadTracker) bool {
+		(*uploads)[ripJob] = uploadTracker
+		return true
+	})
+	defer func() {
+		coordinator.ripJobUploads.ConditionalSet(func(uploads *map[int64]*RipUploadTracker) bool {
+			if tracker, ok := (*uploads)[ripJob]; ok {
+				if tracker == uploadTracker {
+					delete(*uploads, ripJob)
+					return true
+				}
+			}
+			return false
+		})
+	}()
+
+	// Create directory
+	ripDir := path.Join(
+		coordinator.ripDir,
+		strconv.FormatInt(ripJob, 10),
+	)
+	if err := os.MkdirAll(ripDir, os.FileMode(0o777)); err != nil {
+		return err
+	}
+
+	var corruptedFilesMtx sync.Mutex
+	var corruptedFiles []string
+
+	// Receive files
+	if len(files) > 0 {
+		var closers sync.WaitGroup
+
+		uploadIndex := 0
+		filePath := path.Join(ripDir, files[uploadIndex].GetFileName())
+		fileRaw, err := os.Create(filePath)
+		if err != nil {
+			return err
+		}
+		file := bufio.NewWriter(fileRaw)
+		for uploadIndex < len(files) {
+			msg, err := request.Recv()
+			if err != nil {
+				file.Flush()
+				fileRaw.Close()
+				return err
+			}
+
+			switch {
+			case msg.HasHeader():
+				file.Flush()
+				fileRaw.Close()
+				return ErrProtocol
+			case msg.HasDataChunk():
+				chunk := msg.GetDataChunk()
+				if _, err := file.Write(chunk); err != nil {
+					return err
+				}
+				uploadTracker.uploadProgress.ConditionalSet(func(fileMap *map[string]int) bool {
+					fileName := files[uploadIndex].GetFileName()
+					(*fileMap)[fileName] += len(chunk)
+					return true
+				})
+			case msg.HasMd5Hash():
+				uploadIndex += 1
+
+				// Close the file
+				file.Flush()
+
+				// Start checking the hash
+				expectedHash := msg.GetMd5Hash()
+				hashFilePath := filePath
+				hashFileRaw := fileRaw
+				if _, err := hashFileRaw.Seek(0, io.SeekStart); err != nil {
+					return err
+				}
+				closers.Add(1)
+				go func() {
+					defer closers.Done()
+					defer hashFileRaw.Close()
+					hasher := md5.New()
+					hashFile := bufio.NewReader(hashFileRaw)
+					fileChunk := make([]byte, hasher.BlockSize())
+					for {
+						bytesRead, err := hashFile.Read(fileChunk)
+						if err != nil && err != io.EOF {
+							slog.Error("Unable to read uploaded file", "error", err.Error())
+							corruptedFilesMtx.Lock()
+							defer corruptedFilesMtx.Unlock()
+							corruptedFiles = append(corruptedFiles, hashFilePath)
+							return
+						}
+						if _, err := hasher.Write(fileChunk[:bytesRead]); err != nil {
+							slog.Error(
+								"Unable to calculate ms5 sum of uploaded file",
+								"error",
+								err.Error(),
+							)
+							return
+						}
+						if err == io.EOF {
+							hash := hasher.Sum(nil)
+							if !slices.Equal(hash, expectedHash) {
+								corruptedFilesMtx.Lock()
+								defer corruptedFilesMtx.Unlock()
+								corruptedFiles = append(corruptedFiles, hashFilePath)
+							}
+							return
+						}
+					}
+				}()
+
+				// Rotate to next file
+				if uploadIndex < len(files) {
+					filePath = path.Join(ripDir, files[uploadIndex].GetFileName())
+					fileRaw, err = os.Create(filePath)
+					if err != nil {
+						return err
+					}
+					file = bufio.NewWriter(fileRaw)
+				}
+			}
+		}
+
+		closers.Wait()
+	}
+
+	if len(corruptedFiles) == 0 {
+		coordinator.ImportQueue <- ripJob
+		slog.Info("Successfully downloaded ripped media.", "ripJob", ripJob)
+	} else {
+		slog.Error(
+			"Files corrupted during download.",
+			"ripJob",
+			ripJob,
+			"corruptedFiles",
+			corruptedFiles,
+		)
+	}
+
+	request.SendAndClose(drive_coordinatorv1.FinalizeRipJobResponse_builder{
+		CorruptedFiles: corruptedFiles,
+	}.Build())
+
 	return nil
 }
 
@@ -216,6 +397,11 @@ type DriveController struct {
 	writeChan     chan<- *drive_coordinatorv1.DriveConnectionResponse
 	statusWatcher *sync_extras.Watch[*drive_coordinatorv1.DriveStatus]
 	ripJobWatcher *sync_extras.Watch[*drive_coordinatorv1.RipStatus]
+}
+
+// Returns the ID of the drive
+func (controller *DriveController) DriveId() string {
+	return controller.discovery.GetDriveId()
 }
 
 // Returns a watcher that tracks the status of the drive
@@ -267,4 +453,21 @@ func (controller *DriveController) RipMedia(jobId int64, autoeject bool) {
 	case <-controller.ctx.Done():
 	case controller.writeChan <- message:
 	}
+}
+
+// Tracks the upload progress of a rip job. This only shows the progress of the latest call to `FinalizeRipJob`.
+// It must be combined with other context like files on the filesystem & database records to be useful.
+type RipUploadTracker struct {
+	FileList       []*drive_coordinatorv1.FileDescription
+	uploadProgress *sync_extras.Watch[map[string]int]
+}
+
+func (tracker *RipUploadTracker) GetUploadProgress() map[string]int {
+	progress, unlock := tracker.uploadProgress.GetLocked()
+	defer unlock()
+	return maps.Clone(progress)
+}
+
+func (tracker *RipUploadTracker) WatchUploadProgress() sync_extras.WatchReceiverLocked[map[string]int] {
+	return tracker.uploadProgress.WatchLocked()
 }

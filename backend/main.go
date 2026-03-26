@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -32,7 +33,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	driveCoordinator := drive_coordinator.NewDriveCoordinatorService()
+	driveCoordinator := drive_coordinator.NewDriveCoordinatorService(
+		path.Join(config.DataDirectory, "rips"),
+	)
 
 	app, err := application.NewApplication(config, driveCoordinator)
 	if err != nil {
