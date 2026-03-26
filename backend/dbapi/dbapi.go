@@ -22,7 +22,7 @@ type DbTx struct {
 }
 
 func NewDb(dbPath string) (Db, error) {
-	db, err := sql.Open("sqlite3", "file:"+dbPath+"?_timeout=60000&_journal=WAL&mode=rwc")
+	db, err := sql.Open("sqlite", "file:"+dbPath+"?_timeout=60000&_journal=WAL&mode=rwc")
 	if err != nil {
 		return Db{}, fmt.Errorf("an error occurred while opening the database: %w", err)
 	}

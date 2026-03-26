@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/mattn/go-sqlite3"
+	"modernc.org/sqlite"
+	"modernc.org/sqlite/lib"
 )
 
 func InitDb(db *sql.DB) error {
@@ -13,9 +14,9 @@ func InitDb(db *sql.DB) error {
 	for {
 		err := db.QueryRow(`SELECT value FROM migrations WHERE key = 'version'`).Scan(&version)
 		if err != nil {
-			if sqliteErr, ok := err.(sqlite3.Error); ok {
-				switch sqliteErr.Code {
-				case sqlite3.ErrError:
+			if sqliteErr, ok := err.(*sqlite.Error); ok {
+				switch sqliteErr.Code() {
+				case sqlite3.SQLITE_ERROR:
 					version = 0
 				default:
 					return sqliteErr

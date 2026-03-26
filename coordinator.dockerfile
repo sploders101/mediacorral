@@ -1,4 +1,4 @@
-FROM docker.io/node:24.11.1 AS frontend-builder
+FROM --platform=$BUILDPLATFORM docker.io/node:24.11.1 AS frontend-builder
 
 COPY ./frontend /app/frontend
 WORKDIR /app/frontend
@@ -8,22 +8,20 @@ RUN npm run build
 
 # ---
 
-FROM docker.io/golang:1.25.4-trixie AS backend-builder
+FROM --platform=$BUILDPLATFORM docker.io/golang:1.26.1-alpine AS backend-builder
+
+ARG TARGETOS
+ARG TARGETARCH
 
 COPY --from=frontend-builder /app/frontend/dist/ /app/backend/frontend/
 COPY . /app
 
 WORKDIR /app/backend
-RUN go build .
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build .
 
 # ---
 
-FROM docker.io/debian:trixie
+FROM scratch
 
-RUN apt-get update \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    libtesseract5 tesseract-ocr-eng libclang1-19 jq \
-  && rm -rf /var/cache/apt
-
-COPY --from=backend-builder /app/backend/backend /usr/bin/mediacorral
-ENV CONFIG_PATH=/etc/mediacorral.json
+COPY --from=backend-builder /app/backend/backend /mediacorral
+ENV CONFIG_PATH=/config/mediacorral.json
