@@ -14,16 +14,18 @@ var (
 )
 
 type ConfigFile struct {
-	AnalysisUrl      string                `json:"analysis_url"`
-	BasePath         *string               `json:"base_path"`
-	DataDirectory    string                `json:"data_directory"`
-	TmdbApiKey       *string               `json:"tmdb_api_key"`
-	TmdbApiKeyFile   *string               `json:"tmdb_api_key_file"`
-	OstLogin         OstLoginConfig        `json:"ost_login"`
-	WebServeAddress  string                `json:"web_serve_address"`
-	GrpcServeAddress string                `json:"grpc_serve_address"`
-	ExportsDirs      map[string]ExportsDir `json:"exports_dirs"`
-	EnableAutorip    bool                  `json:"enable_autorip"`
+	AnalysisUrl            string                `json:"analysis_url"`
+	BasePath               *string               `json:"base_path"`
+	DataDirectory          string                `json:"data_directory"`
+	TmdbApiKey             *string               `json:"tmdb_api_key"`
+	TmdbApiKeyFile         *string               `json:"tmdb_api_key_file"`
+	OstLogin               OstLoginConfig        `json:"ost_login"`
+	WebServeAddress        string                `json:"web_serve_address"`
+	GrpcServeAddress       string                `json:"grpc_serve_address"`
+	DriveControllerPsk     *string               `json:"drive_controller_psk"`
+	DriveControllerPskFile *string               `json:"drive_controller_psk_file"`
+	ExportsDirs            map[string]ExportsDir `json:"exports_dirs"`
+	EnableAutorip          bool                  `json:"enable_autorip"`
 }
 
 type OstLoginConfig struct {
@@ -99,6 +101,19 @@ func LoadConfig() (ConfigFile, error) {
 		}
 	}
 
+	// Resolve drive controller preshared key
+	if config.DriveControllerPsk == nil {
+		if config.DriveControllerPskFile == nil {
+			return ConfigFile{}, fmt.Errorf("%w: missing drive_controller_psk[_file]", ErrInvalidConfig)
+		}
+		driveControllerPsk, err := os.ReadFile(*config.DriveControllerPsk)
+		if err != nil {
+			return ConfigFile{}, fmt.Errorf("error reading drive_controller_psk_file: %w", err)
+		}
+		apiKey := string(driveControllerPsk)
+		config.DriveControllerPsk = &apiKey
+	}
+
 	// Resolve TMDB API key
 	if config.TmdbApiKey == nil {
 		if config.TmdbApiKeyFile == nil {
@@ -115,7 +130,10 @@ func LoadConfig() (ConfigFile, error) {
 	// Resolve OST API key
 	if config.OstLogin.ApiKey == nil {
 		if config.OstLogin.ApiKey == nil {
-			return ConfigFile{}, fmt.Errorf("%w: missing ost_login.api_key[_file]", ErrInvalidConfig)
+			return ConfigFile{}, fmt.Errorf(
+				"%w: missing ost_login.api_key[_file]",
+				ErrInvalidConfig,
+			)
 		}
 		apiKeyRaw, err := os.ReadFile(*config.OstLogin.ApiKeyFile)
 		if err != nil {
@@ -128,27 +146,33 @@ func LoadConfig() (ConfigFile, error) {
 	// Resolve OST Username
 	if config.OstLogin.Username == nil {
 		if config.OstLogin.Username == nil {
-			return ConfigFile{}, fmt.Errorf("%w: missing ost_login.username[_file]", ErrInvalidConfig)
+			return ConfigFile{}, fmt.Errorf(
+				"%w: missing ost_login.username[_file]",
+				ErrInvalidConfig,
+			)
 		}
-		apiKeyRaw, err := os.ReadFile(*config.OstLogin.Username)
+		usernameRaw, err := os.ReadFile(*config.OstLogin.Username)
 		if err != nil {
 			return ConfigFile{}, fmt.Errorf("error reading ost_login.username_file: %w", err)
 		}
-		apiKey := string(apiKeyRaw)
-		config.OstLogin.Username = &apiKey
+		username := string(usernameRaw)
+		config.OstLogin.Username = &username
 	}
 
 	// Resolve OST Password
 	if config.OstLogin.Password == nil {
 		if config.OstLogin.Password == nil {
-			return ConfigFile{}, fmt.Errorf("%w: missing ost_login.password[_file]", ErrInvalidConfig)
+			return ConfigFile{}, fmt.Errorf(
+				"%w: missing ost_login.password[_file]",
+				ErrInvalidConfig,
+			)
 		}
-		apiKeyRaw, err := os.ReadFile(*config.OstLogin.Password)
+		passwordRaw, err := os.ReadFile(*config.OstLogin.Password)
 		if err != nil {
 			return ConfigFile{}, fmt.Errorf("error reading ost_login.password_file: %w", err)
 		}
-		apiKey := string(apiKeyRaw)
-		config.OstLogin.Password = &apiKey
+		password := string(passwordRaw)
+		config.OstLogin.Password = &password
 	}
 
 	return config, nil

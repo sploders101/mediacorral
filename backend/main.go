@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"io/fs"
 	"log/slog"
@@ -10,8 +11,11 @@ import (
 	"path"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 
 	"github.com/sploders101/mediacorral/backend/application"
 	"github.com/sploders101/mediacorral/backend/drive_coordinator"
@@ -59,7 +63,11 @@ func main() {
 	}()
 
 	// Set up gRPC server & services
-	grpcServer := grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(pskUnaryInterceptor(*config.DriveControllerPsk)),
+		grpc.StreamInterceptor(pskStreamInterceptor(*config.DriveControllerPsk)),
+		grpc.Creds(insecure.NewCredentials()),
+	)
 	driveCoordinator.RegisterGrpc(grpcServer)
 	reflection.Register(grpcServer)
 	grpcListener, err := net.Listen("tcp", config.GrpcServeAddress)
@@ -70,6 +78,48 @@ func main() {
 	if err := grpcServer.Serve(grpcListener); err != nil {
 		slog.Error("An error occurred while starting the gRPC server.", "error", err.Error())
 		os.Exit(1)
+	}
+}
+
+func pskUnaryInterceptor(expectedKey string) grpc.UnaryServerInterceptor {
+	return func(
+		ctx context.Context,
+		req any,
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (resp any, err error) {
+		md, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			return nil, status.Error(codes.Unauthenticated, "missing metadata")
+		}
+
+		key := md.Get("authorization")
+		if len(key) == 0 || key[0] != expectedKey {
+			return nil, status.Error(codes.Unauthenticated, "invalid API key")
+		}
+
+		return handler(ctx, req)
+	}
+}
+
+func pskStreamInterceptor(expectedKey string) grpc.StreamServerInterceptor {
+	return func(
+		srv any,
+		ss grpc.ServerStream,
+		info *grpc.StreamServerInfo,
+		handler grpc.StreamHandler,
+	) error {
+		md, ok := metadata.FromIncomingContext(ss.Context())
+		if !ok {
+			return status.Error(codes.Unauthenticated, "missing metadata")
+		}
+
+		key := md.Get("authorization")
+		if len(key) == 0 || key[0] != expectedKey {
+			return status.Error(codes.Unauthenticated, "invalid API key")
+		}
+
+		return handler(srv, ss)
 	}
 }
 

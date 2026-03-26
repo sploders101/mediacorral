@@ -14,9 +14,14 @@ use serde::Deserialize;
 use tokio::{
     io::{AsyncReadExt, AsyncSeekExt, BufReader},
     process::Command,
+    task::JoinSet,
 };
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::transport::{Channel, Endpoint};
+use tonic::{
+    metadata::MetadataValue,
+    service::interceptor::InterceptedService,
+    transport::{Channel, Endpoint},
+};
 use tracing::Instrument;
 use tracing_subscriber::EnvFilter;
 
@@ -94,6 +99,9 @@ pub struct DriveControllerConfig {
     // The gRPC address for the coordinator/backend
     coordinator_address: String,
 
+    // The preshared key needed to authenticate with the drive controller
+    preshared_key: String,
+
     // A list of drives to offer to the coordinator
     drives: Vec<DriveInfo>,
 
@@ -163,21 +171,32 @@ fn main() {
         .build()
         .expect("Couldn't build tokio runtime")
         .block_on(async move {
-            let endpoint = Endpoint::from_str(config.coordinator_address.as_str())
+            let channel = Endpoint::from_str(config.coordinator_address.as_str())
                 .expect("Invalid coordinator_address")
                 .connect_lazy();
 
-            let coordinator_client = DriveCoordinatorServiceClient::new(endpoint);
+            let psk: MetadataValue<_> =
+                config.preshared_key.parse().expect("Invalid preshared_key");
+
+            let coordinator_client = DriveCoordinatorServiceClient::with_interceptor(
+                channel,
+                move |mut req: tonic::Request<()>| {
+                    req.metadata_mut().insert("authorization", psk.clone());
+                    Ok(req)
+                },
+            );
 
             let (upload_queue_sender, upload_queue_receiver) = if config.max_upload_queue == 0 {
+                (None, None)
+            } else {
                 let (sender, receiver) = tokio::sync::mpsc::channel(config.max_upload_queue);
                 (Some(sender), Some(receiver))
-            } else {
-                (None, None)
             };
 
+            let mut join_set = JoinSet::new();
+
             for drive in drives {
-                tokio::task::spawn(control_drive(
+                join_set.spawn(control_drive(
                     coordinator_client.clone(),
                     drive,
                     Arc::clone(&config),
@@ -189,6 +208,8 @@ fn main() {
             if let Some(upload_queue_receiver) = upload_queue_receiver {
                 rip_job_postprocessor(coordinator_client.clone(), upload_queue_receiver).await;
             }
+
+            join_set.join_all().await;
         });
 }
 
@@ -197,9 +218,14 @@ fn main() {
 /// for this, `control_drive` function can pass finished rip jobs off to this task for finalization so it can continue
 /// operations on its own. Jobs are processed sequentially since they are IO-bound. Parallelization likely won't help
 /// much here.
-#[tracing::instrument]
+#[tracing::instrument(skip_all)]
 async fn rip_job_postprocessor(
-    mut client: DriveCoordinatorServiceClient<Channel>,
+    mut client: DriveCoordinatorServiceClient<
+        InterceptedService<
+            Channel,
+            impl tonic::service::Interceptor + Clone + Sync + Send + 'static,
+        >,
+    >,
     mut upload_queue: tokio::sync::mpsc::Receiver<(RipStatus, RipDir)>,
 ) {
     while let Some((status, dir)) = upload_queue.recv().await {
@@ -376,7 +402,12 @@ async fn rip_job_postprocessor(
 
 /// This function signals the coordinator that the rip job has been completed.
 async fn signal_rip_job_complete(
-    mut client: DriveCoordinatorServiceClient<Channel>,
+    mut client: DriveCoordinatorServiceClient<
+        InterceptedService<
+            Channel,
+            impl tonic::service::Interceptor + Clone + Sync + Send + 'static,
+        >,
+    >,
     status: RipStatus,
     dir: RipDir,
 ) {
@@ -412,9 +443,14 @@ fn rev_ro<T, E>(item: Result<Option<T>, E>) -> Option<Result<T, E>> {
 
 /// The main drive control loop. One of these is spawned for each drive, and only fails on hardware connection errors.
 /// This handles keeping state objects up to date and running commands from the server.
-#[tracing::instrument]
+#[tracing::instrument(skip_all)]
 async fn control_drive(
-    coordinator_client: DriveCoordinatorServiceClient<Channel>,
+    coordinator_client: DriveCoordinatorServiceClient<
+        InterceptedService<
+            Channel,
+            impl tonic::service::Interceptor + Clone + Sync + Send + 'static,
+        >,
+    >,
     drive: Drive,
     config: Arc<DriveControllerConfig>,
     upload_queue: Option<tokio::sync::mpsc::Sender<(RipStatus, RipDir)>>,
@@ -644,7 +680,12 @@ async fn control_drive(
 /// be missed.
 #[tracing::instrument]
 async fn handle_connection(
-    mut client: DriveCoordinatorServiceClient<Channel>,
+    mut client: DriveCoordinatorServiceClient<
+        InterceptedService<
+            Channel,
+            impl tonic::service::Interceptor + Clone + Sync + Send + 'static,
+        >,
+    >,
     drive_id: String,
     drive_name: String,
     command_sender: tokio::sync::mpsc::Sender<DriveConnectionResponse>,
