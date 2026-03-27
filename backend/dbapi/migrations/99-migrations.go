@@ -34,6 +34,11 @@ func InitDb(db *sql.DB) error {
 				return fmt.Errorf("failed to initialize migration: %w", err)
 			}
 		case 1:
+			err := MigrationAuth(db)
+			if err != nil {
+				return fmt.Errorf("failed to initialize auth migration: %w", err)
+			}
+		case 2:
 			return nil
 		default:
 			return fmt.Errorf("unknown schema version: %d", version)

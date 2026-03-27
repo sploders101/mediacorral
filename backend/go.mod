@@ -4,10 +4,12 @@ go 1.25.0
 
 require (
 	github.com/agnivade/levenshtein v1.0.3
+	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/cyruzin/golang-tmdb v1.9.0
 	github.com/google/uuid v1.6.0
 	github.com/twitchtv/twirp v8.1.3+incompatible
 	golang.org/x/net v0.42.0
+	golang.org/x/oauth2 v0.36.0
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
 	modernc.org/sqlite v1.47.0
@@ -15,6 +17,7 @@ require (
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect

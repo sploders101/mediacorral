@@ -18,3 +18,5 @@ CREATE TABLE `drive_tokens`(
     `name` TEXT NOT NULL,
     `token_hash` TEXT NOT NULL
 );
+
+UPDATE migrations SET value = 2 WHERE key = 'version';

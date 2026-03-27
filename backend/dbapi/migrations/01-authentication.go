@@ -9,7 +9,7 @@ import (
 var AUTH_SQL_01 string
 
 func MigrationAuth(db *sql.DB) error {
-	_, err := db.Exec(INIT_SQL)
+	_, err := db.Exec(AUTH_SQL_01)
 	if err != nil {
 		return err
 	}

@@ -20,11 +20,22 @@ type ConfigFile struct {
 	TmdbApiKey             *string               `json:"tmdb_api_key"`
 	TmdbApiKeyFile         *string               `json:"tmdb_api_key_file"`
 	OstLogin               OstLoginConfig        `json:"ost_login"`
+	OIDC                   *OIDCConfig           `json:"oidc"`
 	ServeAddress           string                `json:"serve_address"`
 	DriveControllerPsk     *string               `json:"drive_controller_psk"`
 	DriveControllerPskFile *string               `json:"drive_controller_psk_file"`
 	ExportsDirs            map[string]ExportsDir `json:"exports_dirs"`
 	EnableAutorip          bool                  `json:"enable_autorip"`
+}
+
+type OIDCConfig struct {
+	Issuer           string   `json:"issuer"`
+	ClientID         *string  `json:"client_id"`
+	ClientIDFile     *string  `json:"client_id_file"`
+	ClientSecret     *string  `json:"client_secret"`
+	ClientSecretFile *string  `json:"client_secret_file"`
+	RedirectURL      string   `json:"redirect_url"`
+	Scopes           []string `json:"scopes"`
 }
 
 type OstLoginConfig struct {
@@ -175,6 +186,38 @@ func LoadConfig() (ConfigFile, error) {
 		}
 		password := string(passwordRaw)
 		config.OstLogin.Password = &password
+	}
+
+	// Resolve OIDC credentials
+	if config.OIDC != nil {
+		if config.OIDC.ClientID == nil {
+			if config.OIDC.ClientIDFile == nil {
+				return ConfigFile{}, fmt.Errorf(
+					"%w: missing oidc.client_id[_file]",
+					ErrInvalidConfig,
+				)
+			}
+			clientIDRaw, err := os.ReadFile(*config.OIDC.ClientIDFile)
+			if err != nil {
+				return ConfigFile{}, fmt.Errorf("error reading oidc.client_id_file: %w", err)
+			}
+			clientID := string(clientIDRaw)
+			config.OIDC.ClientID = &clientID
+		}
+		if config.OIDC.ClientSecret == nil {
+			if config.OIDC.ClientSecretFile == nil {
+				return ConfigFile{}, fmt.Errorf(
+					"%w: missing oidc.client_secret[_file]",
+					ErrInvalidConfig,
+				)
+			}
+			clientSecretRaw, err := os.ReadFile(*config.OIDC.ClientSecretFile)
+			if err != nil {
+				return ConfigFile{}, fmt.Errorf("error reading oidc.client_secret_file: %w", err)
+			}
+			clientSecret := string(clientSecretRaw)
+			config.OIDC.ClientSecret = &clientSecret
+		}
 	}
 
 	return config, nil

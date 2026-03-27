@@ -149,4 +149,4 @@ CREATE TABLE `image_files`(
 	`rip_job` INTEGER
 );
 
-INSERT INTO migrations (key, value) VALUES ('version', 1);
+INSERT INTO migrations (key, value) VALUES ('version', 2);

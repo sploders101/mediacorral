@@ -2,6 +2,7 @@ package dbapi
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -37,7 +38,7 @@ func (db *DbTx) GetUser(id string) (UserMeta, error) {
 			SELECT
 				id,
 				name,
-				email,
+				email
 			FROM users
 			WHERE id = ?
 		`,
@@ -48,6 +49,22 @@ func (db *DbTx) GetUser(id string) (UserMeta, error) {
 		return UserMeta{}, err
 	}
 	return user, nil
+}
+
+func (db *DbTx) UpdateUser(id string, name string, email string) error {
+	_, err := db.tx.Exec(
+		`
+			UPDATE users
+			SET
+				name = ?,
+				email = ?
+			WHERE id = ?
+		`,
+		name,
+		email,
+		id,
+	)
+	return err
 }
 
 func (db *DbTx) InsertSessionToken(sessionToken string, userId string, expiration time.Time) error {
@@ -109,13 +126,13 @@ func (db *DbTx) GetSessionMeta(sessionToken string) (SessionMeta, error) {
 	return session, nil
 }
 
-// Ensures the session has at lease 1 hour before expiration, but only if it hasn't already expired.
+// Ensures the session has at least 24 hours before expiration, but only if it hasn't already expired.
 // Returns a boolean indicating whether or not the token was valid.
 func (db *DbTx) ProbeSession(sessionToken string) (bool, error) {
 	result := db.tx.QueryRow(
 		`
 			UPDATE session_tokens
-			SET expires = unixepoch() + 3600
+			SET expires = unixepoch() + 86400
 			WHERE
 				session_token = ?
 				AND expires > unixepoch()
@@ -124,10 +141,24 @@ func (db *DbTx) ProbeSession(sessionToken string) (bool, error) {
 		sessionToken,
 	)
 	var sessionTokenRecv sql.Null[string]
-	if err := result.Scan(&sessionToken); err != nil {
+	if err := result.Scan(&sessionTokenRecv); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
 		return false, err
 	}
 	return sessionTokenRecv.Valid, nil
+}
+
+func (db *DbTx) DeleteSessionToken(sessionToken string) error {
+	_, err := db.tx.Exec(
+		`
+			DELETE FROM session_tokens
+			WHERE session_token = ?
+		`,
+		sessionToken,
+	)
+	return err
 }
 
 func (db *DbTx) AuthGC() error {

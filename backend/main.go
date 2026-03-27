@@ -21,6 +21,7 @@ import (
 
 	"github.com/sploders101/mediacorral/backend/application"
 	"github.com/sploders101/mediacorral/backend/drive_coordinator"
+	"github.com/sploders101/mediacorral/backend/handlers"
 	"github.com/sploders101/mediacorral/backend/helpers/config"
 	twirpservices "github.com/sploders101/mediacorral/backend/twirp_services"
 )
@@ -63,6 +64,48 @@ func main() {
 	router.Handle("GET /", http.FileServerFS(subFs))
 	twirpservices.RegisterApiService(router, app)
 
+	var httpHandler http.Handler = router
+	if config.OIDC != nil {
+		oidcHandler, err := handlers.NewOIDCHandler(config.OIDC, app.Db)
+		if err != nil {
+			slog.Error("Failed to initialize OIDC handler.", "error", err.Error())
+			os.Exit(1)
+		}
+		oidcHandler.Register(router)
+		httpHandler = http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+			if strings.HasPrefix(req.URL.Path, "/auth/") {
+				// Authentication paths don't need to be authorized already.
+				// ServeHTTP protects against bad paths by sending a redirect to the canonical
+				// form instead, so this is safe.
+				router.ServeHTTP(resp, req)
+				return
+			}
+			sessionCookie, err := req.Cookie("session")
+			if err != nil {
+				http.Error(resp, "Missing session cookie", http.StatusUnauthorized)
+				return
+			}
+			dbTx, err := app.Db.Begin()
+			if err != nil {
+				slog.Error("Error beginning transaction", "error", err.Error())
+				http.Error(resp, "Internal server error", http.StatusInternalServerError)
+			}
+			defer func() { _ = dbTx.Rollback() }()
+			valid, err := dbTx.ProbeSession(sessionCookie.Value)
+			if err != nil {
+				slog.Error("Unable to probe session", "error", err.Error())
+				http.Error(resp, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+			if !valid {
+				http.Error(resp, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			dbTx.Commit()
+			router.ServeHTTP(resp, req)
+		})
+	}
+
 	// Set up gRPC server & services
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(pskUnaryInterceptor(*config.DriveControllerPsk)),
@@ -85,7 +128,7 @@ func main() {
 						return
 					}
 
-					router.ServeHTTP(response, request)
+					httpHandler.ServeHTTP(response, request)
 				},
 			),
 			h2s,
