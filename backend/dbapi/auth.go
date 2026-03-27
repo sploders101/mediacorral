@@ -27,7 +27,7 @@ func (db *DbTx) InsertUser(id string, name string, email string) error {
 }
 
 type UserMeta struct {
-	Id    int
+	Id    string
 	Name  string
 	Email string
 }
@@ -173,85 +173,4 @@ func (db *DbTx) AuthGC() error {
 	}
 
 	return nil
-}
-
-func (db *DbTx) InsertDriveToken(id int, name string, tokenHash string) error {
-	_, err := db.tx.Exec(
-		`
-			INSERT INTO drive_tokens (
-				id,
-				name,
-				token_hash
-			) VALUES (?, ?, ?)
-		`,
-		id,
-		name,
-		tokenHash,
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (db *DbTx) DeleteDriveToken(id int) error {
-	_, err := db.tx.Exec(
-		`
-			DELETE FROM drive_tokens
-			WHERE id = ?
-		`,
-		id,
-	)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type DriveTokenMeta struct {
-	Id   int
-	Name string
-}
-
-func (db *DbTx) ListDriveTokens(skip int, limit int) ([]DriveTokenMeta, error) {
-	results, err := db.tx.Query(
-		`
-			SELECT id, name
-			FROM drive_tokens
-			LIMIT ?
-			OFFSET ?
-		`,
-		limit,
-		skip,
-	)
-	if err != nil {
-		return nil, err
-	}
-	var tokens []DriveTokenMeta
-	for results.Next() {
-		var token DriveTokenMeta
-		if err := results.Scan(&token.Id, &token.Name); err != nil {
-			return nil, err
-		}
-		tokens = append(tokens, token)
-	}
-	return tokens, nil
-}
-
-func (db *DbTx) GetDriveTokenHash(id int) (string, error) {
-	result := db.tx.QueryRow(
-		`
-			SELECT token_hash
-			FROM drive_tokens
-			WHERE id = ?
-		`,
-		id,
-	)
-
-	var tokenHash string
-	if err := result.Scan(&tokenHash); err != nil {
-		return "", err
-	}
-	return tokenHash, nil
 }
