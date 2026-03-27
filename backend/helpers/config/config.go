@@ -108,7 +108,7 @@ func LoadConfig() (ConfigFile, error) {
 				ErrInvalidConfig,
 			)
 		}
-		driveControllerPsk, err := os.ReadFile(*config.DriveControllerPsk)
+		driveControllerPsk, err := os.ReadFile(*config.DriveControllerPskFile)
 		if err != nil {
 			return ConfigFile{}, fmt.Errorf("error reading drive_controller_psk_file: %w", err)
 		}
@@ -131,7 +131,7 @@ func LoadConfig() (ConfigFile, error) {
 
 	// Resolve OST API key
 	if config.OstLogin.ApiKey == nil {
-		if config.OstLogin.ApiKey == nil {
+		if config.OstLogin.ApiKeyFile == nil {
 			return ConfigFile{}, fmt.Errorf(
 				"%w: missing ost_login.api_key[_file]",
 				ErrInvalidConfig,
@@ -147,13 +147,13 @@ func LoadConfig() (ConfigFile, error) {
 
 	// Resolve OST Username
 	if config.OstLogin.Username == nil {
-		if config.OstLogin.Username == nil {
+		if config.OstLogin.UsernameFile == nil {
 			return ConfigFile{}, fmt.Errorf(
 				"%w: missing ost_login.username[_file]",
 				ErrInvalidConfig,
 			)
 		}
-		usernameRaw, err := os.ReadFile(*config.OstLogin.Username)
+		usernameRaw, err := os.ReadFile(*config.OstLogin.UsernameFile)
 		if err != nil {
 			return ConfigFile{}, fmt.Errorf("error reading ost_login.username_file: %w", err)
 		}
@@ -163,13 +163,13 @@ func LoadConfig() (ConfigFile, error) {
 
 	// Resolve OST Password
 	if config.OstLogin.Password == nil {
-		if config.OstLogin.Password == nil {
+		if config.OstLogin.PasswordFile == nil {
 			return ConfigFile{}, fmt.Errorf(
 				"%w: missing ost_login.password[_file]",
 				ErrInvalidConfig,
 			)
 		}
-		passwordRaw, err := os.ReadFile(*config.OstLogin.Password)
+		passwordRaw, err := os.ReadFile(*config.OstLogin.PasswordFile)
 		if err != nil {
 			return ConfigFile{}, fmt.Errorf("error reading ost_login.password_file: %w", err)
 		}

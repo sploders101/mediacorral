@@ -11,13 +11,14 @@ serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml = "0.9.34"
 tokio = { version = "1.45.1", features = ["full"] }
 tokio-stream = { version = "0.1.17", features = ["sync"] }
-tonic = "0.13.1"
+tonic = { version = "0.13.1", features = ["tls-native-roots", "tls-aws-lc"] }
 tonic-reflection = "0.13.1"
 prost = "0.13.5"
 anyhow = "1.0.102"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 md5 = "0.8.0"
+url = "2.5.8"
 
 [build-dependencies]
 tonic-build = "0.13.1"

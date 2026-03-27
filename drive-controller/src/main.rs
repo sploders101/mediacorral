@@ -20,10 +20,11 @@ use tokio_stream::wrappers::ReceiverStream;
 use tonic::{
     metadata::MetadataValue,
     service::interceptor::InterceptedService,
-    transport::{Channel, Endpoint},
+    transport::{Channel, ClientTlsConfig, Endpoint},
 };
 use tracing::Instrument;
 use tracing_subscriber::EnvFilter;
+use url::Url;
 
 use crate::{
     makemkv::{Makemkv, messaging::MakemkvMessage},
@@ -171,9 +172,21 @@ fn main() {
         .build()
         .expect("Couldn't build tokio runtime")
         .block_on(async move {
-            let channel = Endpoint::from_str(config.coordinator_address.as_str())
-                .expect("Invalid coordinator_address")
-                .connect_lazy();
+            let url = Url::parse(&config.coordinator_address).expect("Invalid coordinator_address");
+            let is_tls = url.scheme() == "https";
+            let host = url.host_str().expect("Endpoint must have a valid host");
+            let channel = if is_tls {
+                let tls_config = ClientTlsConfig::new().with_native_roots().domain_name(host);
+                Endpoint::from_str(config.coordinator_address.as_str())
+                    .expect("Invalid coordinator_address")
+                    .tls_config(tls_config)
+                    .expect("Invalid TLS config")
+                    .connect_lazy()
+            } else {
+                Endpoint::from_str(config.coordinator_address.as_str())
+                    .expect("Invalid coordinator_address")
+                    .connect_lazy()
+            };
 
             let psk: MetadataValue<_> =
                 config.preshared_key.parse().expect("Invalid preshared_key");

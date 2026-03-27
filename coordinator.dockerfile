@@ -25,3 +25,4 @@ FROM scratch
 
 COPY --from=backend-builder /app/backend/backend /mediacorral
 ENV CONFIG_PATH=/config/mediacorral.json
+ENTRYPOINT ["/mediacorral"]
