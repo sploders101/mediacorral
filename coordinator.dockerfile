@@ -21,8 +21,8 @@ RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build .
 
 # ---
 
-FROM scratch
+FROM gcr.io/distroless/static-debian12
 
-COPY --from=backend-builder /app/backend/backend /mediacorral
+COPY --from=backend-builder /app/backend/backend /bin/mediacorral
 ENV CONFIG_PATH=/config/mediacorral.json
-ENTRYPOINT ["/mediacorral"]
+ENTRYPOINT ["/bin/mediacorral"]

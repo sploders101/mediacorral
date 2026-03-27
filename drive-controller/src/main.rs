@@ -181,10 +181,16 @@ fn main() {
                     .expect("Invalid coordinator_address")
                     .tls_config(tls_config)
                     .expect("Invalid TLS config")
+                    .keep_alive_while_idle(true)
+                    .http2_keep_alive_interval(Duration::from_secs(30))
+                    .keep_alive_timeout(Duration::from_secs(15))
                     .connect_lazy()
             } else {
                 Endpoint::from_str(config.coordinator_address.as_str())
                     .expect("Invalid coordinator_address")
+                    .keep_alive_while_idle(true)
+                    .http2_keep_alive_interval(Duration::from_secs(30))
+                    .keep_alive_timeout(Duration::from_secs(15))
                     .connect_lazy()
             };
 
