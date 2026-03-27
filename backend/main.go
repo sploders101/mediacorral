@@ -82,7 +82,7 @@ func main() {
 			}
 			sessionCookie, err := req.Cookie("session")
 			if err != nil {
-				http.Error(resp, "Missing session cookie", http.StatusUnauthorized)
+				http.Redirect(resp, req, "/auth/login", http.StatusFound)
 				return
 			}
 			dbTx, err := app.Db.Begin()
@@ -98,7 +98,7 @@ func main() {
 				return
 			}
 			if !valid {
-				http.Error(resp, "Unauthorized", http.StatusUnauthorized)
+				http.Redirect(resp, req, "/auth/login", http.StatusFound)
 				return
 			}
 			dbTx.Commit()
