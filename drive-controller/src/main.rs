@@ -194,7 +194,7 @@ fn main() {
             let coordinator_client = DriveCoordinatorServiceClient::with_interceptor(
                 channel,
                 move |mut req: tonic::Request<()>| {
-                    req.metadata_mut().insert("authorization", psk.clone());
+                    req.metadata_mut().insert("x-api-key", psk.clone());
                     Ok(req)
                 },
             );

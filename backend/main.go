@@ -109,7 +109,7 @@ func pskUnaryInterceptor(expectedKey string) grpc.UnaryServerInterceptor {
 			return nil, status.Error(codes.Unauthenticated, "missing metadata")
 		}
 
-		key := md.Get("authorization")
+		key := md.Get("x-api-key")
 		if len(key) == 0 || key[0] != expectedKey {
 			return nil, status.Error(codes.Unauthenticated, "invalid API key")
 		}
@@ -130,7 +130,7 @@ func pskStreamInterceptor(expectedKey string) grpc.StreamServerInterceptor {
 			return status.Error(codes.Unauthenticated, "missing metadata")
 		}
 
-		key := md.Get("authorization")
+		key := md.Get("x-api-key")
 		if len(key) == 0 || key[0] != expectedKey {
 			return status.Error(codes.Unauthenticated, "invalid API key")
 		}
