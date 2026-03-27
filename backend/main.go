@@ -33,16 +33,21 @@ func main() {
 		Level: slog.LevelDebug,
 	})))
 
+	// Load config
 	config, err := config.LoadConfig()
 	if err != nil {
 		slog.Error("An error occurred while reading the config file.", "error", err.Error())
 		os.Exit(1)
 	}
 
+	// Create drive coordinator
+	//
+	// This is created separately because it needs to be registered with the gRPC server
 	driveCoordinator := drive_coordinator.NewDriveCoordinatorService(
 		path.Join(config.DataDirectory, "rips"),
 	)
 
+	// Create the application instance
 	app, err := application.NewApplication(config, driveCoordinator)
 	if err != nil {
 		slog.Error("Failed to initialize application service.", "error", err.Error())
@@ -67,9 +72,8 @@ func main() {
 	driveCoordinator.RegisterGrpc(grpcServer)
 	reflection.Register(grpcServer)
 
-	// Listen for private routes & gRPC calls on private router.
+	// Listen for routes & gRPC calls.
 	// h2c makes this a little more complicated here.
-	// I would like to add some basic auth in the future, but this is going behind my authenticated proxy for now
 	h2s := &http2.Server{}
 	server := http.Server{
 		Addr: config.ServeAddress,
@@ -97,6 +101,7 @@ func main() {
 	}
 }
 
+// Validates that a gRPC header contains a pre-shared key
 func pskUnaryInterceptor(expectedKey string) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
@@ -118,6 +123,7 @@ func pskUnaryInterceptor(expectedKey string) grpc.UnaryServerInterceptor {
 	}
 }
 
+// Validates that a gRPC header contains a pre-shared key
 func pskStreamInterceptor(expectedKey string) grpc.StreamServerInterceptor {
 	return func(
 		srv any,
