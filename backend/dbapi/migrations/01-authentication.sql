@@ -12,11 +12,4 @@ CREATE TABLE `session_tokens`(
     `expires` INTEGER NOT NULL
 );
 
--- Stores drive controller authentication tokens
-CREATE TABLE `drive_tokens`(
-    `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    `name` TEXT NOT NULL,
-    `token_hash` TEXT NOT NULL
-);
-
 UPDATE migrations SET value = 2 WHERE key = 'version';
