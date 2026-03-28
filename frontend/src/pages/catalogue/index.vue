@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { RipJob } from "@/generated/mediacorral/server/v1/api";
+import { type RipJob } from "@/generated/mediacorral/server/v1/api_pb";
 import { injectKeys } from "@/scripts/config";
 import { reportErrorsFactory } from "@/scripts/uiUtils";
 
@@ -7,7 +7,7 @@ const rpc = inject(injectKeys.rpc)!;
 const reportErrors = reportErrorsFactory();
 const rows = ref<RipJob[]>([]);
 onMounted(async () => {
-	const { response: untaggedJobs } = await reportErrors(
+	const untaggedJobs = await reportErrors(
 		rpc.getUntaggedJobs({
 			skip: 0,
 			limit: 500,

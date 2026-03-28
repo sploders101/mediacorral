@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { VideoStereoMode } from "@/generated/mediacorral/analysis/v1/main";
-import { VideoFile } from "@/generated/mediacorral/server/v1/api";
+import { VideoStereoMode } from "@/generated/mediacorral/analysis/v1/main_pb";
+import { type VideoFile } from "@/generated/mediacorral/server/v1/api_pb";
 import { injectKeys } from "@/scripts/config";
 import { reportErrorsFactory } from "@/scripts/uiUtils";
 import {

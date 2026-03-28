@@ -15,13 +15,14 @@ plugins:
     opt:
       - paths=source_relative
       - require_unimplemented_servers=false
-  - local: protoc-gen-twirp
+  - local: protoc-gen-connect-go
     out: backend/gen
     opt:
       - paths=source_relative
-  - remote: buf.build/community/timostamm-protobuf-ts:v2.11.1
+      - simple
+  - local: protoc-gen-es
     out: frontend/src/generated
     opt:
-      - long_type_bigint
+      - target=ts
 inputs:
   - directory: proto

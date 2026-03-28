@@ -28,14 +28,15 @@ export interface ProcessedVideoItem {
 import ManualMatch from "@/components/ManualMatch.vue";
 import type { SubmitData as MatchSubmitData } from "@/components/MatchSelector.vue";
 import {
-	TagFileRequest,
+	type TagFileRequest,
 	VideoType,
 	type GetJobCatalogueInfoResponse,
 	type MatchInfoItem,
 	type OstDownloadsItem,
 	type RipJob,
 	type VideoFile,
-} from "@/generated/mediacorral/server/v1/api";
+	TagFileRequestSchema,
+} from "@/generated/mediacorral/server/v1/api_pb";
 import router from "@/router";
 import { SearchType, type MetaCache } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
@@ -44,7 +45,8 @@ import { reportErrorsFactory } from "@/scripts/uiUtils";
 import type {
 	AudioTrack,
 	SubtitleTrack,
-} from "@/generated/mediacorral/analysis/v1/main";
+} from "@/generated/mediacorral/analysis/v1/main_pb";
+import { create } from "@bufbuild/protobuf";
 
 const reportErrors = reportErrorsFactory();
 const prompter = inject(injectKeys.promptService)!;
@@ -100,8 +102,8 @@ async function refreshData() {
 		rpc.getJobCatalogueInfo({ jobId }),
 		"Failed to get cataloging info"
 	);
-	jobInfo.value = jobInfoResponse.response.details;
-	catInfo.value = catInfoResponse.response;
+	jobInfo.value = jobInfoResponse.details;
+	catInfo.value = catInfoResponse;
 
 	const movies = new Set<bigint>();
 	const tvShows = new Set<bigint>();
@@ -110,17 +112,17 @@ async function refreshData() {
 	const firstFetchers: Array<Promise<void>> = [];
 
 	// Fetch relevant media for suspectedContents
-	if (jobInfoResponse.response.details?.suspectedContents !== undefined) {
+	if (jobInfoResponse.details?.suspectedContents !== undefined) {
 		const suspectedContents =
-			jobInfoResponse.response.details.suspectedContents.suspectedContents;
-		switch (suspectedContents.oneofKind) {
+			jobInfoResponse.details.suspectedContents.suspectedContents;
+		switch (suspectedContents.case) {
 			case "movie":
 				firstFetchers.push(
 					rpc
 						.getMovieByTmdbId({
-							tmdbId: suspectedContents.movie.tmdbId,
+							tmdbId: suspectedContents.value.tmdbId,
 						})
-						.then(({ response }) => {
+						.then((response) => {
 							if (response.movie === undefined)
 								throw new Error("Movie missing");
 							if (cache.movies.get(response.movie.id) === undefined) {
@@ -131,8 +133,8 @@ async function refreshData() {
 				break;
 			case "tvEpisodes":
 				firstFetchers.push(
-					...suspectedContents.tvEpisodes.episodeTmdbIds.map(async (tmdbId) => {
-						const { response } = await rpc.getTvEpisodeByTmdbId({
+					...suspectedContents.value.episodeTmdbIds.map(async (tmdbId) => {
+						const response = await rpc.getTvEpisodeByTmdbId({
 							tmdbId: tmdbId,
 						});
 						if (response.episode === undefined)
@@ -153,7 +155,7 @@ async function refreshData() {
 					break;
 				case VideoType.TV_EPISODE:
 					if (file.matchId !== undefined) {
-						const { response } = await rpc.getTvEpisode({
+						const response = await rpc.getTvEpisode({
 							episodeId: file.matchId,
 						});
 						if (response.episode === undefined)
@@ -179,7 +181,7 @@ async function refreshData() {
 	for (const movieId of movies) {
 		if (cache.movies.has(movieId)) continue;
 		finalFetchers.push(
-			rpc.getMovie({ movieId }).then(({ response }) => {
+			rpc.getMovie({ movieId }).then((response) => {
 				if (response.movie === undefined) throw new Error("Movie missing");
 				cache.movies.set(movieId, response.movie);
 			})
@@ -188,7 +190,7 @@ async function refreshData() {
 	for (const showId of tvShows) {
 		if (cache.tvShows.has(showId)) continue;
 		finalFetchers.push(
-			rpc.getTvShow({ showId }).then(({ response }) => {
+			rpc.getTvShow({ showId }).then((response) => {
 				if (response.tvShow === undefined) throw new Error("TV show missing");
 				cache.tvShows.set(response.tvShow.id, response.tvShow);
 			})
@@ -197,7 +199,7 @@ async function refreshData() {
 	for (const seasonId of tvSeasons) {
 		if (cache.tvSeasons.has(seasonId)) continue;
 		finalFetchers.push(
-			rpc.getTvSeason({ seasonId }).then(({ response }) => {
+			rpc.getTvSeason({ seasonId }).then((response) => {
 				if (response.tvSeason === undefined)
 					throw new Error("TV season missing");
 				cache.tvSeasons.set(response.tvSeason.id, response.tvSeason!);
@@ -303,11 +305,11 @@ const tableItems = computed<ProcessedVideoItem[]>(() => {
 				(subtitle) => subtitle.id === likelyOstMatches[0].ostDownloadId
 			);
 			if (ostMatch !== undefined) {
-				suggestedMatch = {
+				suggestedMatch = create(TagFileRequestSchema, {
 					file: videoFile.id,
 					videoType: ostMatch.videoType,
 					matchId: ostMatch.matchId,
-				};
+				})
 			}
 		}
 
@@ -400,7 +402,7 @@ async function renameJob() {
 		}),
 		"Error renaming job"
 	);
-	const { response } = await reportErrors(
+	const response = await reportErrors(
 		rpc.getJobInfo({ jobId: jobInfo.value.id }),
 		"Error getting new job info"
 	);
@@ -438,8 +440,8 @@ async function suspectContents(data: MatchSubmitData) {
 					jobId: jobInfo.value.id,
 					suspicion: {
 						suspectedContents: {
-							oneofKind: "movie",
-							movie: {
+							case: "movie",
+							value: {
 								tmdbId: data.movie.tmdbId,
 							},
 						},
@@ -456,8 +458,8 @@ async function suspectContents(data: MatchSubmitData) {
 					jobId: jobInfo.value.id,
 					suspicion: {
 						suspectedContents: {
-							oneofKind: "tvEpisodes",
-							tvEpisodes: {
+							case: "tvEpisodes",
+							value: {
 								episodeTmdbIds: data.episodes.map((episode) => episode.tmdbId!),
 							},
 						},

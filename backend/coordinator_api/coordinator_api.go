@@ -1,4 +1,4 @@
-package twirpservices
+package coordinator_api
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	analysis_pb "github.com/sploders101/mediacorral/backend/gen/mediacorral/analysis/v1"
 	drive_coordinatorv1 "github.com/sploders101/mediacorral/backend/gen/mediacorral/drive_coordinator/v1"
 	server_pb "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
+	server_connect "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1/serverv1connect"
 
 	"github.com/twitchtv/twirp"
 	gcodes "google.golang.org/grpc/codes"
@@ -257,7 +258,10 @@ func (server ApiServer) RebuildExportsDir(
 	ctx context.Context,
 	request *server_pb.RebuildExportsDirRequest,
 ) (*server_pb.RebuildExportsDirResponse, error) {
-	if err := server.app.ExportsManager.RebuildDir(request.GetExportsDir(), server.app.BlobStorage); err != nil {
+	if err := server.app.ExportsManager.RebuildDir(
+		request.GetExportsDir(),
+		server.app.BlobStorage,
+	); err != nil {
 		return nil, convertError(err)
 	}
 
@@ -298,7 +302,7 @@ func (server ApiServer) ListDrives(
 	var drives []*server_pb.DiscDrive
 	for _, drive := range driveDiscovery {
 		drives = append(drives, server_pb.DiscDrive_builder{
-			Id: drive.GetDriveId(),
+			Id:   drive.GetDriveId(),
 			Name: drive.GetDriveName(),
 		}.Build())
 	}
@@ -386,22 +390,22 @@ func (server ApiServer) GetDriveStatus(
 	var ripStatus *server_pb.RipJobStatus
 	if driveStatus.HasActiveRipJob() {
 		ripStatus = server_pb.RipJobStatus_builder{
-			JobId: driveRipStatus.GetRipJob(),
-			CprogTitle: driveRipStatus.GetCprogTitle(),
-			TprogTitle: driveRipStatus.GetTprogTitle(),
-			CprogValue: driveRipStatus.GetCprogValue(),
-			TprogValue: driveRipStatus.GetTprogValue(),
+			JobId:        driveRipStatus.GetRipJob(),
+			CprogTitle:   driveRipStatus.GetCprogTitle(),
+			TprogTitle:   driveRipStatus.GetTprogTitle(),
+			CprogValue:   driveRipStatus.GetCprogValue(),
+			TprogValue:   driveRipStatus.GetTprogValue(),
 			MaxProgValue: driveRipStatus.GetMaxProgValue(),
-			Logs: driveRipStatus.GetLogs(),
+			Logs:         driveRipStatus.GetLogs(),
 		}.Build()
 	}
 
 	return server_pb.GetDriveStatusResponse_builder{
 		DriveStatus: server_pb.DriveStatus_builder{
-			DriveId: request.GetDriveId(),
-			Status: driveStatusTag,
+			DriveId:  request.GetDriveId(),
+			Status:   driveStatusTag,
 			DiscName: discName,
-			RipJob: ripStatus,
+			RipJob:   ripStatus,
 		}.Build(),
 	}.Build(), nil
 }
@@ -931,8 +935,8 @@ func (server ApiServer) PruneRipJob(
 }
 
 func RegisterApiService(server *http.ServeMux, app *application.Application) {
-	apiHandler := server_pb.NewCoordinatorApiServiceServer(ApiServer{app: app})
-	server.Handle("POST "+apiHandler.PathPrefix(), apiHandler)
+	prefix, apiHandler := server_connect.NewCoordinatorApiServiceHandler(ApiServer{app: app})
+	server.Handle("POST "+prefix, apiHandler)
 }
 
 func convertError(err error) error {

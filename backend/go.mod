@@ -3,6 +3,7 @@ module github.com/sploders101/mediacorral/backend
 go 1.25.0
 
 require (
+	connectrpc.com/connect v1.19.1
 	github.com/agnivade/levenshtein v1.0.3
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/cyruzin/golang-tmdb v1.9.0

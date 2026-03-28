@@ -1,4 +1,4 @@
-import { RpcError } from "@protobuf-ts/runtime-rpc";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { injectKeys } from "./config";
 
 export function reportErrorsFactory() {
@@ -9,8 +9,8 @@ export function reportErrorsFactory() {
 			const result = await prom;
 			return result;
 		} catch (error) {
-			if (error instanceof RpcError) {
-				if (error.code === "CANCELLED") throw error;
+			if (error instanceof ConnectError) {
+				if (error.code === Code.Canceled) throw error;
 				await prompter.alert(
 					`Code: ${error.code}\n\nMessage:\n${decodeURIComponent(error.message)}`,
 					alertTitle

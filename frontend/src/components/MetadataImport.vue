@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import type { TmdbAnyTitle } from "@/generated/mediacorral/server/v1/tmdb";
+import type { TmdbAnyTitle } from "@/generated/mediacorral/server/v1/tmdb_pb";
 import type {
 	SearchTmdbMovieResponse,
 	SearchTmdbMultiResponse,
 	SearchTmdbTvResponse,
-} from "@/generated/mediacorral/server/v1/api";
+} from "@/generated/mediacorral/server/v1/api_pb";
 import { SearchType } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
 import { reportErrorsFactory } from "@/scripts/uiUtils";
@@ -61,7 +61,7 @@ const resultsMapped = computed(() => {
 async function submit() {
 	switch (searchType.value) {
 		case SearchType.Unspecified:
-			const { response: responseMulti } = await reportErrors(
+			const responseMulti = await reportErrors(
 				rpc.searchTmdbMulti({
 					query: query.value,
 					page: 1,
@@ -71,7 +71,7 @@ async function submit() {
 			results.value = [SearchType.Unspecified, responseMulti];
 			break;
 		case SearchType.Movie:
-			const { response: responseMovie } = await reportErrors(
+			const responseMovie = await reportErrors(
 				rpc.searchTmdbMovie({
 					query: query.value,
 					page: 1,
@@ -81,7 +81,7 @@ async function submit() {
 			results.value = [SearchType.Movie, responseMovie];
 			break;
 		case SearchType.TvSeries:
-			const { response: responseTvSeries } = await reportErrors(
+			const responseTvSeries = await reportErrors(
 				rpc.searchTmdbTv({
 					query: query.value,
 					page: 1,
@@ -121,9 +121,7 @@ async function importItem() {
 				const multiValue = selectedItemDetails.value as TmdbAnyTitle;
 				switch (multiValue.type) {
 					case "movie":
-						let {
-							response: { movieId },
-						} = await reportErrors(
+						let { movieId } = await reportErrors(
 							rpc.importTmdbMovie({
 								tmdbId: multiValue.id,
 							}),
@@ -136,9 +134,7 @@ async function importItem() {
 						});
 						break;
 					case "tv":
-						let {
-							response: { tvId },
-						} = await reportErrors(
+						let { tvId } = await reportErrors(
 							rpc.importTmdbTv({
 								tmdbId: multiValue.id,
 							}),
@@ -153,9 +149,7 @@ async function importItem() {
 				}
 				break;
 			case SearchType.Movie:
-				let {
-					response: { movieId },
-				} = await reportErrors(
+				let { movieId } = await reportErrors(
 					rpc.importTmdbMovie({
 						tmdbId: selectedItemDetails.value.id,
 					}),
@@ -168,9 +162,7 @@ async function importItem() {
 				});
 				break;
 			case SearchType.TvSeries:
-				let {
-					response: { tvId },
-				} = await reportErrors(
+				let { tvId } = await reportErrors(
 					rpc.importTmdbTv({ tmdbId: selectedItemDetails.value.id }),
 					"Error importing TV series"
 				);

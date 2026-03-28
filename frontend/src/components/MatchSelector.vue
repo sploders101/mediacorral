@@ -6,11 +6,11 @@ export type SubmitData =
 
 <script lang="ts" setup>
 import {
-	Movie,
-	TvEpisode,
-	TvSeason,
-	TvShow,
-} from "@/generated/mediacorral/server/v1/api";
+	type Movie,
+	type TvEpisode,
+	type TvSeason,
+	type TvShow,
+} from "@/generated/mediacorral/server/v1/api_pb";
 import { SearchType } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
 import MetadataImport from "./MetadataImport.vue";
@@ -40,7 +40,7 @@ async function useImport(event: {
 	switch (event.type) {
 		case "movie":
 			if (mediaType.value === SearchType.Movie) {
-				let { response } = await reportErrors(
+				let response = await reportErrors(
 					rpc.listMovies({}),
 					"Failed to list movies"
 				);
@@ -53,7 +53,7 @@ async function useImport(event: {
 			break;
 		case "tv":
 			if (mediaType.value === SearchType.TvSeries) {
-				let { response } = await reportErrors(
+				let response = await reportErrors(
 					rpc.listTvShows({}),
 					"Failed to list TV shows"
 				);
@@ -76,7 +76,7 @@ watch(
 		moviesList.value = undefined;
 		if (mediaType.value !== SearchType.Movie) return;
 
-		let { response } = await reportErrors(
+		let response = await reportErrors(
 			rpc.listMovies({}),
 			"Failed to list movies"
 		);
@@ -108,7 +108,7 @@ watch(
 		tvShowsList.value = undefined;
 		if (mediaType.value !== SearchType.TvSeries) return;
 
-		let { response } = await reportErrors(
+		let response = await reportErrors(
 			rpc.listTvShows({}),
 			"Failed to list TV shows"
 		);
@@ -139,7 +139,7 @@ watch(
 	async () => {
 		tvSeasonsList.value = undefined;
 		if (tvShowSelection.value === undefined) return;
-		let { response } = await reportErrors(
+		let response = await reportErrors(
 			rpc.listTvSeasons({
 				seriesId: tvShowSelection.value.id,
 			}),
@@ -189,7 +189,7 @@ watch(
 		tvSeasonSelection.value.sort((a, b) => a.seasonNumber - b.seasonNumber);
 		for (const season of tvSeasonSelection.value) {
 			if (foundSeasons.has(season.id)) continue;
-			let { response } = await reportErrors(
+			let response = await reportErrors(
 				rpc.listTvEpisodes({
 					tvSeasonId: season.id,
 				}),

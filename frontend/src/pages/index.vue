@@ -3,7 +3,7 @@ import DriveMonitor from "@/components/DriveMonitor.vue";
 import {
 	AutoripStatus,
 	type DiscDrive,
-} from "@/generated/mediacorral/server/v1/api";
+} from "@/generated/mediacorral/server/v1/api_pb";
 import { injectKeys } from "@/scripts/config";
 import { reportErrorsFactory } from "@/scripts/uiUtils";
 
@@ -15,7 +15,7 @@ const drives = ref<DiscDrive[]>([]);
 onMounted(async () => {
 	drives.value = (
 		await reportErrors(rpc.listDrives({}), "Error listing drives")
-	).response.drives.sort((a, b) => {
+	).drives.sort((a, b) => {
 		if (a.id > b.id) return 1;
 		if (a.id < b.id) return -1;
 		return 0;
@@ -29,7 +29,7 @@ onMounted(() => {
 	reportErrors(
 		rpc
 			.autoripStatus({ status: AutoripStatus.UNSPECIFIED })
-			.then(({ response }) => (autorip.value = response.status))
+			.then((response) => (autorip.value = response.status))
 	);
 });
 async function changeAutorip(status: boolean) {

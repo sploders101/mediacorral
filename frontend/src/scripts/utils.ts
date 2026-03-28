@@ -1,4 +1,4 @@
-import { VideoStereoMode } from "@/generated/mediacorral/analysis/v1/main";
+import { VideoStereoMode } from "@/generated/mediacorral/analysis/v1/main_pb";
 
 export function formatRuntime(length: number): string {
 	const hours = Math.floor(length / 60 / 60);

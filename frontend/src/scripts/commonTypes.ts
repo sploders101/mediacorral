@@ -3,7 +3,7 @@ import type {
 	TvEpisode,
 	TvSeason,
 	TvShow,
-} from "@/generated/mediacorral/server/v1/api";
+} from "@/generated/mediacorral/server/v1/api_pb";
 
 export enum SearchType {
 	Unspecified = 0,

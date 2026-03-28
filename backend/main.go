@@ -16,14 +16,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
 	"github.com/sploders101/mediacorral/backend/application"
+	"github.com/sploders101/mediacorral/backend/coordinator_api"
 	"github.com/sploders101/mediacorral/backend/drive_coordinator"
 	"github.com/sploders101/mediacorral/backend/handlers"
 	"github.com/sploders101/mediacorral/backend/helpers/config"
-	twirpservices "github.com/sploders101/mediacorral/backend/twirp_services"
 )
 
 //go:embed all:frontend
@@ -62,7 +61,7 @@ func main() {
 		panic("Could not get frontend directory")
 	}
 	router.Handle("GET /", http.FileServerFS(subFs))
-	twirpservices.RegisterApiService(router, app)
+	coordinator_api.RegisterApiService(router, app)
 
 	var httpHandler http.Handler = router
 	if config.OIDC != nil {
@@ -73,7 +72,11 @@ func main() {
 		}
 		oidcHandler.Register(router)
 		httpHandler = http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-			if strings.HasPrefix(req.URL.Path, "/auth/") {
+			// User may currently be in login flow
+			bypassAuth := strings.HasPrefix(req.URL.Path, "/auth/")
+			// Drive controllers have their own auth
+			bypassAuth = bypassAuth || strings.HasPrefix(req.URL.Path, "/mediacorral.drive_coordinator.v1.DriveCoordinatorService/")
+			if bypassAuth {
 				// Authentication paths don't need to be authorized already.
 				// ServeHTTP protects against bad paths by sending a redirect to the canonical
 				// form instead, so this is safe.
@@ -113,26 +116,16 @@ func main() {
 		grpc.Creds(insecure.NewCredentials()),
 	)
 	driveCoordinator.RegisterGrpc(grpcServer)
-	reflection.Register(grpcServer)
+
+	// Register gRPC routes
+	router.Handle("POST /mediacorral.drive_coordinator.v1.DriveCoordinatorService/", grpcServer)
 
 	// Listen for routes & gRPC calls.
 	// h2c makes this a little more complicated here.
 	h2s := &http2.Server{}
 	server := http.Server{
-		Addr: config.ServeAddress,
-		Handler: h2c.NewHandler(
-			http.HandlerFunc(
-				func(response http.ResponseWriter, request *http.Request) {
-					if strings.Contains(request.Header.Get("content-type"), "application/grpc") {
-						grpcServer.ServeHTTP(response, request)
-						return
-					}
-
-					httpHandler.ServeHTTP(response, request)
-				},
-			),
-			h2s,
-		),
+		Addr:    config.ServeAddress,
+		Handler: h2c.NewHandler(httpHandler, h2s),
 	}
 	if err := http2.ConfigureServer(&server, h2s); err != nil {
 		slog.Error("An error occurred while setting up h2s.", "error", err.Error())

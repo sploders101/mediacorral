@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import {
 	DriveStatusTag,
-	RipJobStatus,
+	type RipJobStatus,
 	type DriveStatus,
-} from "@/generated/mediacorral/server/v1/api";
-import type { DiscDrive, RipJob } from "@/generated/mediacorral/server/v1/api";
+	type DiscDrive,
+	type RipJob
+} from "@/generated/mediacorral/server/v1/api_pb";
 import { injectKeys } from "@/scripts/config";
 import { reportErrorsFactory } from "@/scripts/uiUtils";
 
@@ -135,7 +136,7 @@ async function pollDrive() {
 	let result = await rpc.getDriveStatus({
 		driveId: props.drive.id,
 	});
-	driveStatus.value = result.response.driveStatus;
+	driveStatus.value = result.driveStatus;
 }
 
 const jobInfo = ref<RipJob | undefined>(undefined);
@@ -153,7 +154,7 @@ watch(
 			}),
 			"Failed to get info for the active job"
 		);
-		jobInfo.value = result.response.details;
+		jobInfo.value = result.details;
 	}
 );
 

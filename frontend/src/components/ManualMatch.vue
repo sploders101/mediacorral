@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import {
-	GetJobCatalogueInfoResponse,
-	Movie,
-	TvEpisode,
+	type GetJobCatalogueInfoResponse,
+	type Movie,
+	type TvEpisode,
 	VideoType,
-} from "@/generated/mediacorral/server/v1/api";
+} from "@/generated/mediacorral/server/v1/api_pb";
 import MatchSelector, { type SubmitData } from "./MatchSelector.vue";
 import { SearchType } from "@/scripts/commonTypes";
 import { injectKeys } from "@/scripts/config";
@@ -84,7 +84,7 @@ watch(
 			videoSubtitles.value = "[No subtitles found]";
 			return;
 		}
-		const { response } = await reportErrors(
+		const response = await reportErrors(
 			rpc.getSubtitles({
 				blobId: subtitles.subtitleBlob,
 			}),
@@ -98,11 +98,11 @@ watch(
 const episodeOptions = computed(() => {
 	const options: Array<{ title: string; value: bigint }> = [];
 	let contents = props.catInfo.suspectedContents?.suspectedContents;
-	switch (contents?.oneofKind) {
+	switch (contents?.case) {
 		case "movie":
 			let title = "???";
 			const movie = metaCacheByTmdbId.value.movies.get(
-				contents.movie.tmdbId
+				contents.value.tmdbId
 			);
 			if (movie !== undefined) {
 				title = movie.title || "???";
@@ -112,7 +112,7 @@ const episodeOptions = computed(() => {
 			}
 			break;
 		case "tvEpisodes":
-			for (const tvEpisode of contents.tvEpisodes.episodeTmdbIds) {
+			for (const tvEpisode of contents.value.episodeTmdbIds) {
 				const episode =
 					metaCacheByTmdbId.value.tvEpisodes.get(tvEpisode);
 				if (episode === undefined) break;
@@ -143,7 +143,7 @@ watch(
 			matchSubtitles.value = undefined;
 			return;
 		}
-		const { response } = await reportErrors(
+		const response = await reportErrors(
 			rpc.getSubtitles({ blobId: subs.blobId }),
 			"Failed to get subtitles for suspected episode"
 		);
@@ -169,7 +169,7 @@ const episodeDescription = computed(() => {
 	if (matchSelection.value === undefined) return undefined;
 	let contents = props.catInfo.suspectedContents?.suspectedContents;
 	let metadata: TvEpisode | Movie | undefined;
-	switch (contents?.oneofKind) {
+	switch (contents?.case) {
 		case "movie":
 			metadata = metaCache.movies.get(matchSelection.value);
 			return metadata?.description;
@@ -187,7 +187,7 @@ const matchInfo = computed(() => {
 	points.push(`File runtime:      ${props.videoFile.runtime}`);
 	const suspectedContents =
 		props.catInfo.suspectedContents?.suspectedContents;
-	switch (suspectedContents?.oneofKind) {
+	switch (suspectedContents?.case) {
 		case "movie":
 			const movie = metaCache.movies.get(matchSelection.value);
 			if (movie?.runtime !== undefined) {
@@ -227,7 +227,7 @@ const matchInfo = computed(() => {
 
 async function selectMatch() {
 	if (matchSelection.value === undefined) return;
-	switch (props.catInfo.suspectedContents?.suspectedContents.oneofKind) {
+	switch (props.catInfo.suspectedContents?.suspectedContents.case) {
 		case "movie":
 			await reportErrors(
 				rpc.tagFile({
