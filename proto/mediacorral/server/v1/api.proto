@@ -41,8 +41,13 @@ service CoordinatorApiService {
   // Lists connected drives
   rpc ListDrives (ListDrivesRequest) returns (ListDrivesResponse);
 
+  rpc StreamDrivesList (StreamDrivesListRequest) returns (stream StreamDrivesListResponse);
+
   // Gets the current state of the drive
   rpc GetDriveStatus (GetDriveStatusRequest) returns (GetDriveStatusResponse);
+
+  // Streams the current state of the drive
+  rpc StreamDriveStatus (StreamDriveStatusRequest) returns (stream StreamDriveStatusResponse);
 
   // Lists the movies in the database
   rpc ListMovies (ListMoviesRequest) returns (ListMoviesResponse);
@@ -225,6 +230,11 @@ message ListDrivesRequest {}
 message ListDrivesResponse {
   repeated DiscDrive drives = 1;
 }
+message StreamDrivesListRequest {}
+message StreamDrivesListResponse {
+  repeated DiscDrive drives = 1;
+}
+
 message DiscDrive {
   string id = 1;
   string name = 2;
@@ -236,6 +246,14 @@ message GetDriveStatusRequest {
 message GetDriveStatusResponse {
   DriveStatus drive_status = 1;
 }
+
+message StreamDriveStatusRequest {
+  string drive_id = 1;
+}
+message StreamDriveStatusResponse {
+  DriveStatus drive_status = 1;
+}
+
 message DriveStatus {
   string drive_id = 1;
   DriveStatusTag status = 2;

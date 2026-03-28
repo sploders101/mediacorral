@@ -404,6 +404,11 @@ func (controller *DriveController) DriveId() string {
 	return controller.discovery.GetDriveId()
 }
 
+// Returns the name of the drive
+func (controller *DriveController) DriveName() string {
+	return controller.discovery.GetDriveName()
+}
+
 // Returns a watcher that tracks the status of the drive
 func (controller *DriveController) DriveStatus() sync_extras.WatchReceiver[*drive_coordinatorv1.DriveStatus] {
 	return controller.statusWatcher.Watch()

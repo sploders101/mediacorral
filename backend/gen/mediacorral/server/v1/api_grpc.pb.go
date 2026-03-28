@@ -31,7 +31,9 @@ const (
 	CoordinatorApiService_Eject_FullMethodName                = "/mediacorral.server.v1.CoordinatorApiService/Eject"
 	CoordinatorApiService_Retract_FullMethodName              = "/mediacorral.server.v1.CoordinatorApiService/Retract"
 	CoordinatorApiService_ListDrives_FullMethodName           = "/mediacorral.server.v1.CoordinatorApiService/ListDrives"
+	CoordinatorApiService_StreamDrivesList_FullMethodName     = "/mediacorral.server.v1.CoordinatorApiService/StreamDrivesList"
 	CoordinatorApiService_GetDriveStatus_FullMethodName       = "/mediacorral.server.v1.CoordinatorApiService/GetDriveStatus"
+	CoordinatorApiService_StreamDriveStatus_FullMethodName    = "/mediacorral.server.v1.CoordinatorApiService/StreamDriveStatus"
 	CoordinatorApiService_ListMovies_FullMethodName           = "/mediacorral.server.v1.CoordinatorApiService/ListMovies"
 	CoordinatorApiService_GetMovie_FullMethodName             = "/mediacorral.server.v1.CoordinatorApiService/GetMovie"
 	CoordinatorApiService_GetMovieByTmdbId_FullMethodName     = "/mediacorral.server.v1.CoordinatorApiService/GetMovieByTmdbId"
@@ -82,8 +84,11 @@ type CoordinatorApiServiceClient interface {
 	Retract(ctx context.Context, in *RetractRequest, opts ...grpc.CallOption) (*RetractResponse, error)
 	// Lists connected drives
 	ListDrives(ctx context.Context, in *ListDrivesRequest, opts ...grpc.CallOption) (*ListDrivesResponse, error)
+	StreamDrivesList(ctx context.Context, in *StreamDrivesListRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamDrivesListResponse], error)
 	// Gets the current state of the drive
 	GetDriveStatus(ctx context.Context, in *GetDriveStatusRequest, opts ...grpc.CallOption) (*GetDriveStatusResponse, error)
+	// Streams the current state of the drive
+	StreamDriveStatus(ctx context.Context, in *StreamDriveStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamDriveStatusResponse], error)
 	// Lists the movies in the database
 	ListMovies(ctx context.Context, in *ListMoviesRequest, opts ...grpc.CallOption) (*ListMoviesResponse, error)
 	// Gets a movie by id
@@ -254,6 +259,25 @@ func (c *coordinatorApiServiceClient) ListDrives(ctx context.Context, in *ListDr
 	return out, nil
 }
 
+func (c *coordinatorApiServiceClient) StreamDrivesList(ctx context.Context, in *StreamDrivesListRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamDrivesListResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &CoordinatorApiService_ServiceDesc.Streams[0], CoordinatorApiService_StreamDrivesList_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[StreamDrivesListRequest, StreamDrivesListResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type CoordinatorApiService_StreamDrivesListClient = grpc.ServerStreamingClient[StreamDrivesListResponse]
+
 func (c *coordinatorApiServiceClient) GetDriveStatus(ctx context.Context, in *GetDriveStatusRequest, opts ...grpc.CallOption) (*GetDriveStatusResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetDriveStatusResponse)
@@ -263,6 +287,25 @@ func (c *coordinatorApiServiceClient) GetDriveStatus(ctx context.Context, in *Ge
 	}
 	return out, nil
 }
+
+func (c *coordinatorApiServiceClient) StreamDriveStatus(ctx context.Context, in *StreamDriveStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamDriveStatusResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &CoordinatorApiService_ServiceDesc.Streams[1], CoordinatorApiService_StreamDriveStatus_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[StreamDriveStatusRequest, StreamDriveStatusResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type CoordinatorApiService_StreamDriveStatusClient = grpc.ServerStreamingClient[StreamDriveStatusResponse]
 
 func (c *coordinatorApiServiceClient) ListMovies(ctx context.Context, in *ListMoviesRequest, opts ...grpc.CallOption) (*ListMoviesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -492,8 +535,11 @@ type CoordinatorApiServiceServer interface {
 	Retract(context.Context, *RetractRequest) (*RetractResponse, error)
 	// Lists connected drives
 	ListDrives(context.Context, *ListDrivesRequest) (*ListDrivesResponse, error)
+	StreamDrivesList(*StreamDrivesListRequest, grpc.ServerStreamingServer[StreamDrivesListResponse]) error
 	// Gets the current state of the drive
 	GetDriveStatus(context.Context, *GetDriveStatusRequest) (*GetDriveStatusResponse, error)
+	// Streams the current state of the drive
+	StreamDriveStatus(*StreamDriveStatusRequest, grpc.ServerStreamingServer[StreamDriveStatusResponse]) error
 	// Lists the movies in the database
 	ListMovies(context.Context, *ListMoviesRequest) (*ListMoviesResponse, error)
 	// Gets a movie by id
@@ -579,8 +625,14 @@ func (UnimplementedCoordinatorApiServiceServer) Retract(context.Context, *Retrac
 func (UnimplementedCoordinatorApiServiceServer) ListDrives(context.Context, *ListDrivesRequest) (*ListDrivesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListDrives not implemented")
 }
+func (UnimplementedCoordinatorApiServiceServer) StreamDrivesList(*StreamDrivesListRequest, grpc.ServerStreamingServer[StreamDrivesListResponse]) error {
+	return status.Error(codes.Unimplemented, "method StreamDrivesList not implemented")
+}
 func (UnimplementedCoordinatorApiServiceServer) GetDriveStatus(context.Context, *GetDriveStatusRequest) (*GetDriveStatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetDriveStatus not implemented")
+}
+func (UnimplementedCoordinatorApiServiceServer) StreamDriveStatus(*StreamDriveStatusRequest, grpc.ServerStreamingServer[StreamDriveStatusResponse]) error {
+	return status.Error(codes.Unimplemented, "method StreamDriveStatus not implemented")
 }
 func (UnimplementedCoordinatorApiServiceServer) ListMovies(context.Context, *ListMoviesRequest) (*ListMoviesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListMovies not implemented")
@@ -878,6 +930,17 @@ func _CoordinatorApiService_ListDrives_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CoordinatorApiService_StreamDrivesList_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamDrivesListRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(CoordinatorApiServiceServer).StreamDrivesList(m, &grpc.GenericServerStream[StreamDrivesListRequest, StreamDrivesListResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type CoordinatorApiService_StreamDrivesListServer = grpc.ServerStreamingServer[StreamDrivesListResponse]
+
 func _CoordinatorApiService_GetDriveStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetDriveStatusRequest)
 	if err := dec(in); err != nil {
@@ -895,6 +958,17 @@ func _CoordinatorApiService_GetDriveStatus_Handler(srv interface{}, ctx context.
 	}
 	return interceptor(ctx, in, info, handler)
 }
+
+func _CoordinatorApiService_StreamDriveStatus_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamDriveStatusRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(CoordinatorApiServiceServer).StreamDriveStatus(m, &grpc.GenericServerStream[StreamDriveStatusRequest, StreamDriveStatusResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type CoordinatorApiService_StreamDriveStatusServer = grpc.ServerStreamingServer[StreamDriveStatusResponse]
 
 func _CoordinatorApiService_ListMovies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListMoviesRequest)
@@ -1396,6 +1470,17 @@ var CoordinatorApiService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CoordinatorApiService_PruneRipJob_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamDrivesList",
+			Handler:       _CoordinatorApiService_StreamDrivesList_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "StreamDriveStatus",
+			Handler:       _CoordinatorApiService_StreamDriveStatus_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "mediacorral/server/v1/api.proto",
 }

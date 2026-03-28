@@ -69,9 +69,15 @@ const (
 	// CoordinatorApiServiceListDrivesProcedure is the fully-qualified name of the
 	// CoordinatorApiService's ListDrives RPC.
 	CoordinatorApiServiceListDrivesProcedure = "/mediacorral.server.v1.CoordinatorApiService/ListDrives"
+	// CoordinatorApiServiceStreamDrivesListProcedure is the fully-qualified name of the
+	// CoordinatorApiService's StreamDrivesList RPC.
+	CoordinatorApiServiceStreamDrivesListProcedure = "/mediacorral.server.v1.CoordinatorApiService/StreamDrivesList"
 	// CoordinatorApiServiceGetDriveStatusProcedure is the fully-qualified name of the
 	// CoordinatorApiService's GetDriveStatus RPC.
 	CoordinatorApiServiceGetDriveStatusProcedure = "/mediacorral.server.v1.CoordinatorApiService/GetDriveStatus"
+	// CoordinatorApiServiceStreamDriveStatusProcedure is the fully-qualified name of the
+	// CoordinatorApiService's StreamDriveStatus RPC.
+	CoordinatorApiServiceStreamDriveStatusProcedure = "/mediacorral.server.v1.CoordinatorApiService/StreamDriveStatus"
 	// CoordinatorApiServiceListMoviesProcedure is the fully-qualified name of the
 	// CoordinatorApiService's ListMovies RPC.
 	CoordinatorApiServiceListMoviesProcedure = "/mediacorral.server.v1.CoordinatorApiService/ListMovies"
@@ -161,8 +167,11 @@ type CoordinatorApiServiceClient interface {
 	Retract(context.Context, *v1.RetractRequest) (*v1.RetractResponse, error)
 	// Lists connected drives
 	ListDrives(context.Context, *v1.ListDrivesRequest) (*v1.ListDrivesResponse, error)
+	StreamDrivesList(context.Context, *v1.StreamDrivesListRequest) (*connect.ServerStreamForClient[v1.StreamDrivesListResponse], error)
 	// Gets the current state of the drive
 	GetDriveStatus(context.Context, *v1.GetDriveStatusRequest) (*v1.GetDriveStatusResponse, error)
+	// Streams the current state of the drive
+	StreamDriveStatus(context.Context, *v1.StreamDriveStatusRequest) (*connect.ServerStreamForClient[v1.StreamDriveStatusResponse], error)
 	// Lists the movies in the database
 	ListMovies(context.Context, *v1.ListMoviesRequest) (*v1.ListMoviesResponse, error)
 	// Gets a movie by id
@@ -289,10 +298,22 @@ func NewCoordinatorApiServiceClient(httpClient connect.HTTPClient, baseURL strin
 			connect.WithSchema(coordinatorApiServiceMethods.ByName("ListDrives")),
 			connect.WithClientOptions(opts...),
 		),
+		streamDrivesList: connect.NewClient[v1.StreamDrivesListRequest, v1.StreamDrivesListResponse](
+			httpClient,
+			baseURL+CoordinatorApiServiceStreamDrivesListProcedure,
+			connect.WithSchema(coordinatorApiServiceMethods.ByName("StreamDrivesList")),
+			connect.WithClientOptions(opts...),
+		),
 		getDriveStatus: connect.NewClient[v1.GetDriveStatusRequest, v1.GetDriveStatusResponse](
 			httpClient,
 			baseURL+CoordinatorApiServiceGetDriveStatusProcedure,
 			connect.WithSchema(coordinatorApiServiceMethods.ByName("GetDriveStatus")),
+			connect.WithClientOptions(opts...),
+		),
+		streamDriveStatus: connect.NewClient[v1.StreamDriveStatusRequest, v1.StreamDriveStatusResponse](
+			httpClient,
+			baseURL+CoordinatorApiServiceStreamDriveStatusProcedure,
+			connect.WithSchema(coordinatorApiServiceMethods.ByName("StreamDriveStatus")),
 			connect.WithClientOptions(opts...),
 		),
 		listMovies: connect.NewClient[v1.ListMoviesRequest, v1.ListMoviesResponse](
@@ -432,7 +453,9 @@ type coordinatorApiServiceClient struct {
 	eject                *connect.Client[v1.EjectRequest, v1.EjectResponse]
 	retract              *connect.Client[v1.RetractRequest, v1.RetractResponse]
 	listDrives           *connect.Client[v1.ListDrivesRequest, v1.ListDrivesResponse]
+	streamDrivesList     *connect.Client[v1.StreamDrivesListRequest, v1.StreamDrivesListResponse]
 	getDriveStatus       *connect.Client[v1.GetDriveStatusRequest, v1.GetDriveStatusResponse]
+	streamDriveStatus    *connect.Client[v1.StreamDriveStatusRequest, v1.StreamDriveStatusResponse]
 	listMovies           *connect.Client[v1.ListMoviesRequest, v1.ListMoviesResponse]
 	getMovie             *connect.Client[v1.GetMovieRequest, v1.GetMovieResponse]
 	getMovieByTmdbId     *connect.Client[v1.GetMovieByTmdbIdRequest, v1.GetMovieByTmdbIdResponse]
@@ -563,6 +586,11 @@ func (c *coordinatorApiServiceClient) ListDrives(ctx context.Context, req *v1.Li
 	return nil, err
 }
 
+// StreamDrivesList calls mediacorral.server.v1.CoordinatorApiService.StreamDrivesList.
+func (c *coordinatorApiServiceClient) StreamDrivesList(ctx context.Context, req *v1.StreamDrivesListRequest) (*connect.ServerStreamForClient[v1.StreamDrivesListResponse], error) {
+	return c.streamDrivesList.CallServerStream(ctx, connect.NewRequest(req))
+}
+
 // GetDriveStatus calls mediacorral.server.v1.CoordinatorApiService.GetDriveStatus.
 func (c *coordinatorApiServiceClient) GetDriveStatus(ctx context.Context, req *v1.GetDriveStatusRequest) (*v1.GetDriveStatusResponse, error) {
 	response, err := c.getDriveStatus.CallUnary(ctx, connect.NewRequest(req))
@@ -570,6 +598,11 @@ func (c *coordinatorApiServiceClient) GetDriveStatus(ctx context.Context, req *v
 		return response.Msg, err
 	}
 	return nil, err
+}
+
+// StreamDriveStatus calls mediacorral.server.v1.CoordinatorApiService.StreamDriveStatus.
+func (c *coordinatorApiServiceClient) StreamDriveStatus(ctx context.Context, req *v1.StreamDriveStatusRequest) (*connect.ServerStreamForClient[v1.StreamDriveStatusResponse], error) {
+	return c.streamDriveStatus.CallServerStream(ctx, connect.NewRequest(req))
 }
 
 // ListMovies calls mediacorral.server.v1.CoordinatorApiService.ListMovies.
@@ -779,8 +812,11 @@ type CoordinatorApiServiceHandler interface {
 	Retract(context.Context, *v1.RetractRequest) (*v1.RetractResponse, error)
 	// Lists connected drives
 	ListDrives(context.Context, *v1.ListDrivesRequest) (*v1.ListDrivesResponse, error)
+	StreamDrivesList(context.Context, *v1.StreamDrivesListRequest, *connect.ServerStream[v1.StreamDrivesListResponse]) error
 	// Gets the current state of the drive
 	GetDriveStatus(context.Context, *v1.GetDriveStatusRequest) (*v1.GetDriveStatusResponse, error)
+	// Streams the current state of the drive
+	StreamDriveStatus(context.Context, *v1.StreamDriveStatusRequest, *connect.ServerStream[v1.StreamDriveStatusResponse]) error
 	// Lists the movies in the database
 	ListMovies(context.Context, *v1.ListMoviesRequest) (*v1.ListMoviesResponse, error)
 	// Gets a movie by id
@@ -902,10 +938,22 @@ func NewCoordinatorApiServiceHandler(svc CoordinatorApiServiceHandler, opts ...c
 		connect.WithSchema(coordinatorApiServiceMethods.ByName("ListDrives")),
 		connect.WithHandlerOptions(opts...),
 	)
+	coordinatorApiServiceStreamDrivesListHandler := connect.NewServerStreamHandlerSimple(
+		CoordinatorApiServiceStreamDrivesListProcedure,
+		svc.StreamDrivesList,
+		connect.WithSchema(coordinatorApiServiceMethods.ByName("StreamDrivesList")),
+		connect.WithHandlerOptions(opts...),
+	)
 	coordinatorApiServiceGetDriveStatusHandler := connect.NewUnaryHandlerSimple(
 		CoordinatorApiServiceGetDriveStatusProcedure,
 		svc.GetDriveStatus,
 		connect.WithSchema(coordinatorApiServiceMethods.ByName("GetDriveStatus")),
+		connect.WithHandlerOptions(opts...),
+	)
+	coordinatorApiServiceStreamDriveStatusHandler := connect.NewServerStreamHandlerSimple(
+		CoordinatorApiServiceStreamDriveStatusProcedure,
+		svc.StreamDriveStatus,
+		connect.WithSchema(coordinatorApiServiceMethods.ByName("StreamDriveStatus")),
 		connect.WithHandlerOptions(opts...),
 	)
 	coordinatorApiServiceListMoviesHandler := connect.NewUnaryHandlerSimple(
@@ -1054,8 +1102,12 @@ func NewCoordinatorApiServiceHandler(svc CoordinatorApiServiceHandler, opts ...c
 			coordinatorApiServiceRetractHandler.ServeHTTP(w, r)
 		case CoordinatorApiServiceListDrivesProcedure:
 			coordinatorApiServiceListDrivesHandler.ServeHTTP(w, r)
+		case CoordinatorApiServiceStreamDrivesListProcedure:
+			coordinatorApiServiceStreamDrivesListHandler.ServeHTTP(w, r)
 		case CoordinatorApiServiceGetDriveStatusProcedure:
 			coordinatorApiServiceGetDriveStatusHandler.ServeHTTP(w, r)
+		case CoordinatorApiServiceStreamDriveStatusProcedure:
+			coordinatorApiServiceStreamDriveStatusHandler.ServeHTTP(w, r)
 		case CoordinatorApiServiceListMoviesProcedure:
 			coordinatorApiServiceListMoviesHandler.ServeHTTP(w, r)
 		case CoordinatorApiServiceGetMovieProcedure:
@@ -1153,8 +1205,16 @@ func (UnimplementedCoordinatorApiServiceHandler) ListDrives(context.Context, *v1
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mediacorral.server.v1.CoordinatorApiService.ListDrives is not implemented"))
 }
 
+func (UnimplementedCoordinatorApiServiceHandler) StreamDrivesList(context.Context, *v1.StreamDrivesListRequest, *connect.ServerStream[v1.StreamDrivesListResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("mediacorral.server.v1.CoordinatorApiService.StreamDrivesList is not implemented"))
+}
+
 func (UnimplementedCoordinatorApiServiceHandler) GetDriveStatus(context.Context, *v1.GetDriveStatusRequest) (*v1.GetDriveStatusResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mediacorral.server.v1.CoordinatorApiService.GetDriveStatus is not implemented"))
+}
+
+func (UnimplementedCoordinatorApiServiceHandler) StreamDriveStatus(context.Context, *v1.StreamDriveStatusRequest, *connect.ServerStream[v1.StreamDriveStatusResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("mediacorral.server.v1.CoordinatorApiService.StreamDriveStatus is not implemented"))
 }
 
 func (UnimplementedCoordinatorApiServiceHandler) ListMovies(context.Context, *v1.ListMoviesRequest) (*v1.ListMoviesResponse, error) {

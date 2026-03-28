@@ -11,6 +11,7 @@ export function reportErrorsFactory() {
 		} catch (error) {
 			if (error instanceof ConnectError) {
 				if (error.code === Code.Canceled) throw error;
+				if (error.code === Code.Unknown && error.message === "[unknown] CANCELLED") throw error;
 				await prompter.alert(
 					`Code: ${error.code}\n\nMessage:\n${decodeURIComponent(error.message)}`,
 					alertTitle

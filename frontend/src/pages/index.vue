@@ -9,19 +9,67 @@ import { reportErrorsFactory } from "@/scripts/uiUtils";
 
 const rpc = inject(injectKeys.rpc)!;
 const reportErrors = reportErrorsFactory();
-const driveSelection = ref<DiscDrive | null>(null);
+const driveSelection = ref<DiscDrive | undefined>(undefined);
 const drives = ref<DiscDrive[]>([]);
 
-onMounted(async () => {
-	drives.value = (
-		await reportErrors(rpc.listDrives({}), "Error listing drives")
-	).drives.sort((a, b) => {
-		if (a.id > b.id) return 1;
-		if (a.id < b.id) return -1;
+function keyExtractSort<T>(keyExtractor: (i: T) => any) {
+	return (a: T, b: T) => {
+		const aKey = keyExtractor(a);
+		const bKey = keyExtractor(b);
+		if (aKey > bKey) return 1;
+		if (aKey < bKey) return -1;
 		return 0;
+	};
+}
+
+/**
+ * Updates the list of drives in the least destructive way possible.
+ * This preserves components that check for equality.
+ */
+function updateDrives(newDrives: DiscDrive[]) {
+	newDrives.forEach((newDrive) => {
+		const oldDrive = drives.value.find((drive) => drive.id === newDrive.id);
+		if (oldDrive === undefined) {
+			drives.value.push(newDrive);
+		} else {
+			oldDrive.name = newDrive.name;
+		}
 	});
-	driveSelection.value = drives.value[0];
+	drives.value = drives.value.filter(
+		(oldDrive) =>
+			newDrives.findIndex((newDrive) => newDrive.id === oldDrive.id) != -1
+	);
+
+	drives.value.sort(keyExtractSort((drive) => drive.id));
+}
+
+let listTrackerAbort: AbortController = new AbortController();
+onMounted(async () => {
+	listTrackerAbort.abort("CANCELLED");
+	listTrackerAbort = new AbortController();
+	let response = rpc.streamDrivesList({});
+	await reportErrors(
+		(async () => {
+			for await (const update of response) {
+				updateDrives(update.drives);
+			}
+		})(),
+		"Error while streaming job list"
+	);
 });
+onBeforeUnmount(() => listTrackerAbort.abort());
+watch(
+	() => drives.value,
+	() => {
+		if (driveSelection.value === undefined && drives.value.length > 0) {
+			driveSelection.value = drives.value[0];
+		} else if (driveSelection.value !== undefined && !drives.value.includes(driveSelection.value)) {
+			// Prefer selecting nothing to prevent mis-clicks
+			driveSelection.value = undefined;
+		}
+	},
+	{ immediate: true, deep: true }
+);
 
 const appbar = inject(injectKeys.appbar);
 const autorip = ref<AutoripStatus>(AutoripStatus.UNSPECIFIED);
@@ -51,16 +99,9 @@ async function changeAutorip(status: boolean) {
 		</v-tab>
 	</v-tabs>
 	<v-tabs-window v-model="driveSelection">
-		<v-tabs-window-item
-			v-for="drive in drives"
-			:key="drive.id"
-			:value="drive"
-		>
+		<v-tabs-window-item v-for="drive in drives" :key="drive.id" :value="drive">
 			<v-container fluid>
-				<DriveMonitor
-					:drive="drive"
-					:visible="driveSelection === drive"
-				/>
+				<DriveMonitor :drive="drive" :visible="driveSelection === drive" />
 			</v-container>
 		</v-tabs-window-item>
 	</v-tabs-window>

@@ -4,10 +4,12 @@ import {
 	type RipJobStatus,
 	type DriveStatus,
 	type DiscDrive,
-	type RipJob
+	type RipJob,
+	DriveStatusSchema,
 } from "@/generated/mediacorral/server/v1/api_pb";
 import { injectKeys } from "@/scripts/config";
 import { reportErrorsFactory } from "@/scripts/uiUtils";
+import { create } from "@bufbuild/protobuf";
 
 const rpc = inject(injectKeys.rpc)!;
 const reportErrors = reportErrorsFactory();
@@ -48,7 +50,7 @@ const currentStatus = computed(() => {
 	}
 	switch (driveStatus.value?.status) {
 		case undefined:
-			return "Disconnected"
+			return "Disconnected";
 		case DriveStatusTag.UNSPECIFIED:
 			return "Unknown";
 		case DriveStatusTag.EMPTY:
@@ -111,33 +113,39 @@ async function ripDisc() {
 	);
 }
 
-let pollInterval: number | undefined = undefined;
+let jobTrackerAbort: AbortController = new AbortController();
+async function trackDrive() {
+	jobTrackerAbort.abort("CANCELLED");
+	jobTrackerAbort = new AbortController();
+	let response = rpc.streamDriveStatus(
+		{ driveId: props.drive.id },
+		{ signal: jobTrackerAbort.signal }
+	);
+	// driveStatus.value = create(DriveStatusSchema);
+	await reportErrors(
+		(async () => {
+			for await (const update of response) {
+				console.log(update);
+				if (update.driveStatus !== undefined) {
+					driveStatus.value = update.driveStatus;
+				}
+			}
+		})(),
+		"Error while streaming status updates"
+	);
+}
 watch(
 	() => props.visible,
 	() => {
 		if (props.visible) {
-			pollDrive();
-			pollInterval = setInterval(pollDrive, 1000);
+			trackDrive();
 		} else {
-			if (pollInterval !== undefined) clearInterval(pollInterval);
-			pollInterval = undefined;
+			jobTrackerAbort.abort("CANCELLED");
 		}
 	},
 	{ immediate: true }
 );
-onBeforeUnmount(() => {
-	if (pollInterval !== undefined) clearInterval(pollInterval);
-	pollInterval = undefined;
-});
-
-async function pollDrive() {
-	// TODO: Add error handling for this. The current implementation will
-	//       get ***REALLY*** annoying if added here.
-	let result = await rpc.getDriveStatus({
-		driveId: props.drive.id,
-	});
-	driveStatus.value = result.driveStatus;
-}
+onBeforeUnmount(() => jobTrackerAbort.abort("CANCELLED"));
 
 const jobInfo = ref<RipJob | undefined>(undefined);
 const jobStatus = computed(() => driveStatus.value?.ripJob);
@@ -158,9 +166,7 @@ watch(
 	}
 );
 
-const allowRename = computed(
-	() => driveStatus.value?.ripJob !== undefined
-);
+const allowRename = computed(() => driveStatus.value?.ripJob !== undefined);
 async function renameJob() {
 	if (driveStatus.value?.ripJob === undefined) return;
 	if (jobInfo.value === undefined) return;
@@ -198,9 +204,7 @@ async function renameJob() {
 				<v-label :text="`Current: ${jobStatus.cprogTitle}`" />
 				<v-progress-linear
 					:model-value="
-						((jobStatus.cprogValue || 0) /
-							(jobStatus.maxProgValue || 1)) *
-						100
+						((jobStatus.cprogValue || 0) / (jobStatus.maxProgValue || 1)) * 100
 					"
 					buffer-value="0"
 					color="red"
@@ -209,9 +213,7 @@ async function renameJob() {
 				<v-label :text="`Total: ${jobStatus.tprogTitle}`" />
 				<v-progress-linear
 					:model-value="
-						((jobStatus.tprogValue || 0) /
-							(jobStatus.maxProgValue || 1)) *
-						100
+						((jobStatus.tprogValue || 0) / (jobStatus.maxProgValue || 1)) * 100
 					"
 					buffer-value="0"
 					color="blue"

@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 
+	"connectrpc.com/connect"
 	"github.com/sploders101/mediacorral/backend/application"
 	"github.com/sploders101/mediacorral/backend/dbapi"
 	analysis_pb "github.com/sploders101/mediacorral/backend/gen/mediacorral/analysis/v1"
@@ -312,6 +314,34 @@ func (server ApiServer) ListDrives(
 	}.Build(), nil
 }
 
+// Streams the list the currently-registered drives
+func (server ApiServer) StreamDrivesList(
+	ctx context.Context,
+	request *server_pb.StreamDrivesListRequest,
+	resp *connect.ServerStream[server_pb.StreamDrivesListResponse],
+) error {
+	driveDiscovery := server.app.DriveCoordinator.WatchDrives()
+	driveDiscovery.SetContext(ctx)
+	for {
+		drivesMap, unlock, err := driveDiscovery.Changed()
+		if err != nil {
+			return nil
+		}
+
+		var drives []*server_pb.DiscDrive
+		for _, drive := range drivesMap {
+			drives = append(drives, server_pb.DiscDrive_builder{
+				Id:   drive.DriveId(),
+				Name: drive.DriveName(),
+			}.Build())
+		}
+		unlock()
+		resp.Send(server_pb.StreamDrivesListResponse_builder{
+			Drives: drives,
+		}.Build())
+	}
+}
+
 // Starts a rip job
 func (server ApiServer) StartRipJob(
 	ctx context.Context,
@@ -366,48 +396,72 @@ func (server ApiServer) GetDriveStatus(
 	if controller == nil {
 		return nil, twirp.NotFound.Error("The requested drive controller was not found.")
 	}
+
 	driveStatusWatcher := controller.DriveStatus()
 	driveStatus := driveStatusWatcher.Get()
-	var driveStatusTag server_pb.DriveStatusTag
-	switch driveStatus.GetStatus() {
-	case drive_coordinatorv1.DriveStatusTag_DRIVE_STATUS_TAG_EMPTY:
-		driveStatusTag = server_pb.DriveStatusTag_DRIVE_STATUS_TAG_EMPTY
-	case drive_coordinatorv1.DriveStatusTag_DRIVE_STATUS_TAG_TRAY_OPEN:
-		driveStatusTag = server_pb.DriveStatusTag_DRIVE_STATUS_TAG_TRAY_OPEN
-	case drive_coordinatorv1.DriveStatusTag_DRIVE_STATUS_TAG_NOT_READY:
-		driveStatusTag = server_pb.DriveStatusTag_DRIVE_STATUS_TAG_NOT_READY
-	case drive_coordinatorv1.DriveStatusTag_DRIVE_STATUS_TAG_DISC_LOADED:
-		driveStatusTag = server_pb.DriveStatusTag_DRIVE_STATUS_TAG_DISC_LOADED
-	}
-	var discName *string
-	if driveStatus.HasDiscName() {
-		discNameTmp := driveStatus.GetDiscName()
-		discName = &discNameTmp
-	}
 
 	ripStatusWatcher := controller.RipJobStatus()
 	driveRipStatus := ripStatusWatcher.Get()
-	var ripStatus *server_pb.RipJobStatus
-	if driveStatus.HasActiveRipJob() {
-		ripStatus = server_pb.RipJobStatus_builder{
-			JobId:        driveRipStatus.GetRipJob(),
-			CprogTitle:   driveRipStatus.GetCprogTitle(),
-			TprogTitle:   driveRipStatus.GetTprogTitle(),
-			CprogValue:   driveRipStatus.GetCprogValue(),
-			TprogValue:   driveRipStatus.GetTprogValue(),
-			MaxProgValue: driveRipStatus.GetMaxProgValue(),
-			Logs:         driveRipStatus.GetLogs(),
-		}.Build()
-	}
 
 	return server_pb.GetDriveStatusResponse_builder{
-		DriveStatus: server_pb.DriveStatus_builder{
-			DriveId:  request.GetDriveId(),
-			Status:   driveStatusTag,
-			DiscName: discName,
-			RipJob:   ripStatus,
-		}.Build(),
+		DriveStatus: convertDriveStatus(request.GetDriveId(), driveStatus, driveRipStatus),
 	}.Build(), nil
+}
+
+// Streams the drive status
+func (server ApiServer) StreamDriveStatus(
+	ctx context.Context,
+	req *server_pb.StreamDriveStatusRequest,
+	resp *connect.ServerStream[server_pb.StreamDriveStatusResponse],
+) error {
+	controller := server.app.DriveCoordinator.GetDriveById(req.GetDriveId())
+	if controller == nil {
+		return connect.NewError(connect.CodeNotFound, errors.New("The requested drive controller was not found."))
+	}
+
+	driveStatusWatcher := controller.DriveStatus()
+	driveStatusWatcher.SetContext(ctx)
+	ripStatusWatcher := controller.RipJobStatus()
+	ripStatusWatcher.SetContext(ctx)
+
+	var wg sync.WaitGroup
+	var varLock sync.Mutex
+	var driveStatus *drive_coordinatorv1.DriveStatus
+	var ripStatus *drive_coordinatorv1.RipStatus
+
+	wg.Add(2)
+	sendUpdate := func() {
+		varLock.Lock()
+		defer varLock.Unlock()
+
+		resp.Send(server_pb.StreamDriveStatusResponse_builder{
+			DriveStatus: convertDriveStatus(req.GetDriveId(), driveStatus, ripStatus),
+		}.Build())
+	}
+	go func() {
+		defer wg.Done()
+		for {
+			var err error
+			driveStatus, err = driveStatusWatcher.Changed()
+			if err != nil {
+				return
+			}
+			sendUpdate()
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for {
+			var err error
+			ripStatus, err = ripStatusWatcher.Changed()
+			if err != nil {
+				return
+			}
+			sendUpdate()
+		}
+	}()
+	wg.Wait()
+	return nil
 }
 
 // Lists the movies in the database
