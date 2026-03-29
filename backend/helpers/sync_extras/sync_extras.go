@@ -158,7 +158,7 @@ func (w *Watch[T]) wait(
 
 	valueChan <- struct{}{}
 
-	return w.value, w.generation, w.finished, nil
+	return w.value, w.generation, w.finished, ctx.Err()
 }
 
 // A handle for watching changes to a `Watcher`'s value.
