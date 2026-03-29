@@ -47,6 +47,12 @@ provide(injectKeys.appbar, appbar);
 					title="Catalogue"
 					to="/catalogue"
 				/>
+				<v-list-item
+					prepend-icon="mdi-multimedia"
+					link
+					title="Browse Media"
+					to="/browse"
+					/>
 			</v-list>
 		</v-navigation-drawer>
 		<v-main>

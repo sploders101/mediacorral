@@ -9,11 +9,15 @@ declare module 'vue' {
   export interface GlobalComponents {
     DriveMonitor: typeof import('./components/DriveMonitor.vue')['default']
     ManualMatch: typeof import('./components/ManualMatch.vue')['default']
+    MarqueeGrid: typeof import('./components/MarqueeGrid.vue')['default']
     MatchSelector: typeof import('./components/MatchSelector.vue')['default']
     MetadataImport: typeof import('./components/MetadataImport.vue')['default']
+    MovieBrowser: typeof import('./components/MovieBrowser.vue')['default']
+    PosterGrid: typeof import('./components/PosterGrid.vue')['default']
     PromptService: typeof import('./components/PromptService.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     TrackInspector: typeof import('./components/TrackInspector.vue')['default']
+    TvBrowser: typeof import('./components/TvBrowser.vue')['default']
   }
 }
