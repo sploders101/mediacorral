@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"path"
 	"strings"
 
 	"golang.org/x/net/http2"
@@ -20,7 +19,6 @@ import (
 
 	"github.com/sploders101/mediacorral/backend/application"
 	"github.com/sploders101/mediacorral/backend/coordinator_api"
-	"github.com/sploders101/mediacorral/backend/drive_coordinator"
 	"github.com/sploders101/mediacorral/backend/handlers"
 	"github.com/sploders101/mediacorral/backend/helpers/config"
 )
@@ -40,15 +38,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Create drive coordinator
-	//
-	// This is created separately because it needs to be registered with the gRPC server
-	driveCoordinator := drive_coordinator.NewDriveCoordinatorService(
-		path.Join(config.DataDirectory, "rips"),
-	)
-
 	// Create the application instance
-	app, err := application.NewApplication(config, driveCoordinator)
+	app, err := application.NewApplication(config)
 	if err != nil {
 		slog.Error("Failed to initialize application service.", "error", err.Error())
 		os.Exit(1)
@@ -115,7 +106,7 @@ func main() {
 		grpc.StreamInterceptor(pskStreamInterceptor(*config.DriveControllerPsk)),
 		grpc.Creds(insecure.NewCredentials()),
 	)
-	driveCoordinator.RegisterGrpc(grpcServer)
+	app.DriveCoordinator.RegisterGrpc(grpcServer)
 
 	// Register gRPC routes
 	router.Handle("POST /mediacorral.drive_coordinator.v1.DriveCoordinatorService/", grpcServer)

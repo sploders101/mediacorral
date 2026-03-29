@@ -65,10 +65,7 @@ type Application struct {
 	ExportsManager     *exports.ExportsManager
 }
 
-func NewApplication(
-	configData config.ConfigFile,
-	driveCoordinator *drive_coordinator.DriveCoordinatorService,
-) (*Application, error) {
+func NewApplication(configData config.ConfigFile) (*Application, error) {
 	ripDir := path.Join(configData.DataDirectory, "rips")
 	blobDir := path.Join(configData.DataDirectory, "blobs")
 	exportsDir := path.Join(configData.DataDirectory, "exports")
@@ -88,6 +85,7 @@ func NewApplication(
 	}
 
 	// Set up helpers
+	driveCoordinator := drive_coordinator.NewDriveCoordinatorService(ripDir)
 	analysisConn, err := grpc.NewClient(
 		configData.AnalysisUrl,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -394,8 +392,7 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 	var extractWg sync.WaitGroup
 	for _, videoFile := range videoFiles {
 		// Start new analysis job (to be joined later)
-		extractWg.Add(1)
-		go func() {
+		extractWg.Go(func() {
 			defer extractWg.Done()
 			result, err := app.AnalysisController.AnalyzeMkv(
 				context.TODO(),
@@ -509,7 +506,7 @@ func (app *Application) ReprocessRipJob(jobId int64, updateHash bool) error {
 					"videoFileBlobId", videoFile.BlobId,
 				)
 			}
-		}()
+		})
 	}
 	extractWg.Wait()
 

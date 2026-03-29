@@ -28,7 +28,9 @@ func convertDriveStatus(
 	}
 
 	var ripStatus *server_pb.RipJobStatus
-	if driveStatus.HasActiveRipJob() && driveRipStatus != nil {
+	if driveStatus.HasActiveRipJob() &&
+		driveRipStatus != nil &&
+		driveRipStatus.GetRipJob() == driveStatus.GetActiveRipJob() {
 		ripStatus = server_pb.RipJobStatus_builder{
 			JobId:        driveRipStatus.GetRipJob(),
 			CprogTitle:   driveRipStatus.GetCprogTitle(),
