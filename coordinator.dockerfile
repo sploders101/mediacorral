@@ -13,8 +13,8 @@ FROM --platform=$BUILDPLATFORM docker.io/golang:1.26.1-alpine AS backend-builder
 ARG TARGETOS
 ARG TARGETARCH
 
+COPY ./backend /app/backend
 COPY --from=frontend-builder /app/frontend/dist/ /app/backend/frontend/
-COPY . /app
 
 WORKDIR /app/backend
 RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build .
