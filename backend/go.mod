@@ -8,7 +8,6 @@ require (
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/cyruzin/golang-tmdb v1.9.0
 	github.com/google/uuid v1.6.0
-	github.com/twitchtv/twirp v8.1.3+incompatible
 	golang.org/x/net v0.42.0
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/grpc v1.76.0
@@ -22,7 +21,6 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/text v0.27.0 // indirect

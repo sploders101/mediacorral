@@ -16,8 +16,8 @@ import (
 	drive_coordinatorv1 "github.com/sploders101/mediacorral/backend/gen/mediacorral/drive_coordinator/v1"
 	server_pb "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1"
 	server_connect "github.com/sploders101/mediacorral/backend/gen/mediacorral/server/v1/serverv1connect"
+	"github.com/sploders101/mediacorral/backend/helpers/sync_extras"
 
-	"github.com/twitchtv/twirp"
 	gcodes "google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -37,7 +37,10 @@ func (server ApiServer) GetSubtitles(
 	subtitles, err := os.ReadFile(filePath)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
-		return nil, twirp.NotFound.Error("The requested blob does not exist")
+		return nil, connect.NewError(
+			connect.CodeNotFound,
+			errors.New("The requested blob does not exist"),
+		)
 	case err != nil:
 		return nil, convertError(err)
 	}
@@ -367,7 +370,10 @@ func (server ApiServer) Eject(
 	driveId := request.GetDriveId()
 	controller := server.app.DriveCoordinator.GetDriveById(driveId)
 	if controller == nil {
-		return nil, twirp.NotFound.Error("The requested drive controller was not found.")
+		return nil, connect.NewError(
+			connect.CodeNotFound,
+			errors.New("The requested drive controller was not found."),
+		)
 	}
 	controller.OpenTray()
 	return server_pb.EjectResponse_builder{}.Build(), nil
@@ -381,7 +387,10 @@ func (server ApiServer) Retract(
 	driveId := request.GetDriveId()
 	controller := server.app.DriveCoordinator.GetDriveById(driveId)
 	if controller == nil {
-		return nil, twirp.NotFound.Error("The requested drive controller was not found.")
+		return nil, connect.NewError(
+			connect.CodeNotFound,
+			errors.New("The requested drive controller was not found."),
+		)
 	}
 	controller.CloseTray()
 	return server_pb.RetractResponse_builder{}.Build(), nil
@@ -394,7 +403,10 @@ func (server ApiServer) GetDriveStatus(
 ) (*server_pb.GetDriveStatusResponse, error) {
 	controller := server.app.DriveCoordinator.GetDriveById(request.GetDriveId())
 	if controller == nil {
-		return nil, twirp.NotFound.Error("The requested drive controller was not found.")
+		return nil, connect.NewError(
+			connect.CodeNotFound,
+			errors.New("The requested drive controller was not found."),
+		)
 	}
 
 	driveStatusWatcher := controller.DriveStatus()
@@ -416,7 +428,10 @@ func (server ApiServer) StreamDriveStatus(
 ) error {
 	controller := server.app.DriveCoordinator.GetDriveById(req.GetDriveId())
 	if controller == nil {
-		return connect.NewError(connect.CodeNotFound, errors.New("The requested drive controller was not found."))
+		return connect.NewError(
+			connect.CodeNotFound,
+			errors.New("The requested drive controller was not found."),
+		)
 	}
 
 	driveStatusWatcher := controller.DriveStatus()
@@ -871,6 +886,20 @@ func (server ApiServer) GetUntaggedJobs(
 		protoRipJobs = append(protoRipJobs, protoRipJob)
 	}
 
+	// Get in-progress uploads
+	uploadingJobs := server.app.DriveCoordinator.ListUploadingJobs()
+	for _, jobId := range uploadingJobs {
+		job, err := dbTx.GetRipJob(jobId)
+		if err != nil {
+			return nil, convertError(err)
+		}
+		protoRipJob, err := ripJobDbToProto(job)
+		if err != nil {
+			return nil, convertError(err)
+		}
+		protoRipJobs = append(protoRipJobs, protoRipJob)
+	}
+
 	return server_pb.GetUntaggedJobsResponse_builder{
 		RipJobs: protoRipJobs,
 	}.Build(), nil
@@ -988,6 +1017,42 @@ func (server ApiServer) PruneRipJob(
 	return server_pb.PruneRipJobResponse_builder{}.Build(), nil
 }
 
+// Streams upload status for rip jobs
+func (server ApiServer) StreamRipJobUploadStatus(
+	ctx context.Context,
+	req *server_pb.StreamRipJobUploadStatusRequest,
+	resp *connect.ServerStream[server_pb.StreamRipJobUploadStatusResponse],
+) error {
+	tracker := server.app.DriveCoordinator.GetUploadTracker(req.GetJobId())
+	if tracker == nil {
+		return connect.NewError(
+			connect.CodeNotFound,
+			errors.New("The requested job is not currently being uploaded"),
+		)
+	}
+	watcher := tracker.WatchUploadProgress()
+	watcher.SetContext(ctx)
+	for {
+		progress, unlock, err := watcher.Changed()
+		if err != nil {
+			unlock()
+			return convertError(err)
+		}
+		update := make(map[string]*server_pb.RipJobFileUploadStatus, len(progress))
+		for fileName, fileProgress := range progress {
+			update[fileName] = server_pb.RipJobFileUploadStatus_builder{
+				Received:  fileProgress.Received,
+				TotalSize: fileProgress.TotalSize,
+			}.Build()
+		}
+		unlock()
+
+		resp.Send(server_pb.StreamRipJobUploadStatusResponse_builder{
+			Status: update,
+		}.Build())
+	}
+}
+
 func RegisterApiService(server *http.ServeMux, app *application.Application) {
 	prefix, apiHandler := server_connect.NewCoordinatorApiServiceHandler(ApiServer{app: app})
 	server.Handle("POST "+prefix, apiHandler)
@@ -995,17 +1060,20 @@ func RegisterApiService(server *http.ServeMux, app *application.Application) {
 
 func convertError(err error) error {
 	if errors.Is(err, application.ErrNotFound) {
-		return twirp.NotFound.Error(err.Error())
+		return connect.NewError(connect.CodeNotFound, err)
 	}
 	if status, ok := gstatus.FromError(err); ok {
 		switch status.Code() {
 		case gcodes.NotFound:
-			return twirp.NotFound.Error(status.Message())
+			return connect.NewError(connect.CodeNotFound, errors.New(status.Message()))
 		case gcodes.Unknown:
-			return twirp.Unknown.Error(status.Message())
+			return connect.NewError(connect.CodeUnknown, errors.New(status.Message()))
 		}
 	}
-	return twirp.Unknown.Error(err.Error())
+	if errors.Is(err, sync_extras.ErrImmutable) {
+		return nil
+	}
+	return connect.NewError(connect.CodeUnknown, err)
 }
 
 func movieDbToProto(movie dbapi.MoviesItem) *server_pb.Movie {

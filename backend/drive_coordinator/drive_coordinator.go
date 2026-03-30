@@ -30,7 +30,14 @@ type DriveCoordinatorService struct {
 	driveControllers *sync_extras.Watch[map[string]*DriveController]
 	ripJobUploads    *sync_extras.Watch[map[int64]*RipUploadTracker]
 	ripDir           string
-	ImportQueue      chan int64
+	// Used to communicate that a job has finished, and has begun uploading.
+	// This *must* be consumed to avoid deadlocks. It's not easy for the drive controller to mark this directly
+	// without introducing circular references, which is why this is a channel.
+	FinishedQueue chan int64
+	// Used to communicate that a job upload has finished, and should be imported.
+	// This *must* be consumed to avoid deadlocks. It's not easy for the drive controller to mark this directly
+	// without introducing circular references, which is why this is a channel.
+	ImportQueue chan int64
 }
 
 func NewDriveCoordinatorService(ripDir string) *DriveCoordinatorService {
@@ -38,6 +45,7 @@ func NewDriveCoordinatorService(ripDir string) *DriveCoordinatorService {
 		driveControllers: sync_extras.NewWatch(map[string]*DriveController{}),
 		ripJobUploads:    sync_extras.NewWatch(map[int64]*RipUploadTracker{}),
 		ripDir:           ripDir,
+		FinishedQueue:    make(chan int64),
 		ImportQueue:      make(chan int64),
 	}
 }
@@ -199,12 +207,39 @@ func (coordinator *DriveCoordinatorService) FinalizeRipJob(
 	ripJob := header.GetRipJob()
 	files := header.GetUploadFiles()
 
-	uploadProgress := make(map[string]int, len(files))
+	// Create directory
+	ripDir := path.Join(
+		coordinator.ripDir,
+		strconv.FormatInt(ripJob, 10),
+	)
+	if err := os.MkdirAll(ripDir, os.FileMode(0o777)); err != nil {
+		if !errors.Is(err, os.ErrExist) {
+			return err
+		}
+	}
+	coordinator.FinishedQueue <- ripJob
+
+	finishedFiles, err := getFinishedFiles(ripDir, files)
+	if err != nil {
+		// This isn't *really* a fatal error, but if this fails, something is almost definitely wrong with the ripDir.
+		slog.Error("Error getting finished files", "ripJob", ripJob, "error", err.Error())
+		return err
+	}
+	uploadProgress := make(map[string]UploadProgress, len(finishedFiles)+len(files))
 	for _, file := range files {
-		uploadProgress[file.GetFileName()] = 0
+		uploadProgress[file.GetFileName()] = UploadProgress{
+			Received:  0,
+			TotalSize: file.GetFileSize(),
+		}
+	}
+	for _, file := range finishedFiles {
+		uploadProgress[file.GetFileName()] = UploadProgress{
+			Received:  file.GetFileSize(),
+			TotalSize: file.GetFileSize(),
+		}
 	}
 	uploadTracker := &RipUploadTracker{
-		FileList:       files,
+		FileList:       slices.Concat(finishedFiles, files),
 		uploadProgress: sync_extras.NewWatch(uploadProgress),
 	}
 
@@ -225,15 +260,6 @@ func (coordinator *DriveCoordinatorService) FinalizeRipJob(
 		})
 	}()
 
-	// Create directory
-	ripDir := path.Join(
-		coordinator.ripDir,
-		strconv.FormatInt(ripJob, 10),
-	)
-	if err := os.MkdirAll(ripDir, os.FileMode(0o777)); err != nil {
-		return err
-	}
-
 	var corruptedFilesMtx sync.Mutex
 	var corruptedFiles []string
 
@@ -245,6 +271,15 @@ func (coordinator *DriveCoordinatorService) FinalizeRipJob(
 		filePath := path.Join(ripDir, files[uploadIndex].GetFileName())
 		fileRaw, err := os.Create(filePath)
 		if err != nil {
+			slog.Error(
+				"Couldn't create upload file",
+				"ripJob",
+				ripJob,
+				"filePath",
+				filePath,
+				"error",
+				err.Error(),
+			)
 			return err
 		}
 		file := bufio.NewWriter(fileRaw)
@@ -266,11 +301,16 @@ func (coordinator *DriveCoordinatorService) FinalizeRipJob(
 				if _, err := file.Write(chunk); err != nil {
 					return err
 				}
-				uploadTracker.uploadProgress.ConditionalSet(func(fileMap *map[string]int) bool {
-					fileName := files[uploadIndex].GetFileName()
-					(*fileMap)[fileName] += len(chunk)
-					return true
-				})
+				uploadTracker.uploadProgress.ConditionalSet(
+					func(fileMap *map[string]UploadProgress) bool {
+						fileMapDeref := *fileMap
+						fileName := files[uploadIndex].GetFileName()
+						progress := fileMapDeref[fileName]
+						progress.Received += uint64(len(chunk))
+						fileMapDeref[fileName] = progress
+						return true
+					},
+				)
 			case msg.HasMd5Hash():
 				uploadIndex += 1
 
@@ -284,9 +324,7 @@ func (coordinator *DriveCoordinatorService) FinalizeRipJob(
 				if _, err := hashFileRaw.Seek(0, io.SeekStart); err != nil {
 					return err
 				}
-				closers.Add(1)
-				go func() {
-					defer closers.Done()
+				closers.Go(func() {
 					defer hashFileRaw.Close()
 					hasher := md5.New()
 					hashFile := bufio.NewReader(hashFileRaw)
@@ -318,7 +356,7 @@ func (coordinator *DriveCoordinatorService) FinalizeRipJob(
 							return
 						}
 					}
-				}()
+				})
 
 				// Rotate to next file
 				if uploadIndex < len(files) {
@@ -387,6 +425,25 @@ func (coordinator *DriveCoordinatorService) GetDriveById(driveId string) *DriveC
 // value using the returned function as quickly as possible to allow other functions to track the value.
 func (coordinator *DriveCoordinatorService) WatchDrives() sync_extras.WatchReceiverLocked[map[string]*DriveController] {
 	return coordinator.driveControllers.WatchLocked()
+}
+
+// Gets a list of IDs for rip jobs that are currently being uploaded
+func (coordinator *DriveCoordinatorService) ListUploadingJobs() []int64 {
+	ripJobs, unlock := coordinator.ripJobUploads.GetLocked()
+	defer unlock()
+	return slices.Collect(maps.Keys(ripJobs))
+}
+
+// Gets an upload watcher for a given rip job.
+//
+// Returns a pointer to an upload tracker, which will be nil if the job is not currently uploading.
+func (coordinator *DriveCoordinatorService) GetUploadTracker(ripJob int64) *RipUploadTracker {
+	ripJobs, unlock := coordinator.ripJobUploads.GetLocked()
+	defer unlock()
+	if watcher, ok := ripJobs[ripJob]; ok {
+		return watcher
+	}
+	return nil
 }
 
 // A handle to a drive, which can be used to control it or monitor status
@@ -460,19 +517,23 @@ func (controller *DriveController) RipMedia(jobId int64, autoeject bool) {
 	}
 }
 
-// Tracks the upload progress of a rip job. This only shows the progress of the latest call to `FinalizeRipJob`.
-// It must be combined with other context like files on the filesystem & database records to be useful.
-type RipUploadTracker struct {
-	FileList       []*drive_coordinatorv1.FileDescription
-	uploadProgress *sync_extras.Watch[map[string]int]
+type UploadProgress struct {
+	Received  uint64
+	TotalSize uint64
 }
 
-func (tracker *RipUploadTracker) GetUploadProgress() map[string]int {
+// Tracks the upload progress of a rip job. This only shows the progress of the latest call to `FinalizeRipJob`.
+type RipUploadTracker struct {
+	FileList       []*drive_coordinatorv1.FileDescription
+	uploadProgress *sync_extras.Watch[map[string]UploadProgress]
+}
+
+func (tracker *RipUploadTracker) GetUploadProgress() map[string]UploadProgress {
 	progress, unlock := tracker.uploadProgress.GetLocked()
 	defer unlock()
 	return maps.Clone(progress)
 }
 
-func (tracker *RipUploadTracker) WatchUploadProgress() sync_extras.WatchReceiverLocked[map[string]int] {
+func (tracker *RipUploadTracker) WatchUploadProgress() sync_extras.WatchReceiverLocked[map[string]UploadProgress] {
 	return tracker.uploadProgress.WatchLocked()
 }

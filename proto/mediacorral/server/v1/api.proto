@@ -108,6 +108,9 @@ service CoordinatorApiService {
 
   // Prunes a rip job, removing all untagged content
   rpc PruneRipJob (PruneRipJobRequest) returns (PruneRipJobResponse);
+
+  // Stream upload status for rip job
+  rpc StreamRipJobUploadStatus(StreamRipJobUploadStatusRequest) returns (stream StreamRipJobUploadStatusResponse);
 }
 
 message GetSubtitlesRequest {
@@ -507,3 +510,14 @@ message PruneRipJobRequest {
   int64 job_id = 1;
 }
 message PruneRipJobResponse {}
+
+message StreamRipJobUploadStatusRequest {
+  int64 job_id = 1;
+}
+message StreamRipJobUploadStatusResponse {
+  map<string, RipJobFileUploadStatus> status = 1;
+}
+message RipJobFileUploadStatus {
+  uint64 received = 1;
+  uint64 total_size = 2;
+}

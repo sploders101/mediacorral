@@ -5,12 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io/fs"
 	"log/slog"
 	"os"
 	"path"
 	"runtime"
-	"strconv"
 	"sync"
 	"time"
 
@@ -129,8 +127,10 @@ func NewApplication(configData config.ConfigFile) (*Application, error) {
 		ExportsManager:     exportsManager,
 	}
 
+	// Start background tasks
 	go app.autoripper()
-	go app.importJobs()
+	go app.jobFinisher()
+	go app.jobImporter()
 
 	return app, nil
 }
@@ -217,77 +217,6 @@ func (app *Application) RipMedia(
 	}
 
 	return ripJob, nil
-}
-
-// Imports a rip job from the `rips` directory
-func (app *Application) ImportJob(jobId int64) error {
-	dbTx, err := app.Db.Begin()
-	if err != nil {
-		return fmt.Errorf("failed to start db transaction: %w", err)
-	}
-	defer func() { _ = dbTx.Rollback() }()
-
-	// 1. Mark rip job as finished
-	if err := dbTx.MarkRipJobFinished(jobId, true); err != nil {
-		return fmt.Errorf("failed to mark rip job as finished: %w", err)
-	}
-
-	// 2. Import video files
-	ripDir := path.Join(app.ripDir, strconv.FormatInt(jobId, 10))
-	ripDirFS, err := os.OpenRoot(ripDir)
-	if err != nil {
-		return fmt.Errorf("failed to open rip directory: %w", err)
-	}
-	deleteJob := true
-	if err := fs.WalkDir(
-		ripDirFS.FS(),
-		".",
-		func(filePath string, d fs.DirEntry, err error) error {
-			if path.Ext(filePath) != ".mkv" {
-				return nil
-			}
-			filePath = path.Join(ripDir, filePath)
-
-			if err := app.BlobStorage.AddVideoFile(dbTx, filePath, &jobId); err != nil {
-				slog.Error(
-					"An error occurred while importing job.",
-					"job", jobId,
-					"file", filePath,
-					"error", err.Error(),
-				)
-				deleteJob = false
-			}
-
-			return nil
-		},
-	); err != nil {
-		return err
-	}
-
-	if deleteJob {
-		if err := os.RemoveAll(ripDir); err != nil {
-			slog.Error(
-				"Failed to remove rip directory.",
-				"job", jobId,
-				"directory", ripDir,
-				"error", err.Error(),
-			)
-		}
-	}
-
-	if err := dbTx.MarkRipJobImported(jobId, true); err != nil {
-		return fmt.Errorf("failed to mark rip job as imported: %w", err)
-	}
-
-	if err := dbTx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit changes to db: %w", err)
-	}
-
-	go func() {
-		_ = app.ReprocessRipJob(jobId, true)
-	}()
-
-	return nil
 }
 
 func (app *Application) AutoimportMovie(tmdbId int32) (dbapi.MoviesItem, error) {

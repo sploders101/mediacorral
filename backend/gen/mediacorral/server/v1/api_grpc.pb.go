@@ -19,41 +19,42 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CoordinatorApiService_GetSubtitles_FullMethodName         = "/mediacorral.server.v1.CoordinatorApiService/GetSubtitles"
-	CoordinatorApiService_SearchTmdbMulti_FullMethodName      = "/mediacorral.server.v1.CoordinatorApiService/SearchTmdbMulti"
-	CoordinatorApiService_SearchTmdbTv_FullMethodName         = "/mediacorral.server.v1.CoordinatorApiService/SearchTmdbTv"
-	CoordinatorApiService_SearchTmdbMovie_FullMethodName      = "/mediacorral.server.v1.CoordinatorApiService/SearchTmdbMovie"
-	CoordinatorApiService_ImportTmdbTv_FullMethodName         = "/mediacorral.server.v1.CoordinatorApiService/ImportTmdbTv"
-	CoordinatorApiService_ImportTmdbMovie_FullMethodName      = "/mediacorral.server.v1.CoordinatorApiService/ImportTmdbMovie"
-	CoordinatorApiService_RebuildExportsDir_FullMethodName    = "/mediacorral.server.v1.CoordinatorApiService/RebuildExportsDir"
-	CoordinatorApiService_AutoripStatus_FullMethodName        = "/mediacorral.server.v1.CoordinatorApiService/AutoripStatus"
-	CoordinatorApiService_StartRipJob_FullMethodName          = "/mediacorral.server.v1.CoordinatorApiService/StartRipJob"
-	CoordinatorApiService_Eject_FullMethodName                = "/mediacorral.server.v1.CoordinatorApiService/Eject"
-	CoordinatorApiService_Retract_FullMethodName              = "/mediacorral.server.v1.CoordinatorApiService/Retract"
-	CoordinatorApiService_ListDrives_FullMethodName           = "/mediacorral.server.v1.CoordinatorApiService/ListDrives"
-	CoordinatorApiService_StreamDrivesList_FullMethodName     = "/mediacorral.server.v1.CoordinatorApiService/StreamDrivesList"
-	CoordinatorApiService_GetDriveStatus_FullMethodName       = "/mediacorral.server.v1.CoordinatorApiService/GetDriveStatus"
-	CoordinatorApiService_StreamDriveStatus_FullMethodName    = "/mediacorral.server.v1.CoordinatorApiService/StreamDriveStatus"
-	CoordinatorApiService_ListMovies_FullMethodName           = "/mediacorral.server.v1.CoordinatorApiService/ListMovies"
-	CoordinatorApiService_GetMovie_FullMethodName             = "/mediacorral.server.v1.CoordinatorApiService/GetMovie"
-	CoordinatorApiService_GetMovieByTmdbId_FullMethodName     = "/mediacorral.server.v1.CoordinatorApiService/GetMovieByTmdbId"
-	CoordinatorApiService_ListTvShows_FullMethodName          = "/mediacorral.server.v1.CoordinatorApiService/ListTvShows"
-	CoordinatorApiService_ListTvSeasons_FullMethodName        = "/mediacorral.server.v1.CoordinatorApiService/ListTvSeasons"
-	CoordinatorApiService_ListTvEpisodes_FullMethodName       = "/mediacorral.server.v1.CoordinatorApiService/ListTvEpisodes"
-	CoordinatorApiService_GetTvShow_FullMethodName            = "/mediacorral.server.v1.CoordinatorApiService/GetTvShow"
-	CoordinatorApiService_GetTvSeason_FullMethodName          = "/mediacorral.server.v1.CoordinatorApiService/GetTvSeason"
-	CoordinatorApiService_GetTvEpisode_FullMethodName         = "/mediacorral.server.v1.CoordinatorApiService/GetTvEpisode"
-	CoordinatorApiService_GetTvEpisodeByTmdbId_FullMethodName = "/mediacorral.server.v1.CoordinatorApiService/GetTvEpisodeByTmdbId"
-	CoordinatorApiService_TagFile_FullMethodName              = "/mediacorral.server.v1.CoordinatorApiService/TagFile"
-	CoordinatorApiService_GetJobInfo_FullMethodName           = "/mediacorral.server.v1.CoordinatorApiService/GetJobInfo"
-	CoordinatorApiService_RenameJob_FullMethodName            = "/mediacorral.server.v1.CoordinatorApiService/RenameJob"
-	CoordinatorApiService_DeleteJob_FullMethodName            = "/mediacorral.server.v1.CoordinatorApiService/DeleteJob"
-	CoordinatorApiService_SuspectJob_FullMethodName           = "/mediacorral.server.v1.CoordinatorApiService/SuspectJob"
-	CoordinatorApiService_ReanalyzeJob_FullMethodName         = "/mediacorral.server.v1.CoordinatorApiService/ReanalyzeJob"
-	CoordinatorApiService_GetUntaggedJobs_FullMethodName      = "/mediacorral.server.v1.CoordinatorApiService/GetUntaggedJobs"
-	CoordinatorApiService_GetJobCatalogueInfo_FullMethodName  = "/mediacorral.server.v1.CoordinatorApiService/GetJobCatalogueInfo"
-	CoordinatorApiService_ReprocessJob_FullMethodName         = "/mediacorral.server.v1.CoordinatorApiService/ReprocessJob"
-	CoordinatorApiService_PruneRipJob_FullMethodName          = "/mediacorral.server.v1.CoordinatorApiService/PruneRipJob"
+	CoordinatorApiService_GetSubtitles_FullMethodName             = "/mediacorral.server.v1.CoordinatorApiService/GetSubtitles"
+	CoordinatorApiService_SearchTmdbMulti_FullMethodName          = "/mediacorral.server.v1.CoordinatorApiService/SearchTmdbMulti"
+	CoordinatorApiService_SearchTmdbTv_FullMethodName             = "/mediacorral.server.v1.CoordinatorApiService/SearchTmdbTv"
+	CoordinatorApiService_SearchTmdbMovie_FullMethodName          = "/mediacorral.server.v1.CoordinatorApiService/SearchTmdbMovie"
+	CoordinatorApiService_ImportTmdbTv_FullMethodName             = "/mediacorral.server.v1.CoordinatorApiService/ImportTmdbTv"
+	CoordinatorApiService_ImportTmdbMovie_FullMethodName          = "/mediacorral.server.v1.CoordinatorApiService/ImportTmdbMovie"
+	CoordinatorApiService_RebuildExportsDir_FullMethodName        = "/mediacorral.server.v1.CoordinatorApiService/RebuildExportsDir"
+	CoordinatorApiService_AutoripStatus_FullMethodName            = "/mediacorral.server.v1.CoordinatorApiService/AutoripStatus"
+	CoordinatorApiService_StartRipJob_FullMethodName              = "/mediacorral.server.v1.CoordinatorApiService/StartRipJob"
+	CoordinatorApiService_Eject_FullMethodName                    = "/mediacorral.server.v1.CoordinatorApiService/Eject"
+	CoordinatorApiService_Retract_FullMethodName                  = "/mediacorral.server.v1.CoordinatorApiService/Retract"
+	CoordinatorApiService_ListDrives_FullMethodName               = "/mediacorral.server.v1.CoordinatorApiService/ListDrives"
+	CoordinatorApiService_StreamDrivesList_FullMethodName         = "/mediacorral.server.v1.CoordinatorApiService/StreamDrivesList"
+	CoordinatorApiService_GetDriveStatus_FullMethodName           = "/mediacorral.server.v1.CoordinatorApiService/GetDriveStatus"
+	CoordinatorApiService_StreamDriveStatus_FullMethodName        = "/mediacorral.server.v1.CoordinatorApiService/StreamDriveStatus"
+	CoordinatorApiService_ListMovies_FullMethodName               = "/mediacorral.server.v1.CoordinatorApiService/ListMovies"
+	CoordinatorApiService_GetMovie_FullMethodName                 = "/mediacorral.server.v1.CoordinatorApiService/GetMovie"
+	CoordinatorApiService_GetMovieByTmdbId_FullMethodName         = "/mediacorral.server.v1.CoordinatorApiService/GetMovieByTmdbId"
+	CoordinatorApiService_ListTvShows_FullMethodName              = "/mediacorral.server.v1.CoordinatorApiService/ListTvShows"
+	CoordinatorApiService_ListTvSeasons_FullMethodName            = "/mediacorral.server.v1.CoordinatorApiService/ListTvSeasons"
+	CoordinatorApiService_ListTvEpisodes_FullMethodName           = "/mediacorral.server.v1.CoordinatorApiService/ListTvEpisodes"
+	CoordinatorApiService_GetTvShow_FullMethodName                = "/mediacorral.server.v1.CoordinatorApiService/GetTvShow"
+	CoordinatorApiService_GetTvSeason_FullMethodName              = "/mediacorral.server.v1.CoordinatorApiService/GetTvSeason"
+	CoordinatorApiService_GetTvEpisode_FullMethodName             = "/mediacorral.server.v1.CoordinatorApiService/GetTvEpisode"
+	CoordinatorApiService_GetTvEpisodeByTmdbId_FullMethodName     = "/mediacorral.server.v1.CoordinatorApiService/GetTvEpisodeByTmdbId"
+	CoordinatorApiService_TagFile_FullMethodName                  = "/mediacorral.server.v1.CoordinatorApiService/TagFile"
+	CoordinatorApiService_GetJobInfo_FullMethodName               = "/mediacorral.server.v1.CoordinatorApiService/GetJobInfo"
+	CoordinatorApiService_RenameJob_FullMethodName                = "/mediacorral.server.v1.CoordinatorApiService/RenameJob"
+	CoordinatorApiService_DeleteJob_FullMethodName                = "/mediacorral.server.v1.CoordinatorApiService/DeleteJob"
+	CoordinatorApiService_SuspectJob_FullMethodName               = "/mediacorral.server.v1.CoordinatorApiService/SuspectJob"
+	CoordinatorApiService_ReanalyzeJob_FullMethodName             = "/mediacorral.server.v1.CoordinatorApiService/ReanalyzeJob"
+	CoordinatorApiService_GetUntaggedJobs_FullMethodName          = "/mediacorral.server.v1.CoordinatorApiService/GetUntaggedJobs"
+	CoordinatorApiService_GetJobCatalogueInfo_FullMethodName      = "/mediacorral.server.v1.CoordinatorApiService/GetJobCatalogueInfo"
+	CoordinatorApiService_ReprocessJob_FullMethodName             = "/mediacorral.server.v1.CoordinatorApiService/ReprocessJob"
+	CoordinatorApiService_PruneRipJob_FullMethodName              = "/mediacorral.server.v1.CoordinatorApiService/PruneRipJob"
+	CoordinatorApiService_StreamRipJobUploadStatus_FullMethodName = "/mediacorral.server.v1.CoordinatorApiService/StreamRipJobUploadStatus"
 )
 
 // CoordinatorApiServiceClient is the client API for CoordinatorApiService service.
@@ -129,6 +130,8 @@ type CoordinatorApiServiceClient interface {
 	ReprocessJob(ctx context.Context, in *ReprocessJobRequest, opts ...grpc.CallOption) (*ReprocessJobResponse, error)
 	// Prunes a rip job, removing all untagged content
 	PruneRipJob(ctx context.Context, in *PruneRipJobRequest, opts ...grpc.CallOption) (*PruneRipJobResponse, error)
+	// Stream upload status for rip job
+	StreamRipJobUploadStatus(ctx context.Context, in *StreamRipJobUploadStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamRipJobUploadStatusResponse], error)
 }
 
 type coordinatorApiServiceClient struct {
@@ -507,6 +510,25 @@ func (c *coordinatorApiServiceClient) PruneRipJob(ctx context.Context, in *Prune
 	return out, nil
 }
 
+func (c *coordinatorApiServiceClient) StreamRipJobUploadStatus(ctx context.Context, in *StreamRipJobUploadStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamRipJobUploadStatusResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &CoordinatorApiService_ServiceDesc.Streams[2], CoordinatorApiService_StreamRipJobUploadStatus_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[StreamRipJobUploadStatusRequest, StreamRipJobUploadStatusResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type CoordinatorApiService_StreamRipJobUploadStatusClient = grpc.ServerStreamingClient[StreamRipJobUploadStatusResponse]
+
 // CoordinatorApiServiceServer is the server API for CoordinatorApiService service.
 // All implementations should embed UnimplementedCoordinatorApiServiceServer
 // for forward compatibility.
@@ -580,6 +602,8 @@ type CoordinatorApiServiceServer interface {
 	ReprocessJob(context.Context, *ReprocessJobRequest) (*ReprocessJobResponse, error)
 	// Prunes a rip job, removing all untagged content
 	PruneRipJob(context.Context, *PruneRipJobRequest) (*PruneRipJobResponse, error)
+	// Stream upload status for rip job
+	StreamRipJobUploadStatus(*StreamRipJobUploadStatusRequest, grpc.ServerStreamingServer[StreamRipJobUploadStatusResponse]) error
 }
 
 // UnimplementedCoordinatorApiServiceServer should be embedded to have
@@ -693,6 +717,9 @@ func (UnimplementedCoordinatorApiServiceServer) ReprocessJob(context.Context, *R
 }
 func (UnimplementedCoordinatorApiServiceServer) PruneRipJob(context.Context, *PruneRipJobRequest) (*PruneRipJobResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method PruneRipJob not implemented")
+}
+func (UnimplementedCoordinatorApiServiceServer) StreamRipJobUploadStatus(*StreamRipJobUploadStatusRequest, grpc.ServerStreamingServer[StreamRipJobUploadStatusResponse]) error {
+	return status.Error(codes.Unimplemented, "method StreamRipJobUploadStatus not implemented")
 }
 func (UnimplementedCoordinatorApiServiceServer) testEmbeddedByValue() {}
 
@@ -1330,6 +1357,17 @@ func _CoordinatorApiService_PruneRipJob_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CoordinatorApiService_StreamRipJobUploadStatus_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamRipJobUploadStatusRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(CoordinatorApiServiceServer).StreamRipJobUploadStatus(m, &grpc.GenericServerStream[StreamRipJobUploadStatusRequest, StreamRipJobUploadStatusResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type CoordinatorApiService_StreamRipJobUploadStatusServer = grpc.ServerStreamingServer[StreamRipJobUploadStatusResponse]
+
 // CoordinatorApiService_ServiceDesc is the grpc.ServiceDesc for CoordinatorApiService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1479,6 +1517,11 @@ var CoordinatorApiService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "StreamDriveStatus",
 			Handler:       _CoordinatorApiService_StreamDriveStatus_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "StreamRipJobUploadStatus",
+			Handler:       _CoordinatorApiService_StreamRipJobUploadStatus_Handler,
 			ServerStreams: true,
 		},
 	},

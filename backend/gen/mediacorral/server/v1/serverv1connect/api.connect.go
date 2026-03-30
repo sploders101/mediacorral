@@ -138,6 +138,9 @@ const (
 	// CoordinatorApiServicePruneRipJobProcedure is the fully-qualified name of the
 	// CoordinatorApiService's PruneRipJob RPC.
 	CoordinatorApiServicePruneRipJobProcedure = "/mediacorral.server.v1.CoordinatorApiService/PruneRipJob"
+	// CoordinatorApiServiceStreamRipJobUploadStatusProcedure is the fully-qualified name of the
+	// CoordinatorApiService's StreamRipJobUploadStatus RPC.
+	CoordinatorApiServiceStreamRipJobUploadStatusProcedure = "/mediacorral.server.v1.CoordinatorApiService/StreamRipJobUploadStatus"
 )
 
 // CoordinatorApiServiceClient is a client for the mediacorral.server.v1.CoordinatorApiService
@@ -212,6 +215,8 @@ type CoordinatorApiServiceClient interface {
 	ReprocessJob(context.Context, *v1.ReprocessJobRequest) (*v1.ReprocessJobResponse, error)
 	// Prunes a rip job, removing all untagged content
 	PruneRipJob(context.Context, *v1.PruneRipJobRequest) (*v1.PruneRipJobResponse, error)
+	// Stream upload status for rip job
+	StreamRipJobUploadStatus(context.Context, *v1.StreamRipJobUploadStatusRequest) (*connect.ServerStreamForClient[v1.StreamRipJobUploadStatusResponse], error)
 }
 
 // NewCoordinatorApiServiceClient constructs a client for the
@@ -436,46 +441,53 @@ func NewCoordinatorApiServiceClient(httpClient connect.HTTPClient, baseURL strin
 			connect.WithSchema(coordinatorApiServiceMethods.ByName("PruneRipJob")),
 			connect.WithClientOptions(opts...),
 		),
+		streamRipJobUploadStatus: connect.NewClient[v1.StreamRipJobUploadStatusRequest, v1.StreamRipJobUploadStatusResponse](
+			httpClient,
+			baseURL+CoordinatorApiServiceStreamRipJobUploadStatusProcedure,
+			connect.WithSchema(coordinatorApiServiceMethods.ByName("StreamRipJobUploadStatus")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // coordinatorApiServiceClient implements CoordinatorApiServiceClient.
 type coordinatorApiServiceClient struct {
-	getSubtitles         *connect.Client[v1.GetSubtitlesRequest, v1.GetSubtitlesResponse]
-	searchTmdbMulti      *connect.Client[v1.SearchTmdbMultiRequest, v1.SearchTmdbMultiResponse]
-	searchTmdbTv         *connect.Client[v1.SearchTmdbTvRequest, v1.SearchTmdbTvResponse]
-	searchTmdbMovie      *connect.Client[v1.SearchTmdbMovieRequest, v1.SearchTmdbMovieResponse]
-	importTmdbTv         *connect.Client[v1.ImportTmdbTvRequest, v1.ImportTmdbTvResponse]
-	importTmdbMovie      *connect.Client[v1.ImportTmdbMovieRequest, v1.ImportTmdbMovieResponse]
-	rebuildExportsDir    *connect.Client[v1.RebuildExportsDirRequest, v1.RebuildExportsDirResponse]
-	autoripStatus        *connect.Client[v1.AutoripStatusRequest, v1.AutoripStatusResponse]
-	startRipJob          *connect.Client[v1.StartRipJobRequest, v1.StartRipJobResponse]
-	eject                *connect.Client[v1.EjectRequest, v1.EjectResponse]
-	retract              *connect.Client[v1.RetractRequest, v1.RetractResponse]
-	listDrives           *connect.Client[v1.ListDrivesRequest, v1.ListDrivesResponse]
-	streamDrivesList     *connect.Client[v1.StreamDrivesListRequest, v1.StreamDrivesListResponse]
-	getDriveStatus       *connect.Client[v1.GetDriveStatusRequest, v1.GetDriveStatusResponse]
-	streamDriveStatus    *connect.Client[v1.StreamDriveStatusRequest, v1.StreamDriveStatusResponse]
-	listMovies           *connect.Client[v1.ListMoviesRequest, v1.ListMoviesResponse]
-	getMovie             *connect.Client[v1.GetMovieRequest, v1.GetMovieResponse]
-	getMovieByTmdbId     *connect.Client[v1.GetMovieByTmdbIdRequest, v1.GetMovieByTmdbIdResponse]
-	listTvShows          *connect.Client[v1.ListTvShowsRequest, v1.ListTvShowsResponse]
-	listTvSeasons        *connect.Client[v1.ListTvSeasonsRequest, v1.ListTvSeasonsResponse]
-	listTvEpisodes       *connect.Client[v1.ListTvEpisodesRequest, v1.ListTvEpisodesResponse]
-	getTvShow            *connect.Client[v1.GetTvShowRequest, v1.GetTvShowResponse]
-	getTvSeason          *connect.Client[v1.GetTvSeasonRequest, v1.GetTvSeasonResponse]
-	getTvEpisode         *connect.Client[v1.GetTvEpisodeRequest, v1.GetTvEpisodeResponse]
-	getTvEpisodeByTmdbId *connect.Client[v1.GetTvEpisodeByTmdbIdRequest, v1.GetTvEpisodeByTmdbIdResponse]
-	tagFile              *connect.Client[v1.TagFileRequest, v1.TagFileResponse]
-	getJobInfo           *connect.Client[v1.GetJobInfoRequest, v1.GetJobInfoResponse]
-	renameJob            *connect.Client[v1.RenameJobRequest, v1.RenameJobResponse]
-	deleteJob            *connect.Client[v1.DeleteJobRequest, v1.DeleteJobResponse]
-	suspectJob           *connect.Client[v1.SuspectJobRequest, v1.SuspectJobResponse]
-	reanalyzeJob         *connect.Client[v1.ReanalyzeJobRequest, v1.ReanalyzeJobResponse]
-	getUntaggedJobs      *connect.Client[v1.GetUntaggedJobsRequest, v1.GetUntaggedJobsResponse]
-	getJobCatalogueInfo  *connect.Client[v1.GetJobCatalogueInfoRequest, v1.GetJobCatalogueInfoResponse]
-	reprocessJob         *connect.Client[v1.ReprocessJobRequest, v1.ReprocessJobResponse]
-	pruneRipJob          *connect.Client[v1.PruneRipJobRequest, v1.PruneRipJobResponse]
+	getSubtitles             *connect.Client[v1.GetSubtitlesRequest, v1.GetSubtitlesResponse]
+	searchTmdbMulti          *connect.Client[v1.SearchTmdbMultiRequest, v1.SearchTmdbMultiResponse]
+	searchTmdbTv             *connect.Client[v1.SearchTmdbTvRequest, v1.SearchTmdbTvResponse]
+	searchTmdbMovie          *connect.Client[v1.SearchTmdbMovieRequest, v1.SearchTmdbMovieResponse]
+	importTmdbTv             *connect.Client[v1.ImportTmdbTvRequest, v1.ImportTmdbTvResponse]
+	importTmdbMovie          *connect.Client[v1.ImportTmdbMovieRequest, v1.ImportTmdbMovieResponse]
+	rebuildExportsDir        *connect.Client[v1.RebuildExportsDirRequest, v1.RebuildExportsDirResponse]
+	autoripStatus            *connect.Client[v1.AutoripStatusRequest, v1.AutoripStatusResponse]
+	startRipJob              *connect.Client[v1.StartRipJobRequest, v1.StartRipJobResponse]
+	eject                    *connect.Client[v1.EjectRequest, v1.EjectResponse]
+	retract                  *connect.Client[v1.RetractRequest, v1.RetractResponse]
+	listDrives               *connect.Client[v1.ListDrivesRequest, v1.ListDrivesResponse]
+	streamDrivesList         *connect.Client[v1.StreamDrivesListRequest, v1.StreamDrivesListResponse]
+	getDriveStatus           *connect.Client[v1.GetDriveStatusRequest, v1.GetDriveStatusResponse]
+	streamDriveStatus        *connect.Client[v1.StreamDriveStatusRequest, v1.StreamDriveStatusResponse]
+	listMovies               *connect.Client[v1.ListMoviesRequest, v1.ListMoviesResponse]
+	getMovie                 *connect.Client[v1.GetMovieRequest, v1.GetMovieResponse]
+	getMovieByTmdbId         *connect.Client[v1.GetMovieByTmdbIdRequest, v1.GetMovieByTmdbIdResponse]
+	listTvShows              *connect.Client[v1.ListTvShowsRequest, v1.ListTvShowsResponse]
+	listTvSeasons            *connect.Client[v1.ListTvSeasonsRequest, v1.ListTvSeasonsResponse]
+	listTvEpisodes           *connect.Client[v1.ListTvEpisodesRequest, v1.ListTvEpisodesResponse]
+	getTvShow                *connect.Client[v1.GetTvShowRequest, v1.GetTvShowResponse]
+	getTvSeason              *connect.Client[v1.GetTvSeasonRequest, v1.GetTvSeasonResponse]
+	getTvEpisode             *connect.Client[v1.GetTvEpisodeRequest, v1.GetTvEpisodeResponse]
+	getTvEpisodeByTmdbId     *connect.Client[v1.GetTvEpisodeByTmdbIdRequest, v1.GetTvEpisodeByTmdbIdResponse]
+	tagFile                  *connect.Client[v1.TagFileRequest, v1.TagFileResponse]
+	getJobInfo               *connect.Client[v1.GetJobInfoRequest, v1.GetJobInfoResponse]
+	renameJob                *connect.Client[v1.RenameJobRequest, v1.RenameJobResponse]
+	deleteJob                *connect.Client[v1.DeleteJobRequest, v1.DeleteJobResponse]
+	suspectJob               *connect.Client[v1.SuspectJobRequest, v1.SuspectJobResponse]
+	reanalyzeJob             *connect.Client[v1.ReanalyzeJobRequest, v1.ReanalyzeJobResponse]
+	getUntaggedJobs          *connect.Client[v1.GetUntaggedJobsRequest, v1.GetUntaggedJobsResponse]
+	getJobCatalogueInfo      *connect.Client[v1.GetJobCatalogueInfoRequest, v1.GetJobCatalogueInfoResponse]
+	reprocessJob             *connect.Client[v1.ReprocessJobRequest, v1.ReprocessJobResponse]
+	pruneRipJob              *connect.Client[v1.PruneRipJobRequest, v1.PruneRipJobResponse]
+	streamRipJobUploadStatus *connect.Client[v1.StreamRipJobUploadStatusRequest, v1.StreamRipJobUploadStatusResponse]
 }
 
 // GetSubtitles calls mediacorral.server.v1.CoordinatorApiService.GetSubtitles.
@@ -785,6 +797,12 @@ func (c *coordinatorApiServiceClient) PruneRipJob(ctx context.Context, req *v1.P
 	return nil, err
 }
 
+// StreamRipJobUploadStatus calls
+// mediacorral.server.v1.CoordinatorApiService.StreamRipJobUploadStatus.
+func (c *coordinatorApiServiceClient) StreamRipJobUploadStatus(ctx context.Context, req *v1.StreamRipJobUploadStatusRequest) (*connect.ServerStreamForClient[v1.StreamRipJobUploadStatusResponse], error) {
+	return c.streamRipJobUploadStatus.CallServerStream(ctx, connect.NewRequest(req))
+}
+
 // CoordinatorApiServiceHandler is an implementation of the
 // mediacorral.server.v1.CoordinatorApiService service.
 type CoordinatorApiServiceHandler interface {
@@ -857,6 +875,8 @@ type CoordinatorApiServiceHandler interface {
 	ReprocessJob(context.Context, *v1.ReprocessJobRequest) (*v1.ReprocessJobResponse, error)
 	// Prunes a rip job, removing all untagged content
 	PruneRipJob(context.Context, *v1.PruneRipJobRequest) (*v1.PruneRipJobResponse, error)
+	// Stream upload status for rip job
+	StreamRipJobUploadStatus(context.Context, *v1.StreamRipJobUploadStatusRequest, *connect.ServerStream[v1.StreamRipJobUploadStatusResponse]) error
 }
 
 // NewCoordinatorApiServiceHandler builds an HTTP handler from the service implementation. It
@@ -1076,6 +1096,12 @@ func NewCoordinatorApiServiceHandler(svc CoordinatorApiServiceHandler, opts ...c
 		connect.WithSchema(coordinatorApiServiceMethods.ByName("PruneRipJob")),
 		connect.WithHandlerOptions(opts...),
 	)
+	coordinatorApiServiceStreamRipJobUploadStatusHandler := connect.NewServerStreamHandlerSimple(
+		CoordinatorApiServiceStreamRipJobUploadStatusProcedure,
+		svc.StreamRipJobUploadStatus,
+		connect.WithSchema(coordinatorApiServiceMethods.ByName("StreamRipJobUploadStatus")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/mediacorral.server.v1.CoordinatorApiService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case CoordinatorApiServiceGetSubtitlesProcedure:
@@ -1148,6 +1174,8 @@ func NewCoordinatorApiServiceHandler(svc CoordinatorApiServiceHandler, opts ...c
 			coordinatorApiServiceReprocessJobHandler.ServeHTTP(w, r)
 		case CoordinatorApiServicePruneRipJobProcedure:
 			coordinatorApiServicePruneRipJobHandler.ServeHTTP(w, r)
+		case CoordinatorApiServiceStreamRipJobUploadStatusProcedure:
+			coordinatorApiServiceStreamRipJobUploadStatusHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -1295,4 +1323,8 @@ func (UnimplementedCoordinatorApiServiceHandler) ReprocessJob(context.Context, *
 
 func (UnimplementedCoordinatorApiServiceHandler) PruneRipJob(context.Context, *v1.PruneRipJobRequest) (*v1.PruneRipJobResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mediacorral.server.v1.CoordinatorApiService.PruneRipJob is not implemented"))
+}
+
+func (UnimplementedCoordinatorApiServiceHandler) StreamRipJobUploadStatus(context.Context, *v1.StreamRipJobUploadStatusRequest, *connect.ServerStream[v1.StreamRipJobUploadStatusResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("mediacorral.server.v1.CoordinatorApiService.StreamRipJobUploadStatus is not implemented"))
 }
