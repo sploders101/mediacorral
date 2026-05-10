@@ -67,10 +67,9 @@ func NewApplication(configData config.ConfigFile) (*Application, error) {
 	ripDir := path.Join(configData.DataDirectory, "rips")
 	blobDir := path.Join(configData.DataDirectory, "blobs")
 	exportsDir := path.Join(configData.DataDirectory, "exports")
-	sqlitePath := path.Join(configData.DataDirectory, "database.sqlite")
 
 	// Set up DB
-	db, err := dbapi.NewDb(sqlitePath)
+	db, err := dbapi.NewDb(*configData.DatabasePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open db: %w", err)
 	}

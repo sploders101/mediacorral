@@ -17,6 +17,7 @@ type ConfigFile struct {
 	AnalysisUrl            string                `json:"analysis_url"`
 	BasePath               *string               `json:"base_path"`
 	DataDirectory          string                `json:"data_directory"`
+	DatabasePath           *string               `json:"database_path"`
 	TmdbApiKey             *string               `json:"tmdb_api_key"`
 	TmdbApiKeyFile         *string               `json:"tmdb_api_key_file"`
 	OstLogin               OstLoginConfig        `json:"ost_login"`
@@ -90,6 +91,14 @@ func LoadConfig() (ConfigFile, error) {
 
 	if !path.IsAbs(config.DataDirectory) {
 		config.DataDirectory = path.Join(*config.BasePath, config.DataDirectory)
+	}
+
+	if config.DatabasePath == nil {
+		dbPath := path.Join(*config.BasePath, "database.sqlite")
+		config.DatabasePath = &dbPath
+	} else if !path.IsAbs(*config.DatabasePath) {
+		dbPath := path.Join(*config.BasePath, *config.DatabasePath)
+		config.DatabasePath = &dbPath
 	}
 
 	if config.AnalysisUrl == "" {
