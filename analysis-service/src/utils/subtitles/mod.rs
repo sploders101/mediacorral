@@ -55,7 +55,10 @@ impl StContext {
     #[inline]
     pub fn supported_tracks(track: &&TrackEntry) -> bool {
         return track.track_type() == TrackType::Subtitle
-            && matches!(track.codec_id(), "S_VOBSUB" | "S_SUBRIP" | "S_HDMV/PGS")
+            && matches!(
+                track.codec_id(),
+                "S_VOBSUB" | "S_SUBRIP" | "S_HDMV/PGS" | "S_TEXT/UTF8"
+            )
             && matches!(
                 track.language_bcp47().or(track.language()),
                 Some("eng") | Some("en") | Some("en-US") | Some("en-GB")
@@ -67,7 +70,7 @@ impl StContext {
         partess_cache: &PartessCache,
     ) -> Result<Self, ExtractDetailsError> {
         return Ok(match st_track.codec_id() {
-            "S_SUBRIP" => StContext::Subrip(Vec::new()),
+            "S_SUBRIP" | "S_TEXT/UTF8" => StContext::Subrip(Vec::new()),
             "S_VOBSUB" => StContext::Vobsub(VobsubProcessor::new(
                 partess_cache,
                 "eng",
